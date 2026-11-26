@@ -24,6 +24,28 @@ back on runway 36 before the fuel runs out.
 
 You fail if you crash, run out of fuel, let the village burn or run out of mission time. Each stage gets a score and stars.
 
+## Damage and decisions
+
+* **Engine temperature (ITT)** rises with throttle and with the hot air in the smoke. Above the 800 °C redline an
+  engine wears out, can catch fire and flame out: ease the power on a drop run, or lose an engine.
+* **Engine fire**: press X to fire that engine's bottle. The fire goes out and the engine stays shut down: fly home
+  on one. The live engine yaws the nose toward the dead one, and the aircraft climbs and accelerates worse.
+* **Bird strikes** from the hornbills over the canopy crack the windscreen, damage an engine or hole a wing (fuel leak).
+* **Structure**: pulling more than 3.2 g or less than -1 g, and firm landings, cost airframe strength (more drag,
+  less control authority). A damaged gear lowers the sink rate it survives.
+* **Reports**: a crash ends with a crash report (impact speed, sink rate, bank and pitch, surface, g-load, damage
+  and the timeline of what went wrong); a finished mission with a landing debrief (touchdown fpm, g, centreline).
+
+## Cockpit and HUD
+
+The cockpit view (C) has a full lit panel: six-pack flight instruments, twin-needle torque, ITT, prop and fuel-flow
+gauges for both engines, fuel and water quantity, clock, G-meter, a moving-map display, 16 annunciators, radios,
+master warning and caution lights and a mode panel on the glareshield. The needles jitter with engine vibration,
+warnings flash, the yokes and overhead power levers follow your inputs, and soot, spray droplets and a bird-strike
+crack build up on the windscreen. The HUD has speed and altitude tapes with trend arrows, stall and scoop speed bands,
+a heading tape with the objective bug and wind, a radar mini-map with fires, village, rings and objective, engine and
+systems panels, G-meter, master caution alerts, radio messages with a typing effect, and hit/miss feedback for drops.
+
 ## Controls
 
 | Key | Action |
@@ -35,6 +57,7 @@ You fail if you crash, run out of fuel, let the village burn or run out of missi
 | V | flaps (UP, 1, FULL) |
 | SPACE (hold) | open the belly doors and drop water |
 | B | wheel brakes |
+| X | fire bottle: put out a burning engine (it stays shut down) |
 | C | chase / cockpit camera |
 | Mouse drag / wheel | look around / zoom |
 | P or Esc | pause |
@@ -56,17 +79,17 @@ impostor card baked at start-up from that tree in eight directions (colour and n
 
 ```
 game/src/aircraft   FW-218 model and livery
-game/src/flight     flight physics (lift, stall, drag, water load, ground and water contact)
+game/src/flight     flight physics, damage model, annunciators
 game/src/world      terrain, water, sky, forest, village, airstrip, clouds and hornbills
 game/src/fire       fire spread, flames, smoke, water drop and scoop spray
-game/src/mission    the five stages, rings and the mission director
-game/src/hud        head-up display
-game/src/cockpit    cockpit interior and lit instrument panel
+game/src/mission    the five stages, rings, mission director, crash and landing report
+game/src/hud        head-up display: tapes, radar, systems, messages
+game/src/cockpit    cockpit shell, instrument panel, gauges, moving map, windscreen, yokes and levers
 game/src/camera     chase and cockpit cameras
 game/src/audio      synthesised sound
 game/src/input      keyboard, mouse and touch controls
 game/src/ui         title, briefing, pause and result screens, bundled fonts
-game/src/shots      staged scenes for the screenshots (?shot=cover|cockpit|scoop|landing)
+game/src/shots      staged scenes for the screenshots (?shot=title|cover|cockpit|scoop|landing)
 ```
 
 Run it locally with `node serve.ts` (Node 22) and open http://localhost:8080.
