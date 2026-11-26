@@ -152,6 +152,7 @@ class Game {
       setFlying(s, new THREE.Vector3(r.x + 260, 230, r.z + r.length / 2 + 2600), 5 * deg, 62);
       s.fuel = s.fuelMax * 0.3;
     }
+    this.plane.userData.parts.gearExt = null;
     this.state = 'playing';
     this.showHud = true;
     this.rig.first = true;

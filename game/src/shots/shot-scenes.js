@@ -58,7 +58,7 @@ export const SHOTS = {
     game.startMission(1, { quiet: true });
     setFlying(game.flight, new THREE.Vector3(-200, 230, 200), 200 * deg, 60, 1 * deg, 8 * deg);
     game.flight.flaps = game.flight.flapTarget = 0.5;
-    game.rig.yaw = 2.75; game.rig.pitch = 0.2; game.rig.dist = 22;
+    game.rig.yaw = 0.6; game.rig.pitch = 0.25; game.rig.dist = 22;
     return { warm: 1.0, mode: 'chase' };
   },
 };

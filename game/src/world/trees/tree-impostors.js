@@ -192,7 +192,7 @@ void main() {
   vec3 hemi = mix(uGround, uSky, N.y * 0.5 + 0.5);
   vec3 toCam = normalize(cameraPosition - vWorld);
   float back = pow(max(dot(toCam, uSunDir), 0.0), 3.0) * (0.35 + 0.65 * max(dot(-N, uSunDir), 0.0));
-  vec3 col = alb * ((uSunColor * (ndl + back * 1.1 * leaf) + hemi) * 0.31831 + uAmbient);
+  vec3 col = alb * ((uSunColor * (ndl * 1.25 + back * 1.1 * leaf) + hemi) * 0.31831 + uAmbient);
   gl_FragColor = vec4(col, 1.0);
   #include <fog_fragment>
 }`;
@@ -230,7 +230,7 @@ export function buildImpostorMesh(forest, baked, quality, isImpostor) {
       uSky: { value: new THREE.Color(0xffd2a8).multiplyScalar(0.35) },
       uGround: { value: new THREE.Color(0x3a4a2a).multiplyScalar(0.35) },
       // Stands in for the sky reflection (environment map) the real leaves get.
-      uAmbient: { value: new THREE.Color(0.55, 0.62, 0.7).multiplyScalar(Number(new URLSearchParams(location.search).get('impk') || 0.6)) },
+      uAmbient: { value: new THREE.Color(0.55, 0.62, 0.7).multiplyScalar(Number(new URLSearchParams(location.search).get('impk') || 1.1)) },
     }]),
     vertexShader: impVert,
     fragmentShader: impFrag,

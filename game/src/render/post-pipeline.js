@@ -1,5 +1,5 @@
 // HDR post-processing: the scene renders into a multisampled half-float target, then a bloom chain
-// (bright-pass + blurred mip pyramid), sun glare ghosts, ACES filmic tone mapping, colour grading,
+// (bright-pass + blurred mip pyramid), heat shimmer over the fire, sun glare ghosts, ACES filmic tone mapping, colour grading,
 // vignette and fine grain are composited to the screen.
 import * as THREE from 'three';
 
@@ -62,7 +62,13 @@ vec3 toSRGB(vec3 c) {
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + time) * 43758.5453); }
 
 void main() {
-  vec3 c = texture2D(scene, vUv).rgb;
+  // Heat shimmer: the air just above bright, warm (fire) light wobbles. The widest bloom level
+  // sampled a little below the pixel is the heat mask (hot air rises).
+  vec3 heatSrc = texture2D(bloom3, vUv - vec2(0.0, 0.035)).rgb + texture2D(bloom2, vUv - vec2(0.0, 0.015)).rgb * 0.5;
+  float heat = clamp((heatSrc.r - heatSrc.b * 1.4) * 0.6, 0.0, 1.0);
+  vec2 wob = vec2(sin(vUv.y * 160.0 - time * 9.0) + sin(vUv.y * 97.0 + vUv.x * 40.0 - time * 6.3) * 0.6,
+                  cos(vUv.x * 130.0 + time * 7.0) * 0.5) * 0.0016 * heat;
+  vec3 c = texture2D(scene, vUv + wob).rgb;
   vec3 b = texture2D(bloom0, vUv).rgb * 0.5 + texture2D(bloom1, vUv).rgb * 0.7 + texture2D(bloom2, vUv).rgb * 0.9 + texture2D(bloom3, vUv).rgb * 1.1;
   c += b * bloomStrength;
   // Sun glare: soft ghosts mirrored through the screen centre, and a warm veil when facing the sun.

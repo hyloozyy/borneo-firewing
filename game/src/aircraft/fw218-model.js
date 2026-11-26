@@ -1,6 +1,6 @@
 // FW-218 "Enggang": twin-turboprop amphibious water bomber, modelled in code.
 // Boat hull with rounded nose, high straight wing, red nacelles with chrome spinners and 4-blade props,
-// wingtip floats, tall fin with mid stabiliser, moving controls, lights and belly water doors.
+// wingtip floats, tall fin with mid stabiliser, moving controls, lights, belly water doors, landing gear.
 // Local axes: nose toward -Z, right wing +X, up +Y. Metres.
 import * as THREE from 'three';
 import { buildLiveryTexture, buildFinTexture, buildHullDetailMaps } from './livery-texture.js';
@@ -338,6 +338,44 @@ export function buildFW218() {
   probe.position.set(0, -1.8, 1.6);
   model.add(probe);
 
+  // Retractable landing gear: a nose leg folding forward into the bow and two main legs folding
+  // up into the hull sides (an amphibian lands on the runway on wheels, on water on its hull).
+  parts.gear = [];
+  const tyre = new THREE.TorusGeometry(0.3, 0.13, 8, 18);
+  tyre.rotateY(Math.PI / 2);
+  const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.2, 14);
+  hubGeo.rotateZ(Math.PI / 2);
+  const rubber = std(0x1a1a1c, { roughness: 0.9 });
+  const wheel = (x, y, z) => {
+    const w = new THREE.Group();
+    w.add(new THREE.Mesh(tyre, rubber), new THREE.Mesh(hubGeo, grey));
+    w.position.set(x, y, z);
+    return w;
+  };
+  const leg = (len) => {
+    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, len, 8), grey);
+    l.position.y = -len / 2;
+    return l;
+  };
+  const noseH = hinge(model, 0, -1.0, -7.3);
+  noseH.add(leg(0.6), wheel(0.17, -0.62, 0), wheel(-0.17, -0.62, 0));
+  noseH.userData = { axis: 'x', sign: -1 };
+  parts.gear.push(noseH);
+  for (const side of [-1, 1]) {
+    const mh = hinge(model, side * 1.3, -0.62, 0.9);
+    const l = leg(1.05);
+    l.rotation.z = side * 0.25;
+    l.position.x = side * 0.13;
+    mh.add(l, wheel(side * 0.3, -1.05, 0));
+    const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 6), grey);
+    brace.position.set(side * 0.05, -0.45, -0.38);
+    brace.rotation.x = -0.75;
+    mh.add(brace);
+    mh.userData = { axis: 'z', sign: side };
+    parts.gear.push(mh);
+  }
+  parts.gearExt = null;
+
   // Navigation lights, strobes and beacon.
   const lightGlow = (col, size) => {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(col), blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -405,6 +443,16 @@ export function animateFW218(root, s, dt, time) {
     d.material.opacity = Math.min(1, (s.rpm - 0.3) * 2.5);
     d.rotation.z += dt * 3;
   });
+  // Gear comes down on the runway, on final with full flaps, or when slow; up on the water.
+  const gearDown = !s.onWater && (s.onGround || (s.flapTarget >= 1 && s.agl < 220) || s.airspeed < 28);
+  if (p.gearExt === null || s.onGround) p.gearExt = gearDown ? 1 : 0;
+  else p.gearExt += ((gearDown ? 1 : 0) - p.gearExt) * Math.min(1, dt * 0.8);
+  const up = 1 - p.gearExt;
+  for (const g of p.gear) {
+    if (g.userData.axis === 'x') g.rotation.x = g.userData.sign * up * 1.75;
+    else g.rotation.z = g.userData.sign * up * 1.55;
+    g.visible = p.gearExt > 0.02 || s.cockpit;
+  }
   const flash = (time % 1.3) < 0.07;
   p.strobes.forEach((st) => (st.visible = flash));
   p.beacon.visible = (time % 1.0) < 0.5;
