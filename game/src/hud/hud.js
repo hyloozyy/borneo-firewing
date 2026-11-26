@@ -68,7 +68,7 @@ export class Hud {
     else if (game.dropWindow > 0 && s.water > 0) this.flash('DROP NOW · SPACE', W / 2, H * 0.5 + 90 * u, AMBER, u);
     if (s.turbulence > 0.2) this.flash('SMOKE · TURBULENCE', W / 2, H * 0.5 + 112 * u, AMBER, u);
 
-    this.gauges(game, 16 * u, H - 16 * u, u);
+    this.gauges(game, 16 * u, game.controls.isTouch ? H * 0.42 : H - 16 * u, u);
     this.objective(game, u);
     this.missionPanel(game, u, small);
     this.radioBox(dt, u);

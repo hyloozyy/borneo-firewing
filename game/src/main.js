@@ -87,7 +87,8 @@ class Game {
 
     addEventListener('resize', () => this.resize());
     this.resize();
-    for (const ev of ['pointerdown', 'keydown', 'touchstart', 'focus']) addEventListener(ev, () => this.audio.ctx && this.audio.unlock());
+    for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, () => this.audio.unlock());
+    addEventListener('focus', () => this.audio.ctx && this.audio.unlock());
     document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); else if (this.state === 'playing') this.setPaused(true); });
     bindScreens(this);
     this.menuFlyby();
@@ -150,7 +151,7 @@ class Game {
   onMissionEnd(passed) {
     this.state = 'result';
     if (!passed && this.flight.crashed) { this.audio.crash(); this.rig.shake = 2; }
-    setTimeout(() => showResult(this, passed), passed ? 1200 : 1800);
+    setTimeout(() => { this.showHud = false; showResult(this, passed); }, passed ? 1200 : 1800);
   }
 
   handleKeys() {
@@ -247,6 +248,7 @@ class Game {
     if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
     this.renderer.render(this.scene, this.camera);
     this.hud.draw(this, dt);
+    this.controls.syncThrottle(this.flight.throttle);
     this.controls.endFrame();
   }
 }

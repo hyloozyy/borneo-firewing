@@ -34,8 +34,9 @@ body.shot .screen, body.shot #touch { display: none !important; }
 #touch .throttle { pointer-events: auto; position: absolute; right: 3vw; bottom: 8vh; width: 54px; height: 170px; border-radius: 10px; background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.35); }
 #touch .throttle i { position: absolute; left: 4px; right: 4px; bottom: 0%; height: 22px; margin-bottom: -11px; border-radius: 6px; background: #ffb347; }
 #touch .throttle span { position: absolute; top: -20px; width: 100%; text-align: center; font-size: 11px; }
-#touch .buttons { pointer-events: auto; position: absolute; right: calc(3vw + 70px); bottom: 6vh; display: grid; grid-template-columns: repeat(3, 58px); gap: 6px; }
-#touch .buttons button { margin: 0; padding: 12px 0; font-size: 12px; background: rgba(30,20,15,0.6); }
+#touch .buttons { pointer-events: auto; position: absolute; right: calc(3vw + 66px); bottom: 4vh; display: grid; grid-template-columns: repeat(3, 50px); gap: 5px; }
+#touch .stick { opacity: 0.85; }
+#touch .buttons button { margin: 0; padding: 9px 0; font-size: 11px; background: rgba(30,20,15,0.55); }
 #touch .buttons .b-drop { background: rgba(40,120,220,0.75); }
 #touch .buttons .on { background: rgba(60,180,90,0.8); }
 #rotate { display: none; }

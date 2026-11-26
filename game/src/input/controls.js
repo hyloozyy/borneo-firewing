@@ -48,11 +48,18 @@ export class Controls {
     };
   }
 
+  // Keep the on-screen throttle knob in step with the aircraft's throttle.
+  syncThrottle(v) {
+    if (!this.thrKnob || this.touch.throttle != null) return;
+    this.thrKnob.style.bottom = `${v * 100}%`;
+  }
+
   buildTouch() {
     const root = document.getElementById('touch');
     root.hidden = false;
     const stick = root.querySelector('.stick'), knob = root.querySelector('.knob');
     const thr = root.querySelector('.throttle'), thrKnob = root.querySelector('.throttle i');
+    this.thrKnob = thrKnob;
     let stickId = null;
     stick.addEventListener('touchstart', (e) => { stickId = e.changedTouches[0].identifier; this.touch.active = true; e.preventDefault(); }, { passive: false });
     const move = (e) => {
