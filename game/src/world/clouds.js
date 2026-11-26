@@ -1,6 +1,6 @@
-// Volumetric-looking cumulus: each cloud is a flat-based heap of camera-facing puffs whose noise
-// density, sphere-like normals, sun lighting, silver lining and blue-grey shaded undersides are
-// computed per pixel. Puffs are re-sorted back to front as the camera moves.
+// Volumetric-looking tropical cumulus: each cloud is a flat-based heap of many camera-facing puffs
+// whose two-octave noise density (crisp cauliflower edges), sphere-like normals, sun lighting, silver
+// lining, self-shadowed lower halves and blue-grey undersides are computed per pixel. Puffs are re-sorted back to front as the camera moves.
 import * as THREE from 'three';
 import { rand, randRange } from '../core/rng.js';
 import { SUN_DIR } from './sky.js';
@@ -42,9 +42,10 @@ float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a
 void main() {
   float r = length(vUv);
   if (r > 1.0) discard;
-  vec2 q = vUv * 2.2 + vSeed * 31.0 + vec2(time * 0.01, 0.0);
+  vec2 q = vUv * 2.6 + vSeed * 31.0 + vec2(time * 0.01, 0.0);
   float n = fbm(q);
-  float dens = smoothstep(0.0, 0.75, 1.0 - r + (n - 0.5) * 0.6) * (0.75 + 0.25 * n);
+  float nd = fbm(q * 2.9 + 5.0); // fine detail: crisp cauliflower edges instead of soft cotton balls
+  float dens = smoothstep(0.0, 0.32, 1.0 - r + (n - 0.5) * 0.75 + (nd - 0.5) * 0.35) * (0.8 + 0.2 * n);
   // Flat bases: puffs fade out below their own centre near the cloud base.
   dens *= mix(smoothstep(-0.65, 0.05, vUv.y), 1.0, smoothstep(0.0, 0.35, vH));
   if (dens < 0.01) discard;
@@ -53,12 +54,13 @@ void main() {
   float wrap = max(dot(N, sunView) * 0.5 + 0.5, 0.0);
   // Forward scattering: thin edges glow when the sun is behind the cloud.
   float silver = pow(max(-sunView.z, 0.0), 3.0) * pow(1.0 - dens, 2.0) * 3.0;
-  float self = mix(0.45, 1.0, vH) * (0.6 + 0.4 * n);
+  // Self-shadowing: the base and the lower half of every puff sit in the cloud's own shade.
+  float self = mix(0.36, 1.0, vH) * (0.55 + 0.45 * n) * mix(0.62, 1.0, smoothstep(-0.9, 0.55, vUv.y + N.y * 0.3));
   vec3 amb = mix(skyBottom, skyTop, N.y * 0.5 + 0.5) * self;
   vec3 col = amb + sunColor * (lam * 0.75 + wrap * 0.35) * self + sunColor * silver;
   float dist = length(vFogRel);
   col = mix(col, fogColor * 1.4, 1.0 - exp(-dist * 0.00009));
-  gl_FragColor = vec4(col, dens * 0.92);
+  gl_FragColor = vec4(col, dens * 0.97);
 }`;
 
 export function buildClouds(scene, count) {
@@ -66,12 +68,12 @@ export function buildClouds(scene, count) {
   for (let i = 0; i < count; i++) {
     const cx = randRange(-9000, 9000), cz = randRange(-10000, 7000), base = randRange(850, 1300);
     const w = randRange(500, 1100), tall = randRange(300, 800);
-    const n = 10 + Math.floor(rand() * 10);
+    const n = 18 + Math.floor(rand() * 16); // many smaller puffs: towers with detail, not blobs
     for (let j = 0; j < n; j++) {
       const t = rand();
       const hgt = Math.pow(t, 0.8);
       const spread = w * (1 - hgt * 0.6);
-      const rad = randRange(240, 420) * (1 - hgt * 0.35) * (w / 800);
+      const rad = randRange(170, 330) * (1 - hgt * 0.35) * (w / 800);
       puffs.push({ x: cx + randRange(-spread, spread), y: base + hgt * tall + rad * 0.35, z: cz + randRange(-spread, spread) * 0.7, r: rad, seed: rand(), h: hgt });
     }
   }

@@ -116,13 +116,16 @@ void main() {
   c = acesFitted(c);
   // Grade: gentle contrast S-curve, warm highlights, slightly teal shadows, a touch more saturation.
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  c = mix(vec3(l), c, 1.1);
-  c = mix(c, c * vec3(0.93, 1.0, 1.04), (1.0 - smoothstep(0.0, 0.45, l)) * 0.5);
-  c = mix(c, c * vec3(1.04, 1.0, 0.95), smoothstep(0.5, 1.0, l) * 0.5);
+  // Natural grade: no extra saturation (real rainforest greens are muted), a faint cool shadow /
+  // warm highlight split like real evening light, and a little desaturation of the greens' yellow cast.
+  c = mix(vec3(l), c, 0.97);
+  c = mix(c, c * vec3(0.96, 1.0, 1.03), (1.0 - smoothstep(0.0, 0.45, l)) * 0.35);
+  c = mix(c, c * vec3(1.03, 1.0, 0.97), smoothstep(0.5, 1.0, l) * 0.35);
+  c.g = mix(c.g, (c.r + c.g + c.b) / 3.0, 0.06);
   c = clamp(c, 0.0, 1.0);
   c = c * c * (3.0 - 2.0 * c) * 0.18 + c * 0.82;
   vec2 q = vUv - 0.5;
-  c *= 1.0 - dot(q * vec2(aspect * 0.55, 1.0), q * vec2(aspect * 0.55, 1.0)) * 0.55;
+  c *= 1.0 - dot(q * vec2(aspect * 0.55, 1.0), q * vec2(aspect * 0.55, 1.0)) * 0.4;
   c = toSRGB(c);
   c += (hash(vUv * 731.0) - 0.5) * 0.012;
   gl_FragColor = vec4(c, 1.0);
