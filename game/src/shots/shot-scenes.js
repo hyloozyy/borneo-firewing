@@ -47,18 +47,19 @@ export const SHOTS = {
     game.rig.yaw = -2.15; game.rig.pitch = 0.12; game.rig.dist = 34;
     return { warm: 1.6, scoop: true, mode: 'chase' };
   },
-  // Golden-hour short final, seen low from behind: gear down, full flaps, the approach light bars
+  // Golden-hour short final, seen from the rear quarter: gear down, full flaps, the approach light bars
   // leading to runway 36, threshold lights and the PAPI, the low sun lighting the aircraft.
   landing(game) {
     game.startMission(4, { quiet: true });
     const r = PLACES.runway;
-    const z = r.z + r.length / 2 + num('pz', 230);
-    setFlying(game.flight, new THREE.Vector3(r.x + 1, r.h + num('py', 24), z), 0, 52, 3 * deg, num('bank', -4) * deg);
+    const z = r.z + r.length / 2 + num('pz', 330);
+    setFlying(game.flight, new THREE.Vector3(r.x + 1, r.h + num('py', 26), z), 0, 52, 3 * deg, num('bank', -4) * deg);
     game.flight.flaps = game.flight.flapTarget = 1;
     game.stageData.gate = true;
-    const camPos = new THREE.Vector3(r.x + num('cx', 24), r.h + num('cy', 9), z + num('cz', 120));
-    const look = new THREE.Vector3(r.x - 2, r.h + num('ly', 18), z - num('lz', 120));
-    return { warm: 1.0, mode: 'chase', camera: { pos: camPos, look, fov: num('fov', 40) } };
+    game.flight.velocity.set(0, -3.4, -52); // 3.5° glide path, nose slightly up
+    game.renderer.toneMappingExposure = num('exp', 1.3);
+    game.rig.yaw = num('yaw', 0.75); game.rig.pitch = num('pitch', 0.1); game.rig.dist = num('dist', 22);
+    return { warm: 1.0, mode: 'chase' };
   },
   // Title screen over the orbiting fly-by of the fire.
   title(game) {

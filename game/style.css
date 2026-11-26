@@ -124,7 +124,7 @@ body.shot #title.staged { display: flex !important; }
   .sub { font-size: 14px; margin: 10px auto 12px; }
   .label { margin: 12px 0 6px; }
   button.primary { font-size: 17px; padding: 11px 30px; }
-  .keys { display: none; }
+  .keys, .keys-label { display: none; }
   h2 { font-size: 24px; margin-bottom: 8px; }
   .steps li { padding: 4px 0; }
   .steps b { font-size: 15px; }
