@@ -24,6 +24,7 @@ export class FireSystem {
     this.emberClock = 0;
     this.burnMap = burnMap;
     this.glowClock = 0;
+    this.doused = 0; // heat knocked down by water, for the stage goals
   }
 
   key(x, z) { return `${Math.round(x / CELL)},${Math.round(z / CELL)}`; }
@@ -35,7 +36,8 @@ export class FireSystem {
     if (h < 3) return null;
     let c = this.cells.get(k);
     if (c) { if (!c.burnt) c.heat = Math.max(c.heat, heat); return c; }
-    c = { x, z, h, heat, burnt: false, age: 0 };
+    // Each patch of forest holds fuel for a minute or two; then it collapses to ash and cannot reburn.
+    c = { x, z, h, heat, burnt: false, age: 0, life: 65 + rand() * 55 };
     this.cells.set(k, c);
     return c;
   }
@@ -45,7 +47,8 @@ export class FireSystem {
     const f = PLACES.fire;
     for (let i = 0; i < 26; i++) {
       const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * 220;
-      this.ignite(f.x + Math.cos(a) * r * 1.3, f.z + Math.sin(a) * r, randRange(0.5, 1));
+      const c = this.ignite(f.x + Math.cos(a) * r * 1.3, f.z + Math.sin(a) * r, randRange(0.5, 1));
+      if (c) c.age = rand() * 45; // the fire has been burning for a while: not every patch is fresh
     }
     this.forest.scorch(f.x, f.z, 260, 0.9);
     // The ground the fire already swept: ash in a ragged patch around the seed.
@@ -102,6 +105,7 @@ export class FireSystem {
       this.burnMap.paint(c.x, c.z, CELL * 0.6, 1, 0, 'set');
       if (c.heat < 0.05) { c.heat = 0; c.burnt = true; this.addScorch(c.x, c.z, CELL * 0.8, false); }
     }
+    this.doused += removed;
     return removed;
   }
 
@@ -115,6 +119,12 @@ export class FireSystem {
     const list = this.activeCells();
     const wl = Math.hypot(wind.x, wind.z) || 1;
     for (const c of list) {
+      if (c.age > c.life) {
+        // Fuel spent: the patch dies down to glowing ash.
+        c.heat -= 0.14;
+        if (c.heat <= 0.05) { c.heat = 0; c.burnt = true; this.addScorch(c.x, c.z, CELL * 0.8, false); }
+        continue;
+      }
       c.heat = Math.min(1.2, c.heat + 0.04 * this.spreadRate);
       if (c.heat < 0.55 || rand() > 0.22 * this.spreadRate) continue;
       // Pick a neighbour, preferring downwind and toward the target.

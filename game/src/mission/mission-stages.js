@@ -87,6 +87,7 @@ export const STAGES = [
       d.ring = makeRing(55, 0xff5a1e);
       game.scene.add(d.ring);
       d.startHeat = game.fire.totalHeat();
+      d.dousedStart = game.fire.doused;
       game.fire.spreadRate = 0.5;
       d.drops = 0;
       placeDropRing(game, d.ring);
@@ -99,9 +100,12 @@ export const STAGES = [
         game.addScore(100, 'TARGET RING');
       }
       if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
-      const ratio = game.fire.totalHeat() / d.startHeat;
-      d.ratio = ratio;
-      return ratio < 0.45 ? 'pass' : null;
+      // Knock-down: the share of the fire's heat that this crew's water has put out (patches that
+      // burn out on their own do not count), so the goal tracks the drops, not the clock.
+      const out = game.fire.doused - (d.dousedStart || 0);
+      d.ratio = game.fire.totalHeat() / d.startHeat;
+      d.out = out / Math.max(1e-6, out + game.fire.totalHeat());
+      return d.out >= 0.55 ? 'pass' : null;
     },
     objective(game) {
       const d = game.stageData;
@@ -110,7 +114,7 @@ export const STAGES = [
     },
     checklist(game) {
       const d = game.stageData, s = game.flight;
-      const out = Math.max(0, Math.round((1 - (d.ratio ?? 1)) * 100));
+      const out = Math.round((d.out || 0) * 100);
       return [
         [s.water > 600, `Water on board ${Math.round((100 * s.water) / s.waterMax)}%`],
         [game.dropWindow > 0, 'Through the target ring'],
