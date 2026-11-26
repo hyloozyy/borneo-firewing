@@ -1,10 +1,11 @@
-/* BORNEO FIREWING: one visual language for every screen. Fonts (bundled, OFL): Saira Stencil One
-   (logo), Saira Condensed (titles, buttons), B612 (labels, instruments), Barlow (body text). */
+/* BORNEO FIREWING: one quiet, modern visual language for every screen. Fonts (bundled, OFL):
+   Michroma (logo and titles, wide aerospace display), Manrope (UI, buttons, body: light/medium/bold
+   hierarchy), JetBrains Mono (numbers, kickers and labels). Thin strokes, glass panels, soft glow. */
 :root {
   --ink: #f4efe9; --muted: #b9aa9b; --fire: #ff7a3d; --fire-deep: #c8321a; --gold: #ffd27a; --ok: #9dffb0; --bad: #ff6a50;
   --panel: rgba(12, 9, 7, 0.84); --edge: rgba(255, 150, 80, 0.32);
-  --display: "Saira Condensed", "Arial Narrow", sans-serif; --logo: "Saira Stencil One", "Saira Condensed", sans-serif;
-  --label: "B612", "Segoe UI", sans-serif; --body: "Barlow", "Segoe UI", sans-serif;
+  --display: "Manrope", "Segoe UI", sans-serif; --logo: "Michroma", "Manrope", sans-serif;
+  --label: "JetBrains Mono", "Consolas", monospace; --body: "Manrope", "Segoe UI", sans-serif;
 }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #120a06; font-family: var(--body); color: var(--ink); touch-action: none; user-select: none; }
 #view, #view canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
@@ -12,25 +13,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #120a06; fon
 .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;
   background: radial-gradient(ellipse at center, rgba(20, 8, 0, 0.15), rgba(8, 3, 0, 0.72)); }
 .screen[hidden] { display: none; }
-.panel { position: relative; background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 26px 34px 24px; width: min(600px, 100%);
-  box-sizing: border-box; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px); }
+.panel { position: relative; background: linear-gradient(160deg, rgba(24, 16, 12, 0.78), rgba(8, 6, 5, 0.86)); border: 1px solid rgba(255, 200, 160, 0.16); border-radius: 14px; padding: 26px 34px 24px; width: min(600px, 100%);
+  box-sizing: border-box; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); backdrop-filter: blur(14px) saturate(1.2); }
 .panel::before { content: ""; position: absolute; left: 34px; right: 34px; top: -1px; height: 3px; border-radius: 0 0 3px 3px; background: linear-gradient(90deg, var(--fire-deep), var(--fire), var(--gold)); }
 .panel.small { width: min(340px, 100%); text-align: center; }
-.kicker { font: 700 11px/1 var(--label); letter-spacing: 3px; color: var(--fire); margin: 0 0 10px; }
-.logo { font: 400 88px/0.86 var(--logo); letter-spacing: 4px; margin: 0; text-shadow: 0 6px 30px rgba(255, 80, 20, 0.5); }
+.kicker { font: 500 10.5px/1 var(--label); letter-spacing: 3.2px; color: var(--fire); margin: 0 0 10px; }
+.logo { font: 400 58px/1.02 var(--logo); letter-spacing: 6px; margin: 0; text-shadow: 0 4px 28px rgba(255, 90, 30, 0.35); }
 .logo span { display: block; color: transparent; background: linear-gradient(180deg, #ffd27a 0%, #ff7a3d 45%, #d6261a 100%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 4px 16px rgba(255, 70, 20, 0.55)); }
-.tag { font: 700 11px/1 var(--label); letter-spacing: 2.5px; color: var(--gold); margin: 12px 0 0; }
-h2 { font: 900 30px/1.05 var(--display); letter-spacing: 1px; text-transform: uppercase; margin: 0 0 14px; }
+.tag { font: 500 10.5px/1 var(--label); letter-spacing: 2.6px; color: var(--gold); margin: 12px 0 0; }
+h2 { font: 400 22px/1.25 var(--logo); letter-spacing: 2.5px; text-transform: uppercase; margin: 0 0 16px; }
 #result-title.ok { color: var(--ok); }
 #result-title.bad { color: var(--bad); }
-.sub { font: 400 16px/1.5 var(--body); color: #efe2d6; margin: 16px auto 18px; max-width: 470px; }
-.label { font: 700 10px/1 var(--label); letter-spacing: 2.5px; color: var(--muted); margin: 18px 0 8px; }
+.sub { font: 400 15.5px/1.6 var(--body); color: #efe2d6; margin: 16px auto 18px; max-width: 470px; }
+.label { font: 500 9.5px/1 var(--label); letter-spacing: 2.8px; color: var(--muted); margin: 18px 0 8px; }
 .hint { font: 400 13px/1.4 var(--body); color: var(--muted); margin: 14px 0 0; }
 .warn { font: 400 14px/1.45 var(--body); color: #ffd58a; border-left: 3px solid var(--fire); padding: 2px 0 2px 12px; margin: 14px 0 18px; }
-button { font: 700 15px/1 var(--display); letter-spacing: 1.2px; text-transform: uppercase; margin: 5px 4px; padding: 11px 20px; border-radius: 8px;
-  border: 1px solid rgba(255, 160, 90, 0.5); background: rgba(60, 30, 15, 0.75); color: #fff; cursor: pointer; transition: background 0.15s, transform 0.15s; }
+button { font: 600 13px/1 var(--display); letter-spacing: 2px; text-transform: uppercase; margin: 5px 4px; padding: 12px 20px; border-radius: 6px;
+  border: 1px solid rgba(255, 190, 140, 0.35); background: rgba(30, 18, 12, 0.55); backdrop-filter: blur(6px); color: #fff; cursor: pointer; transition: background 0.15s, transform 0.15s; }
 button:hover { background: rgba(120, 50, 20, 0.9); transform: translateY(-1px); }
-button.primary { background: linear-gradient(#ee4a2c, #a82012); border-color: #ff8a5a; font-size: 20px; letter-spacing: 2px; padding: 13px 40px; box-shadow: 0 6px 20px rgba(200, 40, 10, 0.35); }
+button.primary { background: linear-gradient(135deg, #f0612f, #b3261a); border-color: rgba(255, 190, 150, 0.7); font-size: 14px; font-weight: 700; letter-spacing: 3.5px; padding: 15px 42px; box-shadow: 0 8px 28px rgba(200, 50, 15, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
 .stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .stages button { margin: 0; padding: 8px 4px; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .stages button b { font: 700 10px/1 var(--label); color: var(--fire); }
@@ -42,17 +43,17 @@ button.primary { background: linear-gradient(#ee4a2c, #a82012); border-color: #f
 .steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; column-gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
 .steps li::before { content: counter(s); grid-row: span 2; align-self: center; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
   font: 700 12px/1 var(--label); color: #fff; background: linear-gradient(#ee4a2c, #a82012); }
-.steps b { font: 700 17px/1.1 var(--display); letter-spacing: 0.6px; text-transform: uppercase; }
+.steps b { font: 700 14px/1.2 var(--display); letter-spacing: 1.6px; text-transform: uppercase; }
 .steps span { font: 400 14px/1.35 var(--body); color: #e6d9cc; }
 #briefing .primary, #result .row { display: block; margin: 0 auto; }
 #result .row { text-align: center; }
 #result-reason { font: 400 15px/1.45 var(--body); color: #efe2d6; margin: 0 0 6px; }
 table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; }
 td { padding: 7px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 14px/1.2 var(--body); }
-td:first-child { font: 700 15px/1.1 var(--display); letter-spacing: 0.5px; }
+td:first-child { font: 600 13px/1.2 var(--display); letter-spacing: 1.2px; }
 td:nth-child(2) { text-align: right; font: 700 14px/1 var(--label); }
 td.stars { color: #ffd34a; letter-spacing: 2px; text-align: right; width: 70px; }
-tr.total td { font: 900 19px/1 var(--display); color: var(--gold); border-bottom: none; }
+tr.total td { font: 400 17px/1 var(--logo); color: var(--gold); border-bottom: none; }
 tr.total td:nth-child(2) { font: 700 17px/1 var(--label); }
 /* Title: hero on the left over the fly-by, aircraft card and controls on the right. */
 #title { justify-content: flex-start; background: linear-gradient(90deg, rgba(8, 4, 2, 0.86) 0%, rgba(8, 4, 2, 0.55) 46%, rgba(8, 4, 2, 0.05) 75%, rgba(8, 4, 2, 0.5) 100%); }
@@ -101,14 +102,14 @@ body.shot #title.staged { display: flex !important; }
   .screen { align-items: flex-start; overflow: auto; padding: 10px; }
   .panel { padding: 16px 20px; margin: auto; }
   .panel::before { left: 20px; right: 20px; }
-  .logo { font-size: 46px; }
+  .logo { font-size: 32px; letter-spacing: 4px; }
   .flight-data dd { font-size: 15px; }
   .tag { margin-top: 8px; }
   .sub { font-size: 14px; margin: 10px auto 12px; }
   .label { margin: 12px 0 6px; }
-  button.primary { font-size: 17px; padding: 11px 30px; }
+  button.primary { font-size: 13px; padding: 12px 30px; }
   .keys, .keys-label { display: none; }
-  h2 { font-size: 24px; margin-bottom: 8px; }
+  h2 { font-size: 17px; margin-bottom: 8px; }
   .steps li { padding: 4px 0; }
   .steps b { font-size: 15px; }
   .steps span { font-size: 13px; }
