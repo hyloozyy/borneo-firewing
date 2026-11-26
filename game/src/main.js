@@ -359,7 +359,7 @@ if (shot && SHOTS[shot]) {
   else showScreen('title');
   let last = performance.now();
   const loop = (now) => {
-    const dt = (now - last) / 1000;
+    const dt = Math.max(0, (now - last) / 1000); // rAF time can precede performance.now() on the first frame
     last = now;
     game.frame(dt);
     requestAnimationFrame(loop);

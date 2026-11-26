@@ -1,6 +1,22 @@
 [
-  { "name": "1-cover-water-drop.jpg", "query": "?shot=cover&seed=218" },
-  { "name": "2-cockpit-approach.jpg", "query": "?shot=cockpit&seed=218" },
-  { "name": "3-lake-scoop.jpg", "query": "?shot=scoop&seed=218" },
-  { "name": "4-airstrip-landing.jpg", "query": "?shot=landing&seed=218" }
+  {
+    "name": "1-cover-water-drop.jpg",
+    "query": "?shot=cover&seed=218"
+  },
+  {
+    "name": "2-cockpit-approach.jpg",
+    "query": "?shot=cockpit&seed=218"
+  },
+  {
+    "name": "3-lake-scoop.jpg",
+    "query": "?shot=scoop&seed=218"
+  },
+  {
+    "name": "4-airstrip-landing.jpg",
+    "query": "?shot=landing&seed=218"
+  },
+  {
+    "name": "5-title-screen.jpg",
+    "query": "?shot=title&seed=218"
+  }
 ]

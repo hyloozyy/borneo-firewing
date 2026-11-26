@@ -118,11 +118,11 @@ export function stepFlight(s, input, dt, env) {
   s.elevator += (input.pitch - s.elevator) * Math.min(1, dt * 6);
   s.rudder += (input.yaw - s.rudder) * Math.min(1, dt * 5);
   const heavy = 1 - (s.water / WATER_MAX) * 0.3;
+  // Asymmetric thrust: the live engine swings the nose toward the dead one (engine 1 is the left).
+  const asym = (out[1] - out[0]) * power * 0.16;
   const targetPitch = s.elevator * 0.75 * auth * heavy;
   const targetRoll = -s.aileron * 1.45 * auth * heavy + asym * 0.6;
   const bank = Math.asin(clamp(_r.y, -1, 1));
-  // Asymmetric thrust: the live engine swings the nose toward the dead one (engine 1 is the left).
-  const asym = (out[1] - out[0]) * power * 0.16;
   const targetYaw = s.rudder * -0.3 * auth + (s.onGround ? 0 : bank * 0.12 * auth) + asym;
   const k = Math.min(1, dt * 3.5);
   s.angular.x += (targetPitch - s.angular.x) * k;
@@ -185,7 +185,7 @@ function contact(s, dt, input, env, fwd) {
     // Water drag
     s.velocity.multiplyScalar(1 - dt * 0.035);
   } else {
-    if (!runway && speed > 8) { s.crashed = s.agl < -0.5 && speed > 30 ? 'Flew into the forest canopy' : 'Ran off the runway into the trees'; return; }
+    if (!runway && speed > 8) { s.crashed = wasAir ? (vs < -6 ? 'Dived into the forest' : 'Flew into the forest canopy') : 'Ran off the runway into the trees'; return; }
     const limit = -4.5 * (0.5 + 0.5 * s.damage.gear);
     if (vs < limit || Math.abs(e.z) > 0.3 || e.x < -0.15) { s.crashed = vs < limit ? 'Touchdown far too hard: the landing gear collapsed' : 'A wingtip or the nose struck the runway'; return; }
     if (wasAir) {

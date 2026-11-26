@@ -54,6 +54,7 @@ export function damageSummary(d) {
 // env: { dt, time, heat (0..1 smoke/heat around the aircraft), birds: [{ position }] }
 export function updateDamage(s, d, env) {
   const { dt, time } = env;
+  if (!(dt > 0)) return;
   d.birdCooldown = Math.max(0, d.birdCooldown - dt);
   d.maxG = Math.max(d.maxG, s.gLoad);
   d.minG = Math.min(d.minG, s.gLoad);

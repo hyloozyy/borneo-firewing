@@ -41,7 +41,7 @@ export function showResult(game, passed) {
   const rows = m.stageScores.map((s) => `<tr><td>${esc(s.title)}</td><td>${s.skipped ? '-' : s.score}</td><td class="stars">${'★'.repeat(s.stars)}${'☆'.repeat(3 - s.stars)}</td></tr>`).join('');
   $('result-table').innerHTML = rows + `<tr class="total"><td>TOTAL</td><td>${m.total()}</td><td></td></tr>`;
   const dmg = r.damage.length ? r.damage.map((t) => `<li>${esc(t)}</li>`).join('') : '<li class="ok">NO DAMAGE · AIRFRAME CLEAN</li>';
-  $('result-damage').innerHTML = dmg + r.timeline.map((t) => `<li class="ok" style="opacity:.75">${esc(t)}</li>`).join('');
+  $('result-damage').innerHTML = dmg + r.timeline.map((t) => `<li class="event">${esc(t)}</li>`).join('');
   $('btn-retry-stage').hidden = passed;
   showScreen('result');
 }
