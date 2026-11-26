@@ -25,8 +25,8 @@ function instanced(geo, mat, cap) {
 }
 
 export function buildForest(scene, quality, renderer) {
-  const atlas = buildLeafAtlas(quality.name === 'low' ? 0.5 : 1);
-  const bark = buildBarkTextures(quality.name === 'low' ? 256 : 512);
+  const atlas = buildLeafAtlas(quality.texDetail ?? 1);
+  const bark = buildBarkTextures(quality.texDetail < 1 ? 256 : 512);
   const leafMat = buildLeafMaterial(atlas);
   const leafDepth = buildLeafDepthMaterial(atlas);
   const barkMat = buildBarkMaterial(bark);

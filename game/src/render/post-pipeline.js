@@ -44,7 +44,34 @@ uniform vec2 sunUv;
 uniform float sunVisible;
 uniform float time;
 uniform float aspect;
+uniform vec2 texel;
+uniform float fxaa;
+uniform float sharpen;
 varying vec2 vUv;
+
+// Scene sample with edge antialiasing (FXAA-style blend along the edge, used when there is no MSAA)
+// and a light unsharp mask on flat areas, so the picture stays crisp at every render scale.
+float lumaOf(vec3 c) { c = c / (1.0 + c); return dot(c, vec3(0.299, 0.587, 0.114)); }
+vec3 sceneSample(vec2 uv) {
+  vec3 cM = texture2D(scene, uv).rgb;
+  vec3 cN = texture2D(scene, uv + vec2(0.0, texel.y)).rgb;
+  vec3 cS = texture2D(scene, uv - vec2(0.0, texel.y)).rgb;
+  vec3 cE = texture2D(scene, uv + vec2(texel.x, 0.0)).rgb;
+  vec3 cW = texture2D(scene, uv - vec2(texel.x, 0.0)).rgb;
+  float lM = lumaOf(cM), lN = lumaOf(cN), lS = lumaOf(cS), lE = lumaOf(cE), lW = lumaOf(cW);
+  float lMin = min(lM, min(min(lN, lS), min(lE, lW)));
+  float lMax = max(lM, max(max(lN, lS), max(lE, lW)));
+  if (fxaa > 0.5 && lMax - lMin > max(0.04, lMax * 0.14)) {
+    vec2 dir = vec2(-(lN - lS), lE - lW);
+    dir = clamp(dir / (min(abs(dir.x), abs(dir.y)) + 0.02), -3.0, 3.0) * texel;
+    vec3 a = 0.5 * (texture2D(scene, uv - dir * 0.1667).rgb + texture2D(scene, uv + dir * 0.1667).rgb);
+    vec3 b = 0.5 * a + 0.25 * (texture2D(scene, uv - dir * 0.5).rgb + texture2D(scene, uv + dir * 0.5).rgb);
+    float lb = lumaOf(b);
+    return (lb < lMin || lb > lMax) ? a : b;
+  }
+  vec3 avg = (cN + cS + cE + cW) * 0.25;
+  return max(cM + (cM - avg) * sharpen, vec3(0.0));
+}
 
 vec3 acesFitted(vec3 v) {
   const mat3 inM = mat3(0.59719, 0.07600, 0.02840, 0.35458, 0.90834, 0.13383, 0.04823, 0.01566, 0.83777);
@@ -68,7 +95,7 @@ void main() {
   float heat = clamp((heatSrc.r - heatSrc.b * 1.4) * 0.6, 0.0, 1.0);
   vec2 wob = vec2(sin(vUv.y * 160.0 - time * 9.0) + sin(vUv.y * 97.0 + vUv.x * 40.0 - time * 6.3) * 0.6,
                   cos(vUv.x * 130.0 + time * 7.0) * 0.5) * 0.0016 * heat;
-  vec3 c = texture2D(scene, vUv + wob).rgb;
+  vec3 c = sceneSample(vUv + wob);
   vec3 b = texture2D(bloom0, vUv).rgb * 0.5 + texture2D(bloom1, vUv).rgb * 0.7 + texture2D(bloom2, vUv).rgb * 0.9 + texture2D(bloom3, vUv).rgb * 1.1;
   c += b * bloomStrength;
   // Sun glare: soft ghosts mirrored through the screen centre, and a warm veil when facing the sun.
@@ -138,6 +165,9 @@ export class PostPipeline {
       sunVisible: { value: 0 },
       time: { value: 0 },
       aspect: { value: 1 },
+      texel: { value: new THREE.Vector2(1, 1) },
+      fxaa: { value: quality.msaa ? 0 : 1 },
+      sharpen: { value: quality.phone ? 0.32 : 0.22 },
     });
     this.sunWorld = new THREE.Vector3();
   }
@@ -152,6 +182,7 @@ export class PostPipeline {
       lw = Math.max(1, lw >> 1); lh = Math.max(1, lh >> 1);
     }
     this.composite.uniforms.aspect.value = w / h;
+    this.composite.uniforms.texel.value.set(1 / W, 1 / H);
   }
 
   draw(material, target) {

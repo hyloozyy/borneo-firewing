@@ -25,7 +25,7 @@ export function buildCockpit(quality = { name: 'high' }) {
   const mats = cockpitMaterials();
   const windscreen = new Windscreen();
   buildShell(inner, mats, windscreen.material);
-  const scale = quality.name === 'low' ? 0.5 : 1;
+  const scale = quality.texDetail ?? 1;
   const panel = new InstrumentPanel(scale);
   const p = canvasPlane(panel.canvas, 2.7, 0.62);
   p.mesh.position.set(0, 0.87, -8.12);

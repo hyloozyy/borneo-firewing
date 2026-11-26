@@ -234,3 +234,15 @@ body.touch .hint-key { display: none; }
 .badges li { font: 700 9.5px/1 var(--label); letter-spacing: 1.6px; color: #ffe6c8; padding: 6px 9px; border-radius: 20px;
   background: linear-gradient(rgba(255, 140, 70, 0.22), rgba(150, 40, 10, 0.25)); border: 1px solid rgba(255, 170, 110, 0.45); }
 @media (max-height: 500px), (max-width: 620px) { .badges { display: none; } }
+
+/* Graphics setting (title and pause) */
+.gfx-slot { margin-top: 6px; }
+.gfx-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.gfx-modes button { margin: 0; padding: 8px 2px; font-size: 11px; letter-spacing: 1px; background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.18); }
+.gfx-modes button.on { background: rgba(255, 140, 70, 0.28); border-color: var(--fire); color: #fff; }
+.gfx-scale { display: flex; align-items: center; gap: 10px; margin-top: 8px; font: 700 9.5px/1 var(--label); letter-spacing: 1.6px; color: var(--muted); }
+.gfx-scale input { flex: 1; accent-color: var(--fire); }
+.gfx-scale b { width: 36px; text-align: right; color: var(--ink); }
+.gfx-now { margin: 6px 0 0; font: 400 11px/1.3 var(--label); letter-spacing: 0.6px; color: var(--muted); }
+#pause .gfx-slot { text-align: left; margin-top: 14px; }
+#pause .panel.small { width: min(400px, 100%); }

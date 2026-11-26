@@ -35,6 +35,7 @@ import { BurnMap } from './fire/burn-map.js';
 import { loadFonts } from './ui/fonts.js';
 import { buildGroundTextures } from './textures/ground-textures.js';
 import { setupPhone, syncBodyState } from './ui/phone.js';
+import { bindGraphicsMenu } from './ui/graphics-menu.js';
 import { loadingProgress, hideLoading, watchContext } from './ui/loading.js';
 
 const params = new URLSearchParams(location.search);
@@ -129,6 +130,7 @@ class Game {
     addEventListener('focus', () => this.audio.ctx && this.audio.unlock());
     document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); else if (this.state === 'playing') this.setPaused(true); });
     bindScreens(this);
+    bindGraphicsMenu(this);
     setupPhone(this);
     this.menuFlyby();
     // Compile every shader now (in parallel where the GPU driver allows) instead of on the first frames.
@@ -148,6 +150,7 @@ class Game {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.hud.resize(w, h, Math.min(devicePixelRatio, 2));
+    if (this.refreshGraphicsMenu) this.refreshGraphicsMenu();
     for (const p of [this.fire.flames, this.fire.smoke, this.water.pool]) p.setViewportHeight(h * this.quality.pixelRatio);
   }
 
