@@ -106,7 +106,7 @@ export const STAGES = [
       const out = game.fire.doused - (d.dousedStart || 0);
       d.ratio = game.fire.totalHeat() / d.startHeat;
       d.out = out / Math.max(1e-6, out + game.fire.totalHeat());
-      return d.out >= 0.5 ? 'pass' : null;
+      return d.out >= 0.4 ? 'pass' : null;
     },
     objective(game) {
       const d = game.stageData;
@@ -120,7 +120,7 @@ export const STAGES = [
         [s.water > 600, `Water on board ${Math.round((100 * s.water) / s.waterMax)}%`],
         [game.dropWindow > 0, 'Through the target ring'],
         [d.drops > 0, `Drops (${keyName(game, 'drop')}) ${d.drops}`],
-        [out >= 50, `Main fire out ${Math.min(100, out)}% / 50%`],
+        [out >= 40, `Main fire out ${Math.min(100, out)}% / 40%`],
       ];
     },
     exit(game) { game.scene.remove(game.stageData.ring); },
