@@ -87,8 +87,10 @@ void main() {
     return;
   }
   // Water spray / mist.
-  vec3 lit = vTint.rgb * (0.55 + 0.25 * N.y + 0.9 * sun) * 1.6;
-  float a = m * vTint.a * (0.5 + n * 0.7);
+  // Churning water: streaky, with shaded hollows between the bright lit lumps.
+  float streak = vn(vec2(q.x * 6.0 + vSeed * 9.0, q.y * 1.5 - time * 2.0));
+  vec3 lit = vTint.rgb * (0.35 + 0.3 * N.y + 0.75 * sun) * (0.75 + 0.5 * n) * (0.85 + 0.3 * streak);
+  float a = m * vTint.a * (0.35 + n * 0.6 + streak * 0.25);
   gl_FragColor = vec4(lit, a);
 }`;
 

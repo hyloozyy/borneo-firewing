@@ -10,6 +10,7 @@ import { buildVillage } from './world/village.js';
 import { buildAirstrip } from './world/airstrip.js';
 import { buildClouds } from './world/clouds.js';
 import { buildBirds } from './world/birds.js';
+import { buildGrass } from './world/grass.js';
 import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
 import { FireSystem } from './fire/fire-system.js';
@@ -26,6 +27,7 @@ import { bindScreens, showScreen, hideScreens, showResult } from './ui/screens.j
 import { runShot, SHOTS } from './shots/shot-scenes.js';
 import { installAtmosphereFog } from './render/atmosphere-fog.js';
 import { PostPipeline } from './render/post-pipeline.js';
+import { AutoQuality } from './render/auto-quality.js';
 import { BurnMap } from './fire/burn-map.js';
 import { buildGroundTextures } from './textures/ground-textures.js';
 
@@ -46,6 +48,7 @@ class Game {
     document.getElementById('view').appendChild(renderer.domElement);
     this.renderer = renderer;
     this.post = new PostPipeline(renderer, this.quality);
+    this.autoQuality = new AutoQuality(this);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.5, 30000);
 
@@ -57,6 +60,7 @@ class Game {
     this.waterSurface = buildWater(this.quality);
     this.scene.add(this.waterSurface.mesh);
     this.forest = buildForest(this.scene, this.quality);
+    this.grass = buildGrass(this.scene, this.quality.grass);
     this.village = buildVillage(this.scene);
     this.airstrip = buildAirstrip(this.scene);
     this.clouds = buildClouds(this.scene, this.quality.clouds);
@@ -285,6 +289,7 @@ class Game {
   }
 
   frame(dt) {
+    this.autoQuality.sample(dt);
     this.handleKeys();
     if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
     this.waterSurface.renderReflection(this.renderer, this.scene, this.camera);

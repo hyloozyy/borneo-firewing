@@ -17,7 +17,7 @@ const painters = {
     const dry = Math.max(0, tileFbm(u, v, 3, 3, 9) - 0.55) * 2.5;
     const clover = Math.pow(tileWorley(u, v, 24, 11).d1, 0.5);
     const lum = 0.55 + blades * 0.5 + (patch - 0.5) * 0.4;
-    let r = 62 * lum, g = 92 * lum, b = 34 * lum;
+    let r = 92 * lum, g = 128 * lum, b = 46 * lum;
     r += dry * 70; g += dry * 38; b += dry * 6;
     r *= 0.85 + clover * 0.15; g *= 0.85 + clover * 0.15;
     return [r, g, b, blades * 0.6 + patch * 0.4];
@@ -33,7 +33,7 @@ const painters = {
     const gap = 1 - Math.min(1, (w.d2 - w.d1) * 6);
     const hue = w.id;
     const lit = (0.4 + h * 0.8) * (0.75 + speck * 0.5) * (1 - gap * 0.2);
-    let r = (32 + hue * 26) * lit, g = (62 + hue * 22) * lit, b = (24 + (1 - hue) * 10) * lit;
+    let r = (40 + hue * 30) * lit, g = (76 + hue * 26) * lit, b = (28 + (1 - hue) * 12) * lit;
     if (hue > 0.86) { r *= 1.35; g *= 1.2; } // the odd yellow-green pioneer crown
     if (hue < 0.06) { r *= 1.25; g *= 0.95; b *= 0.85; } // a reddish young-leaf crown
     return [r, g, b, h * 0.8 + speck * 0.2];

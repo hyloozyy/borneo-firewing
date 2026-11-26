@@ -31,13 +31,13 @@ export class WaterEffects {
   emitDrop(s, dt, kgPerSec) {
     const release = Math.min(s.water, kgPerSec * dt);
     s.water -= release;
-    const n = Math.ceil(release / 20);
+    const n = Math.ceil(release / 12);
     const p = s.position, v = s.velocity;
     for (let i = 0; i < n; i++) {
       const sp = randRange(0, 1);
       this.pool.spawn(p.x + randRange(-1.2, 1.2), p.y - 2.2 - sp * 2, p.z + randRange(-1.2, 1.2),
         v.x * 0.9 + randRange(-3, 3), v.y - randRange(2, 6), v.z * 0.9 + randRange(-3, 3),
-        8, randRange(4, 6), randRange(16, 26), [1, 1, 1, 0.9], [0.92, 0.95, 1, 0.15], 0.55, -9.81, 1);
+        8, randRange(2.5, 4), randRange(11, 19), [0.9, 0.93, 0.96, 0.7], [0.85, 0.9, 0.95, 0.1], 0.55, -9.81, 1);
     }
     return release;
   }

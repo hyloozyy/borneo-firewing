@@ -78,7 +78,7 @@ function groundWeights(x, z, h, slope, a, b) {
   const forest = forestMask(x, z, h);
   const n = fbm(x * 0.012, z * 0.012, 3);
   const sand = 1 - smoothstep(1.5, 5.5 + n * 3, h);
-  const rock = Math.min(1, smoothstep(0.5, 0.85, slope) + smoothstep(330, 560, h) * 0.8);
+  const rock = Math.min(1, smoothstep(0.7, 0.98, slope) + smoothstep(330, 560, h) * 0.8);
   const open = Math.max(0, 1 - forest - sand);
   const soil = open * smoothstep(0.55, 0.75, fbm(x * 0.02 + 5, z * 0.02, 3)) + smoothstep(0.3, 0.6, slope) * 0.5;
   const r = PLACES.runway;

@@ -1,14 +1,20 @@
 // Cockpit interior seen from the captain's seat: glareshield, window posts, yokes, throttle quadrant
 // and a lit instrument panel (attitude, airspeed, altimeter, heading, VSI, fuel, water, engines).
 import * as THREE from 'three';
+import { tileFbm, heightToNormalTexture } from '../textures/texture-utils.js';
 import { makeCanvas } from '../core/canvas-textures.js';
 
 export const EYE = new THREE.Vector3(-0.55, 1.4, -7.3);
 
 export function buildCockpit() {
   const group = new THREE.Group();
-  const dark = new THREE.MeshStandardMaterial({ color: 0x2a2e33, roughness: 0.8 });
-  const frame = new THREE.MeshStandardMaterial({ color: 0x6c7277, roughness: 0.55 });
+  // Crinkle-finish paint on the glare shield and panels (a fine bumpy normal map).
+  const size = 128, bump = new Float32Array(size * size);
+  for (let i = 0; i < size * size; i++) bump[i] = tileFbm((i % size) / size, Math.floor(i / size) / size, 16, 3, 5);
+  const crinkle = heightToNormalTexture(bump, size, size, 3);
+  crinkle.repeat.set(4, 4);
+  const dark = new THREE.MeshStandardMaterial({ color: 0x17191b, roughness: 0.82, metalness: 0.05, normalMap: crinkle, normalScale: new THREE.Vector2(0.8, 0.8) });
+  const frame = new THREE.MeshStandardMaterial({ color: 0x33383d, roughness: 0.45, metalness: 0.35 });
   const panelCanvas = makeCanvas(1024, 384);
   const panelTex = new THREE.CanvasTexture(panelCanvas);
   panelTex.colorSpace = THREE.SRGBColorSpace;

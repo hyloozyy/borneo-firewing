@@ -168,15 +168,15 @@ export const SPECIES = [
   },
   {
     name: 'canopy',
-    share: 0.36,
+    share: 0.33,
     scale: [0.8, 1.3],
-    build: broadleafRecipe({ H: 28, trunkTop: 16, r0: 0.55, r1: 0.32, lean: 3, wobble: 0.25, buttress: 4, buttressAmp: 1.3, buttressH: 1.4, bark: DARK, limbs: 6, limbR: 0.26, spread: 6.5, crownY: 20, clumpR: 5.6, flat: 0.7, subClumps: 2, cards: 40, loCards: 12, card: 4.4, cell: LEAF_CELLS.canopy, topClump: true }),
+    build: broadleafRecipe({ H: 26, trunkTop: 12, r0: 0.55, r1: 0.32, lean: 3, wobble: 0.25, buttress: 4, buttressAmp: 1.3, buttressH: 1.4, bark: DARK, limbs: 7, limbR: 0.26, spread: 7.0, crownY: 17, clumpR: 6.0, flat: 0.7, subClumps: 2, cards: 40, loCards: 12, card: 4.4, cell: LEAF_CELLS.canopy, topClump: true }),
   },
   {
     name: 'broadleaf',
-    share: 0.2,
+    share: 0.18,
     scale: [0.75, 1.2],
-    build: broadleafRecipe({ H: 22, trunkTop: 11, r0: 0.42, r1: 0.25, lean: 3, wobble: 0.3, buttress: 0, bark: PALE, limbs: 5, limbR: 0.2, spread: 4.8, crownY: 15, clumpR: 4.6, flat: 0.8, subClumps: 2, cards: 36, loCards: 11, card: 4.0, cell: LEAF_CELLS.broad, topClump: true }),
+    build: broadleafRecipe({ H: 20, trunkTop: 8, r0: 0.42, r1: 0.25, lean: 3, wobble: 0.3, buttress: 0, bark: PALE, limbs: 5, limbR: 0.2, spread: 5.2, crownY: 12.5, clumpR: 4.8, flat: 0.8, subClumps: 2, cards: 36, loCards: 11, card: 4.0, cell: LEAF_CELLS.broad, topClump: true }),
   },
   {
     name: 'pioneer',
@@ -185,5 +185,5 @@ export const SPECIES = [
     build: broadleafRecipe({ H: 16, trunkTop: 10, r0: 0.28, r1: 0.16, lean: 2.5, wobble: 0.2, buttress: 0, bark: PALE, limbs: 5, limbR: 0.13, spread: 4.0, crownY: 12.5, clumpR: 3.4, flat: 0.5, subClumps: 2, cards: 26, loCards: 9, card: 3.4, cell: LEAF_CELLS.young, topClump: false }),
   },
   { name: 'palm', share: 0.1, scale: [0.8, 1.2], build: palmRecipe, lowland: true },
-  { name: 'shrub', share: 0.12, scale: [0.8, 1.6], build: shrubRecipe, edge: true },
+  { name: 'shrub', share: 0.17, scale: [1.1, 2.3], build: shrubRecipe, edge: true },
 ];

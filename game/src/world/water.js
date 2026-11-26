@@ -132,7 +132,10 @@ export function buildWater(quality = { reflections: true, pixelRatio: 1 }) {
     },
     // Render the mirrored scene (everything above the water) into the reflection texture.
     renderReflection(renderer, scene, camera) {
-      if (!quality.reflections || camera.position.y < 0.2) return;
+      // High above, the water is a small part of the view: the sky-only reflection is enough.
+      const use = quality.reflections && camera.position.y > 0.2 && camera.position.y < 900;
+      uniforms.useRefl.value = use ? 1 : 0;
+      if (!use) return;
       mirrorCam.copy(camera);
       mirrorCam.position.set(camera.position.x, -camera.position.y, camera.position.z);
       camera.getWorldDirection(fwd);

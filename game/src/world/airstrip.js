@@ -1,42 +1,91 @@
 // Jungle airstrip: asphalt runway with markings, edge lights, approach lights, PAPI, hangar and windsock.
 import * as THREE from 'three';
 import { makeCanvas, glowTexture } from '../core/canvas-textures.js';
+import { tileNoise, tileFbm, painterRandom } from '../textures/texture-utils.js';
 import { mergeParts, paint, placed } from '../core/geometry-utils.js';
 import { PLACES } from './terrain.js';
 
-function runwayTexture(lengthM, widthM) {
-  const c = makeCanvas(256, 2048);
+// Worn jungle runway: weathered asphalt aggregate, laterite dust blown in from the edges, cracks,
+// darker patch repairs, rubber in the touchdown zones and sun-faded paint.
+function runwayTexture(lengthM) {
+  const W = 384, H = 3072;
+  const c = makeCanvas(W, H);
   const g = c.getContext('2d');
-  g.fillStyle = '#6f6b63';
-  g.fillRect(0, 0, 256, 2048);
-  for (let i = 0; i < 4000; i++) {
-    g.fillStyle = `rgba(${Math.random() < 0.5 ? 20 : 90},${Math.random() < 0.5 ? 20 : 85},${Math.random() < 0.5 ? 20 : 80},0.12)`;
-    g.fillRect(Math.random() * 256, Math.random() * 2048, 2, 3);
+  const img = g.createImageData(W, H);
+  const d = img.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const u = x / W, v = y / H;
+      const grain = tileNoise(x * 0.9, y * 0.9, 4096, 3) * 0.55 + tileNoise(x * 0.25, y * 0.25, 4096, 5) * 0.45;
+      const blot = tileFbm(u * 0.5, v * 4, 8, 4, 7);
+      const edge = Math.min(u, 1 - u);
+      const dust = Math.max(0, 1 - edge / 0.12) * (0.6 + 0.4 * tileNoise(x * 0.05, y * 0.02, 4096, 9));
+      const patch = tileNoise(u * 3, v * 40, 4096, 11) > 0.78 ? 0.75 : 1;
+      let l = (88 + grain * 40 + (blot - 0.5) * 30) * patch;
+      let r = l, gg = l * 0.98, bb = l * 0.94;
+      r = r * (1 - dust * 0.7) + 150 * dust * 0.7; gg = gg * (1 - dust * 0.7) + 92 * dust * 0.7; bb = bb * (1 - dust * 0.7) + 60 * dust * 0.7;
+      const k = (y * W + x) * 4;
+      d[k] = r; d[k + 1] = gg; d[k + 2] = bb; d[k + 3] = 255;
+    }
   }
-  const ppm = 2048 / lengthM;
-  g.fillStyle = '#e8e6df';
-  // Edge lines
-  g.fillRect(8, 0, 5, 2048); g.fillRect(243, 0, 5, 2048);
-  // Centreline dashes
-  for (let y = 120; y < 2048 - 120; y += 60) g.fillRect(124, y, 8, 30);
-  // Threshold bars at both ends
-  for (let i = 0; i < 8; i++) {
-    g.fillRect(22 + i * 28, 14, 14, 60);
-    g.fillRect(22 + i * 28, 2048 - 74, 14, 60);
-  }
-  // Runway numbers 36 / 18
-  g.font = 'bold 54px sans-serif';
+  g.putImageData(img, 0, 0);
+  const ppm = H / lengthM;
+  g.globalAlpha = 0.82;
+  g.fillStyle = '#e9e6dc';
+  g.fillRect(14, 0, 7, H); g.fillRect(W - 21, 0, 7, H);
+  for (let y = 180; y < H - 180; y += 90) g.fillRect(W / 2 - 6, y, 12, 45);
+  for (let i = 0; i < 8; i++) { g.fillRect(34 + i * 41, 20, 20, 90); g.fillRect(34 + i * 41, H - 110, 20, 90); }
+  g.font = 'bold 84px sans-serif';
   g.textAlign = 'center';
-  g.save(); g.translate(128, 2048 - 110); g.fillText('36', 0, 0); g.restore();
-  g.save(); g.translate(128, 110); g.rotate(Math.PI); g.fillText('18', 0, 0); g.restore();
-  // Touchdown zone marks
-  for (const y of [200, 300, 400, 2048 - 240, 2048 - 340, 2048 - 440]) { g.fillRect(60, y, 30, 22 * ppm); g.fillRect(166, y, 30, 22 * ppm); }
-  // Tyre marks
-  g.fillStyle = 'rgba(15,15,15,0.35)';
-  for (let i = 0; i < 30; i++) g.fillRect(100 + Math.random() * 50, 1700 + Math.random() * 200 - (i % 2) * 1400, 4, 60);
+  g.save(); g.translate(W / 2, H - 150); g.fillText('36', 0, 0); g.restore();
+  g.save(); g.translate(W / 2, 150); g.rotate(Math.PI); g.fillText('18', 0, 0); g.restore();
+  for (const y of [300, 450, 600, H - 360, H - 510, H - 660]) { g.fillRect(90, y, 44, 22 * ppm); g.fillRect(W - 134, y, 44, 22 * ppm); }
+  g.globalAlpha = 1;
+  // Paint scuffed away, rubber deposits and cracks.
+  const rnd = painterRandom(5);
+  g.fillStyle = 'rgba(95,92,86,0.55)';
+  for (let i = 0; i < 2500; i++) g.fillRect(rnd() * W, rnd() * H, 2 + rnd() * 4, 2 + rnd() * 3);
+  g.fillStyle = 'rgba(12,12,12,0.22)';
+  for (let i = 0; i < 140; i++) {
+    const end = i % 2 ? H - 500 - rnd() * 500 : 300 + rnd() * 500;
+    g.fillRect(W / 2 - 70 + rnd() * 140, end, 4 + rnd() * 5, 40 + rnd() * 120);
+  }
+  g.strokeStyle = 'rgba(25,22,20,0.45)';
+  g.lineWidth = 1.2;
+  for (let i = 0; i < 160; i++) {
+    let x = rnd() * W, y = rnd() * H;
+    g.beginPath(); g.moveTo(x, y);
+    for (let k = 0; k < 6; k++) { x += (rnd() - 0.5) * 30; y += (rnd() - 0.3) * 30; g.lineTo(x, y); }
+    g.stroke();
+  }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = 8;
+  return t;
+}
+
+// Laterite and trampled grass verge around the runway, fading out into the terrain at its edge.
+function vergeTexture() {
+  const c = makeCanvas(256, 512);
+  const g = c.getContext('2d');
+  const img = g.createImageData(256, 512);
+  for (let y = 0; y < 512; y++) {
+    for (let x = 0; x < 256; x++) {
+      const u = x / 256, v = y / 512;
+      const n = tileFbm(u, v, 8, 4, 21);
+      const edge = Math.min(u, 1 - u, v * 0.5, (1 - v) * 0.5) * 2;
+      const a = Math.max(0, Math.min(1, (edge * 2.2 + (n - 0.5) * 0.9) * 1.6));
+      const grassy = tileFbm(u, v, 16, 3, 23);
+      const k = (y * 256 + x) * 4;
+      img.data[k] = 120 + n * 40 - grassy * 50;
+      img.data[k + 1] = 80 + n * 30 + grassy * 10;
+      img.data[k + 2] = 46 + n * 15 - grassy * 10;
+      img.data[k + 3] = a * 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -46,13 +95,13 @@ export function buildAirstrip(scene) {
   group.position.set(r.x, r.h + 0.5, r.z);
   const runway = new THREE.Mesh(
     new THREE.PlaneGeometry(r.width, r.length),
-    new THREE.MeshLambertMaterial({ map: runwayTexture(r.length, r.width), polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
+    new THREE.MeshStandardMaterial({ map: runwayTexture(r.length), roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
   );
   runway.rotation.x = -Math.PI / 2;
   runway.receiveShadow = true;
   group.add(runway);
   // Grass shoulders and apron.
-  const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(r.width + 50, r.length + 120), new THREE.MeshLambertMaterial({ color: 0x5d6b33, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+  const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(r.width + 70, r.length + 160), new THREE.MeshStandardMaterial({ map: vergeTexture(), transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
   shoulder.rotation.x = -Math.PI / 2;
   shoulder.position.y = -0.2;
   shoulder.receiveShadow = true;

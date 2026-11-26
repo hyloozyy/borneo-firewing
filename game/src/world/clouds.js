@@ -44,7 +44,7 @@ void main() {
   if (r > 1.0) discard;
   vec2 q = vUv * 2.2 + vSeed * 31.0 + vec2(time * 0.01, 0.0);
   float n = fbm(q);
-  float dens = smoothstep(0.0, 0.55, 1.0 - r + (n - 0.5) * 0.85);
+  float dens = smoothstep(0.0, 0.75, 1.0 - r + (n - 0.5) * 0.6) * (0.75 + 0.25 * n);
   // Flat bases: puffs fade out below their own centre near the cloud base.
   dens *= mix(smoothstep(-0.65, 0.05, vUv.y), 1.0, smoothstep(0.0, 0.35, vH));
   if (dens < 0.01) discard;
