@@ -1,148 +1,172 @@
-// Layered rainforest: tall dipterocarps, broadleaf canopy, palms and ferns as instanced meshes.
+// The Kalimantan rainforest: thousands of procedural trees of six species, instanced at two levels
+// of detail (full trees with hundreds of leaf cards near the camera, light versions further out),
+// swaying in the wind, and scorched tree by tree as the fire spreads.
 import * as THREE from 'three';
-import { mergeParts, paint, placed } from '../core/geometry-utils.js';
 import { rand, randRange } from '../core/rng.js';
-import { terrainHeight, isOnRunway, PLACES, riverDistance } from './terrain.js';
+import { terrainHeight, PLACES, riverDistance } from './terrain.js';
+import { forestMask, TREE_HOTSPOTS } from './forest-layout.js';
+import { SPECIES } from './trees/tree-species.js';
+import { buildLeafAtlas, buildBarkTextures } from '../textures/foliage-textures.js';
+import { buildLeafMaterial, buildLeafDepthMaterial, buildBarkMaterial, treeUniforms } from './trees/tree-materials.js';
 
-function crownBlob(x, y, z, r, color, flat = 0.6) {
-  return placed(paint(new THREE.IcosahedronGeometry(r, 1), color), { x, y, z, sy: flat });
-}
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
-function dipterocarpGeometry() {
-  const parts = [paint(placed(new THREE.CylinderGeometry(0.55, 1.1, 30, 7), { y: 15 }), 0xb8ab94)];
-  parts.push(paint(placed(new THREE.CylinderGeometry(0.12, 0.3, 7, 4), { x: 2.5, y: 27, rz: -0.9 }), 0x9d917b));
-  parts.push(paint(placed(new THREE.CylinderGeometry(0.12, 0.3, 7, 4), { x: -2.4, y: 28, rz: 0.8 }), 0x9d917b));
-  parts.push(crownBlob(0, 32, 0, 7.5, 0x2f5a1f, 0.42));
-  parts.push(crownBlob(4.8, 30.5, 1.5, 5.2, 0x3b6b24, 0.5));
-  parts.push(crownBlob(-4.5, 31, -1.8, 5.5, 0x295019, 0.5));
-  parts.push(crownBlob(0.6, 34.2, -3.5, 4.6, 0x46792b, 0.5));
-  return mergeParts(parts);
-}
-
-function broadleafGeometry() {
-  const parts = [paint(placed(new THREE.CylinderGeometry(0.35, 0.6, 12, 6), { y: 6 }), 0x5e4a36)];
-  parts.push(crownBlob(0, 13, 0, 5.2, 0x24491a, 0.7));
-  parts.push(crownBlob(3, 11.5, 1, 3.8, 0x2e5a1e, 0.75));
-  parts.push(crownBlob(-2.6, 12, -1.6, 3.6, 0x1f4016, 0.75));
-  return mergeParts(parts);
-}
-
-function palmGeometry() {
-  const parts = [];
-  for (let i = 0; i < 5; i++) {
-    parts.push(paint(placed(new THREE.CylinderGeometry(0.26, 0.32, 3.2, 5), { x: i * i * 0.05, y: 1.6 + i * 3, rz: -0.03 * i }), 0x7a6648));
+function samplePosition(species) {
+  const r0 = rand();
+  let acc = 0;
+  for (const [hx, hz, hr, share] of TREE_HOTSPOTS) {
+    acc += share;
+    if (r0 < acc) {
+      const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * hr;
+      return [hx + Math.cos(a) * r, hz + Math.sin(a) * r];
+    }
   }
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * Math.PI * 2;
-    const leaf = paint(new THREE.BoxGeometry(0.9, 0.08, 5.5), i % 2 ? 0x4e7d2a : 0x3d6b22);
-    leaf.translate(0, 0, 2.6);
-    leaf.rotateX(0.45 + (i % 3) * 0.1);
-    leaf.rotateY(a);
-    leaf.translate(0.8, 15.6, 0);
-    parts.push(leaf);
+  const a = rand() * Math.PI * 2, r = Math.pow(rand(), 0.7) * 4600;
+  return [Math.cos(a) * r, -300 + Math.sin(a) * r * 1.05];
+}
+
+function accept(species, x, z, h) {
+  const m = forestMask(x, z, h);
+  if (m <= 0.05 || rand() > m) return false;
+  if (species.lowland) {
+    const wet = h < 30 || riverDistance(x, z) < 160 || Math.hypot(x - PLACES.lake.x, z - PLACES.lake.z) < 800 || x > PLACES.coastX - 700;
+    if (!wet && rand() < 0.85) return false;
   }
-  parts.push(crownBlob(0.8, 15.4, 0, 0.8, 0x5a4a1e, 1));
-  return mergeParts(parts);
-}
-
-function fernGeometry() {
-  const parts = [];
-  for (let i = 0; i < 7; i++) {
-    const f = paint(new THREE.ConeGeometry(0.7, 4.2, 4), i % 2 ? 0x4f8a2c : 0x3a6e22);
-    f.rotateX(Math.PI / 2 - 0.6);
-    f.translate(0, 1.2, 1.6);
-    f.rotateY((i / 7) * Math.PI * 2);
-    parts.push(f);
-  }
-  return mergeParts(parts);
-}
-
-// Canopy clump: a cluster of crowns without a visible trunk, to close the rainforest roof.
-function canopyGeometry() {
-  return mergeParts([
-    crownBlob(0, 9, 0, 6, 0x1f4517, 0.55),
-    crownBlob(5, 8, 2, 4.6, 0x2a5a1c, 0.6),
-    crownBlob(-4, 8.5, -3, 5, 0x18391a, 0.6),
-    crownBlob(1, 10.5, 4, 4, 0x34692a, 0.55),
-    paint(placed(new THREE.CylinderGeometry(0.4, 0.7, 8, 5), { y: 4 }), 0x4a3b2a),
-  ]);
-}
-
-function treeAllowed(x, z, h) {
-  if (h < 3.5) return false;
-  if (isOnRunway(x, z, 110)) return false;
-  if (Math.hypot(x - PLACES.village.x, z - PLACES.village.z) < 170) return false;
-  if (riverDistance(x, z) < 40) return false;
-  // Approach lanes off both runway ends are kept clear.
-  const r = PLACES.runway;
-  if (Math.abs(x - r.x) < 150 + Math.max(0, Math.abs(z - r.z) - r.length / 2) * 0.12 && Math.abs(z - r.z) < r.length / 2 + 1600) return false;
+  if (species.edge && m > 0.97 && rand() < 0.5) return false;
   return true;
 }
 
+function instanced(geo, mat, count, n) {
+  const g = geo.clone();
+  g.setAttribute('burn', new THREE.InstancedBufferAttribute(new Float32Array(count), 1));
+  const mesh = new THREE.InstancedMesh(g, mat, count);
+  mesh.count = n;
+  mesh.frustumCulled = false;
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  return mesh;
+}
+
 export function buildForest(scene, quality) {
-  const kinds = [
-    { geo: dipterocarpGeometry(), share: 0.12, scale: [0.8, 1.3] },
-    { geo: broadleafGeometry(), share: 0.26, scale: [1.0, 1.9] },
-    { geo: palmGeometry(), share: 0.1, scale: [0.8, 1.15] },
-    { geo: fernGeometry(), share: 0.1, scale: [0.9, 1.8] },
-    { geo: canopyGeometry(), share: 0.42, scale: [1.2, 2.4] },
-  ];
+  const atlas = buildLeafAtlas(quality.name === 'low' ? 0.5 : 1);
+  const bark = buildBarkTextures(quality.name === 'low' ? 256 : 512);
+  const leafMat = buildLeafMaterial(atlas);
+  const leafDepth = buildLeafDepthMaterial(atlas);
+  const barkMat = buildBarkMaterial(bark);
   const total = quality.trees;
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const hiRadius = quality.hiTreeRadius;
   const trees = [];
-  const meshes = kinds.map((k) => {
-    const count = Math.floor(total * k.share);
-    const mesh = new THREE.InstancedMesh(k.geo, mat, count);
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
+  const groups = SPECIES.map((sp, si) => {
+    const hiGeo = sp.build('hi', 100 + si * 7);
+    const loGeo = sp.build('lo', 100 + si * 7);
+    const want = Math.floor(total * sp.share);
+    const matrices = new Float32Array(want * 16);
+    const list = [];
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
-    const col = new THREE.Color();
-    let placedCount = 0, tries = 0;
-    while (placedCount < count && tries < count * 6) {
+    const tint = new THREE.Color();
+    const tints = new Float32Array(want * 3);
+    let tries = 0;
+    while (list.length < want && tries < want * 12) {
       tries++;
-      // Denser near the action, sparser far away.
-      const r = Math.pow(rand(), 0.62) * 4300;
-      const a = rand() * Math.PI * 2;
-      const x = 0 + Math.cos(a) * r, z = -300 + Math.sin(a) * r * 1.05;
+      const [x, z] = samplePosition(sp);
       const h = terrainHeight(x, z);
-      if (!treeAllowed(x, z, h)) continue;
-      if (k === kinds[2] && h > 60 && rand() < 0.7) continue; // palms prefer lowlands
-      const sc = randRange(k.scale[0], k.scale[1]);
+      if (!accept(sp, x, z, h)) continue;
+      const sc = randRange(sp.scale[0], sp.scale[1]);
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand() * Math.PI * 2);
-      s.set(sc, sc * randRange(0.85, 1.15), sc);
-      p.set(x, h - 0.5, z);
+      s.set(sc * randRange(0.9, 1.1), sc * randRange(0.88, 1.12), sc * randRange(0.9, 1.1));
+      p.set(x, h - 0.3, z);
       m.compose(p, q, s);
-      mesh.setMatrixAt(placedCount, m);
-      col.setHSL(0.22 + rand() * 0.1, 0.35 + rand() * 0.3, 0.75 + rand() * 0.35);
-      mesh.setColorAt(placedCount, col);
-      trees.push({ mesh, index: placedCount, x, z, base: col.clone(), burnt: 0 });
-      placedCount++;
+      const i = list.length;
+      m.toArray(matrices, i * 16);
+      // Gentle per-tree colour shifts: yellowish, bluish and darker crowns.
+      const k = rand();
+      tint.setRGB(0.8 + k * 0.3, 0.88 + rand() * 0.18, 0.72 + rand() * 0.25).multiplyScalar(randRange(0.7, 1.05));
+      tint.toArray(tints, i * 3);
+      const t = { group: si, index: i, x, z, burnt: 0 };
+      list.push(t);
+      trees.push(t);
     }
-    mesh.count = placedCount;
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.frustumCulled = false;
-    scene.add(mesh);
-    return mesh;
+    const n = list.length;
+    const hiCap = Math.max(8, Math.ceil(quality.hiTrees * sp.share * 1.4));
+    const lo = { wood: instanced(loGeo.wood, barkMat, n, n), leaves: instanced(loGeo.leaves, leafMat, n, n) };
+    const hi = { wood: instanced(hiGeo.wood, barkMat, hiCap, 0), leaves: instanced(hiGeo.leaves, leafMat, hiCap, 0) };
+    for (const mesh of [lo.wood, lo.leaves, hi.wood, hi.leaves]) {
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(mesh.instanceMatrix.count * 3).fill(1), 3);
+      scene.add(mesh);
+    }
+    for (const mesh of [lo.leaves, hi.leaves]) mesh.instanceColor.array.set(tints.subarray(0, Math.min(tints.length, mesh.instanceColor.array.length)));
+    lo.wood.instanceMatrix.array.set(matrices.subarray(0, n * 16));
+    lo.leaves.instanceMatrix.array.set(matrices.subarray(0, n * 16));
+    hi.wood.castShadow = hi.leaves.castShadow = quality.treeShadows;
+    hi.wood.receiveShadow = hi.leaves.receiveShadow = quality.treeShadows;
+    hi.leaves.customDepthMaterial = leafDepth;
+    return { sp, list, matrices, tints, lo, hi, hiCap, near: [] };
   });
 
-  // Trees near the fire zone and the village can be scorched as the fire spreads.
-  const burnable = trees.filter((t) => Math.hypot(t.x - PLACES.fire.x, t.z - PLACES.fire.z) < 1500);
-  const charred = new THREE.Color(0x1c1612);
+  const burnable = trees.filter((t) => Math.hypot(t.x - PLACES.fire.x, t.z - PLACES.fire.z) < 1600);
+  const last = new THREE.Vector3(1e9, 0, 0);
+  let dirty = true;
+
+  // Move the trees nearest the camera into the detailed meshes (hidden in the light ones).
+  function relod(cam) {
+    const r2 = hiRadius * hiRadius;
+    for (const gr of groups) {
+      const { list, matrices, lo, hi, hiCap } = gr;
+      const near = [];
+      for (const t of list) {
+        const dx = t.x - cam.x, dz = t.z - cam.z;
+        const d = dx * dx + dz * dz;
+        if (d < r2) near.push([d, t.index]);
+      }
+      near.sort((a, b) => a[0] - b[0]);
+      if (near.length > hiCap) near.length = hiCap;
+      const loM = lo.wood.instanceMatrix.array, loL = lo.leaves.instanceMatrix.array;
+      loM.set(matrices.subarray(0, list.length * 16));
+      const zero = ZERO.elements;
+      const hiW = hi.wood.instanceMatrix.array, hiL = hi.leaves.instanceMatrix.array;
+      const hiTint = hi.leaves.instanceColor.array;
+      const burnHiW = hi.wood.geometry.attributes.burn.array, burnHiL = hi.leaves.geometry.attributes.burn.array;
+      near.forEach(([, idx], k) => {
+        loM.set(zero, idx * 16);
+        const src = matrices.subarray(idx * 16, idx * 16 + 16);
+        hiW.set(src, k * 16); hiL.set(src, k * 16);
+        hiTint.set(gr.tints.subarray(idx * 3, idx * 3 + 3), k * 3);
+        burnHiW[k] = burnHiL[k] = list[idx].burnt;
+      });
+      loL.set(loM);
+      hi.wood.count = hi.leaves.count = near.length;
+      const loBurnW = lo.wood.geometry.attributes.burn.array, loBurnL = lo.leaves.geometry.attributes.burn.array;
+      for (const t of list) loBurnW[t.index] = loBurnL[t.index] = t.burnt;
+      for (const mesh of [lo.wood, lo.leaves, hi.wood, hi.leaves]) {
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.geometry.attributes.burn.needsUpdate = true;
+      }
+      hi.leaves.instanceColor.needsUpdate = true;
+      gr.near = near;
+    }
+  }
+
+  const sunView = new THREE.Vector3();
   return {
-    meshes,
     trees,
+    groups,
+    // Call once a frame after the camera moved: LOD swap, wind time, sun direction for leaves.
+    update(camera, time, sunDir) {
+      treeUniforms.uTime.value = time;
+      sunView.copy(sunDir).transformDirection(camera.matrixWorldInverse);
+      treeUniforms.uSunView.value.copy(sunView);
+      if (dirty || camera.position.distanceToSquared(last) > 18 * 18) {
+        last.copy(camera.position);
+        dirty = false;
+        relod(camera.position);
+      }
+    },
     scorch(x, z, radius, amount) {
-      const touched = new Set();
       for (const t of burnable) {
         const d = Math.hypot(t.x - x, t.z - z);
         if (d > radius) continue;
-        t.burnt = Math.min(1, t.burnt + amount * (1 - d / radius));
-        const c = t.base.clone().lerp(charred, t.burnt);
-        t.mesh.setColorAt(t.index, c);
-        touched.add(t.mesh);
+        t.burnt = Math.min(1, t.burnt + amount * (1 - d / radius) * randRange(0.6, 1.2));
       }
-      for (const m of touched) m.instanceColor.needsUpdate = true;
+      dirty = true;
     },
   };
 }

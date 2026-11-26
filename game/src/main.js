@@ -4,7 +4,7 @@ import { seedRandom } from './core/rng.js';
 import { pickQuality } from './core/quality.js';
 import { buildTerrain, PLACES, terrainHeight } from './world/terrain.js';
 import { buildWater } from './world/water.js';
-import { buildSky } from './world/sky.js';
+import { buildSky, SUN_DIR } from './world/sky.js';
 import { buildForest } from './world/forest.js';
 import { buildVillage } from './world/village.js';
 import { buildAirstrip } from './world/airstrip.js';
@@ -22,6 +22,8 @@ import { SoundEngine } from './audio/sound-engine.js';
 import { Controls } from './input/controls.js';
 import { bindScreens, showScreen, hideScreens, showResult } from './ui/screens.js';
 import { runShot, SHOTS } from './shots/shot-scenes.js';
+import { installAtmosphereFog } from './render/atmosphere-fog.js';
+import { PostPipeline } from './render/post-pipeline.js';
 
 const params = new URLSearchParams(location.search);
 const deg = Math.PI / 180;
@@ -30,6 +32,7 @@ class Game {
   constructor() {
     seedRandom(Number(params.get('seed') || 218));
     this.quality = pickQuality();
+    installAtmosphereFog();
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: params.has('shot') });
     renderer.setPixelRatio(this.quality.pixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -38,10 +41,11 @@ class Game {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById('view').appendChild(renderer.domElement);
     this.renderer = renderer;
+    this.post = new PostPipeline(renderer, this.quality);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.5, 30000);
 
-    this.sky = buildSky(this.scene);
+    this.sky = buildSky(this.scene, this.quality);
     this.scene.add(buildTerrain(this.quality.terrainSegments));
     this.water = null;
     this.waterSurface = buildWater();
@@ -97,6 +101,7 @@ class Game {
   resize() {
     const w = innerWidth, h = innerHeight;
     this.renderer.setSize(w, h);
+    this.post.setSize(w, h, this.quality.pixelRatio);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.hud.resize(w, h, Math.min(devicePixelRatio, 2));
@@ -251,13 +256,14 @@ class Game {
     if (this.cockpit.group.visible) updateCockpit(this.cockpit, s);
     this.rig.shake = Math.max(s.turbulence * 1.5, this.rig.shake * (1 - dt * 2));
     this.rig.update(s, dt, this.controls.mouse.dragging);
-    this.sky.follow(this.camera.position);
-    this.sky.sun.position.copy(s.position).addScaledVector(new THREE.Vector3(-0.62, 0.2, 0.76).normalize(), 400);
-    this.sky.sun.target.position.copy(s.position);
+    this.focus = (this.focus || new THREE.Vector3()).set(0, 0, -1).applyQuaternion(this.camera.quaternion).setY(0).normalize().multiplyScalar(this.quality.shadowBox * 0.55).add(this.camera.position);
+    this.focus.y = Math.max(terrainHeight(this.focus.x, this.focus.z), 0);
+    this.sky.follow(this.camera.position, this.focus);
+    this.sky.uniforms.time.value = this.time;
+    this.forest.update(this.camera, this.time, SUN_DIR);
     // Smoke thickens the haze around the fire.
     const smoke = s.turbulence;
-    this.scene.fog.near = 900 - smoke * 850;
-    this.scene.fog.far = 7600 - smoke * 6400;
+    this.scene.fog.near = 0.00016 * (1 + smoke * 10);
     this.waterSurface.update(this.time);
     this.airstrip.update(this.time, s);
     this.birds.update(this.time);
@@ -271,7 +277,7 @@ class Game {
   frame(dt) {
     this.handleKeys();
     if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
-    this.renderer.render(this.scene, this.camera);
+    this.post.render(this.scene, this.camera, SUN_DIR, this.time);
     this.hud.draw(this, dt);
     this.controls.syncThrottle(this.flight.throttle);
     this.controls.endFrame();
@@ -285,7 +291,7 @@ if (shot && SHOTS[shot]) {
   document.body.classList.add('shot');
   hideScreens();
   runShot(game, shot);
-  game.renderer.render(game.scene, game.camera);
+  game.post.render(game.scene, game.camera, SUN_DIR, game.time);
   game.hud.draw(game, 0);
   window.__shotReady = true;
 } else {

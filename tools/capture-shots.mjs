@@ -1,9 +1,9 @@
 // Capture the staged screenshots listed in shots.json from a running `node serve.ts --port 8218`.
-// Usage: node tools/capture-shots.mjs <playwright module path> [only-name]
+// Usage: node tools/capture-shots.mjs <playwright module path> <output dir> [only-name]
 import { readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
-const [pwPath, only] = process.argv.slice(2);
+const [pwPath, outDir, only] = process.argv.slice(2);
 const require = createRequire(import.meta.url);
 const { chromium } = require(pwPath);
 const shots = JSON.parse(readFileSync(new URL('../shots.json', import.meta.url), 'utf8'));
@@ -16,8 +16,8 @@ page.on('pageerror', (e) => console.log('pageerror', e.message));
 for (const s of shots) {
   if (only && !s.name.includes(only)) continue;
   await page.goto(`http://localhost:8218/${s.query}`, { waitUntil: 'commit', timeout: 300000 });
-  await page.waitForFunction(() => window.__shotReady === true, null, { timeout: 300000 });
-  const out = new URL(`../screenshots/${s.name}`, import.meta.url).pathname;
+  await page.waitForFunction(() => window.__shotReady === true, null, { timeout: 600000 });
+  const out = `${outDir}/${s.name}`;
   let q = 88;
   do {
     await page.screenshot({ path: out, type: 'jpeg', quality: q });
