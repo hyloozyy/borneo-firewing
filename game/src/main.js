@@ -138,6 +138,7 @@ class Game {
     this.state = 'playing';
     this.showHud = true;
     this.rig.first = true;
+    this.rig.yaw = 0; this.rig.pitch = 0.12; this.rig.dist = 34;
     this.mission.start(index);
     this.prevPos.copy(s.position);
   }
