@@ -47,7 +47,7 @@ export const STAGES = [
       return [
         [s.rpm > 0.3, 'Mesin hidup (R = gas)'],
         [s.flaps > 0.2 || !s.onGround, 'Flaps 1 (V)'],
-        [!s.onGround, 'Lepas landas ±60 kt, tarik (S)'],
+        [!s.onGround, 'Rotate ±75 kt, tarik (S)'],
         [d.index >= 3, `Cincin patroli ${Math.min(3, d.index)}/3`],
       ];
     },
@@ -86,6 +86,7 @@ export const STAGES = [
       d.ring = makeRing(55, 0xff5a1e);
       game.scene.add(d.ring);
       d.startHeat = game.fire.totalHeat();
+      game.fire.spreadRate = 0.5;
       d.drops = 0;
       placeDropRing(game, d.ring);
     },
@@ -176,7 +177,7 @@ export const STAGES = [
       const r = PLACES.runway;
       const d = game.stageData;
       d.ring = makeRing(48, 0x5cf08a);
-      orientRing(d.ring, v3(r.x, r.h + 120, r.z + r.length / 2 + 1900), 0, -1);
+      orientRing(d.ring, v3(r.x, r.h + 95, r.z + r.length / 2 + 1400), 0, -1);
       game.scene.add(d.ring);
       d.gate = false;
     },

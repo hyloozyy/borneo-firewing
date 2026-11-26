@@ -51,6 +51,11 @@ export function terrainHeight(x, z) {
   const ax = Math.abs(x - r.x), az = Math.abs(z - r.z);
   const pad = (1 - smoothstep(70, 220, ax)) * (1 - smoothstep(r.length / 2 + 60, r.length / 2 + 300, az));
   h = lerp(h, r.h, pad);
+  // Keep both approach corridors clear of hills (a valley below the 3.5 degree glide path).
+  const corridor = 1 - smoothstep(160, 520, ax);
+  const beyond = Math.max(0, az - r.length / 2);
+  const cap = r.h + beyond * 0.03;
+  if (corridor > 0 && h > cap) h = lerp(h, cap, corridor);
   // Village clearing.
   const dv = Math.hypot(x - PLACES.village.x, z - PLACES.village.z);
   h = lerp(h, PLACES.village.h, 1 - smoothstep(120, 280, dv));

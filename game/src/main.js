@@ -131,7 +131,7 @@ class Game {
       setFlying(s, new THREE.Vector3(-700, 240, -900), -80 * deg, 70);
       s.water = s.waterMax; s.fuel = s.fuelMax * 0.75;
     } else {
-      setFlying(s, new THREE.Vector3(r.x + 400, 420, r.z + r.length / 2 + 5200), 4 * deg, 70);
+      setFlying(s, new THREE.Vector3(r.x + 260, 230, r.z + r.length / 2 + 2600), 5 * deg, 62);
       s.fuel = s.fuelMax * 0.3;
     }
     this.state = 'playing';
