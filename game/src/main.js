@@ -13,7 +13,7 @@ import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
 import { FireSystem } from './fire/fire-system.js';
 import { WaterEffects } from './fire/water-effects.js';
-import { MissionDirector } from './mission/mission-director.js';
+import { MissionDirector, landingRating } from './mission/mission-director.js';
 import { pulseRing } from './mission/rings.js';
 import { Hud } from './hud/hud.js';
 import { buildCockpit, updateCockpit } from './cockpit/cockpit-view.js';
@@ -150,8 +150,25 @@ class Game {
 
   onMissionEnd(passed) {
     this.state = 'result';
-    if (!passed && this.flight.crashed) { this.audio.crash(); this.rig.shake = 2; }
+    if (!passed && this.flight.crashed) { this.audio.crash(); this.rig.shake = 3; this.crashEffect(); }
     setTimeout(() => { this.showHud = false; showResult(this, passed); }, passed ? 1200 : 1800);
+  }
+
+  // Fireball and smoke on land, a white splash on water, so a crash reads as what happened.
+  crashEffect() {
+    const s = this.flight, p = s.position;
+    const onWater = terrainHeight(p.x, p.z) < 0;
+    for (let i = 0; i < 160; i++) {
+      const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 16;
+      if (onWater) {
+        this.water.pool.spawn(p.x, 0.5, p.z, Math.cos(a) * v, 8 + Math.random() * 18, Math.sin(a) * v, 2.5, 6, 30, [1, 1, 1, 0.9], [0.9, 0.95, 1, 0], 0.4, -9.81, 0);
+      } else {
+        this.fire.flames.spawn(p.x, p.y, p.z, Math.cos(a) * v, Math.random() * 14, Math.sin(a) * v, 1.5 + Math.random(), 18, 40, [1, 0.9, 0.5, 1], [0.8, 0.15, 0, 0], 0.8, 2);
+        if (i % 3 === 0) this.fire.smoke.spawn(p.x, p.y, p.z, Math.cos(a) * v * 0.3, 6 + Math.random() * 6, Math.sin(a) * v * 0.3, 10, 30, 160, [0.1, 0.08, 0.07, 0.8], [0.4, 0.38, 0.36, 0], 0.2, 0.5);
+      }
+    }
+    if (!onWater) this.fire.ignite(p.x, p.z, 0.8);
+    this.flight.velocity.multiplyScalar(0.1);
   }
 
   handleKeys() {
@@ -208,7 +225,14 @@ class Game {
       this.dropReleased = 0;
     }
     if (s.scooping) this.water.emitScoopSpray(s);
+    if (s.stall && this.state === 'playing' && Math.floor(this.time * 3) !== Math.floor((this.time - dt) * 3)) this.audio.stallWarn();
     this.dropWindow = Math.max(0, this.dropWindow - dt);
+    if (s.lastTouchdown && s.lastTouchdown !== this.seenTouchdown) {
+      this.seenTouchdown = s.lastTouchdown;
+      const td = s.lastTouchdown;
+      if (td.bounce) this.hud.toast('BOUNCE! Terlalu cepat/curam', '#ff7a5a');
+      else this.hud.toast(`TOUCHDOWN ${Math.round(td.vs * 196.85)} FPM · ${landingRating(td)}`, td.vs > -2.5 ? '#9dffb0' : '#ffc861');
+    }
 
     this.fire.update(dt, this.wind, this.time, this.camera.position);
     this.water.update(dt, this.wind);

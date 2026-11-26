@@ -72,6 +72,7 @@ export class Hud {
     this.objective(game, u);
     this.missionPanel(game, u, small);
     this.radioBox(dt, u);
+    this.toastsDraw(dt, u);
     this.bannerDraw(dt, u);
     g.shadowBlur = 0;
   }
@@ -293,6 +294,21 @@ export class Hud {
     g.textAlign = 'right';
     g.font = `700 ${13 * u}px Arial`;
     g.fillText(`🔥 TITIK API ${fires}   ⏱ ${Math.floor(tl / 60)}:${String(Math.floor(tl % 60)).padStart(2, '0')}   SKOR ${m.total() + Math.round(m.stagePoints || 0)}`, x, y + (52 + lines.length * 20) * u);
+    g.font = `600 ${13 * u}px Arial`;
+  }
+
+  // Score and event pop-ups that rise and fade beside the aircraft symbol.
+  toastsDraw(dt, u) {
+    const g = this.g;
+    this.toasts = this.toasts.filter((t) => (t.t += dt) < 2.4);
+    this.toasts.slice(-4).forEach((t, i, arr) => {
+      g.globalAlpha = Math.min(1, (2.4 - t.t) * 1.5);
+      g.fillStyle = t.color;
+      g.textAlign = 'center';
+      g.font = `800 ${17 * u}px Arial`;
+      g.fillText(t.text, this.w / 2, this.h * 0.3 - (arr.length - 1 - i) * 22 * u - t.t * 14 * u);
+    });
+    g.globalAlpha = 1;
     g.font = `600 ${13 * u}px Arial`;
   }
 
