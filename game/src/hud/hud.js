@@ -101,7 +101,9 @@ export class Hud {
       ['GEAR', gear > 0.95 ? 'DOWN' : gear < 0.05 ? 'UP' : 'TRANS', gear > 0.95 ? C.green : gear < 0.05 ? C.white : C.amber],
     ], u);
     const fpm = Math.round(s.vs * 196.85);
-    if (cockpit) {
+    if (cockpit && touch) {
+      // Phones: the buttons own the corners; speed/altitude/heading are on the tapes.
+    } else if (cockpit) {
       readouts(g, W / 2 + tx + 96 * u, cy - 26 * u, [['VS', `${fpm >= 0 ? '+' : ''}${fpm}`, fpm < -1000 ? C.amber : C.green], ['RA', `${Math.max(0, Math.round(s.agl * FT))}`, s.agl < 30 && !s.onGround ? C.amber : C.green]], u);
       readouts(g, W / 2 - tx - 96 * u, cy - 26 * u, [['THR', `${Math.round(s.throttle * 100)}%`], ['G', s.gLoad.toFixed(1), s.gLoad > 3.2 ? C.red : C.green]], u);
     } else if (!touch) readouts(g, W / 2 + tx, below, [
@@ -125,7 +127,7 @@ export class Hud {
     if (s.turbulence > 0.2) flash(g, 'SMOKE · TURBULENCE', W / 2, cy2 + 26 * u, C.amber, u, this.time, true);
 
     const lights = activeLights(s, game.plane.userData.parts);
-    alertsDraw(g, this, lights, W / 2, headY + (portrait ? 92 : 62) * u, u);
+    alertsDraw(g, this, lights, W / 2, portrait ? cy - (tapeH / 2 + 40) * u : headY + 62 * u, u);
 
     // Corners
     const status = statusStrip(g, game, M, M, u);
@@ -138,7 +140,7 @@ export class Hud {
     } else if (touch) {
       radarR = 40 * u;
       radar(g, game, M + 6 * u + radarR, status.bottom + 12 * u + radarR, radarR, u, this.time);
-      systemsPanel(g, game, M, status.bottom + 24 * u + radarR * 2, sw * 0.9, u);
+      systemsPanel(g, game, M, portrait ? headY + 96 * u : status.bottom + 24 * u + radarR * 2, sw * 0.9, u);
     } else if (compact) {
       radar(g, game, M + 6 * u + radarR, status.bottom + 14 * u + radarR, radarR, u, this.time);
       systemsPanel(g, game, W - M - sw, M + mh + 8 * u, sw, u);

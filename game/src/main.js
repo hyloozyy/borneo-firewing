@@ -124,7 +124,8 @@ class Game {
 
     addEventListener('resize', () => this.resize());
     await step('Screen', 0.95, () => this.resize());
-    for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, () => this.audio.unlock());
+    // Audio may only start on a user-activation event: on phones that is touchend/pointerup, not touchstart.
+    for (const ev of ['pointerdown', 'pointerup', 'keydown', 'touchstart', 'touchend', 'click']) addEventListener(ev, () => this.audio.unlock(), { passive: true });
     addEventListener('focus', () => this.audio.ctx && this.audio.unlock());
     document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); else if (this.state === 'playing') this.setPaused(true); });
     bindScreens(this);

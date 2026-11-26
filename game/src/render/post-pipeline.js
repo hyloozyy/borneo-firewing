@@ -109,6 +109,7 @@ export class PostPipeline {
   constructor(renderer, quality) {
     this.renderer = renderer;
     this.enabled = true;
+    this.bloomShift = quality.phone ? 2 : 1; // phones start the bloom pyramid at quarter resolution
     const type = THREE.HalfFloatType;
     this.sceneRT = new THREE.WebGLRenderTarget(1, 1, { type, samples: quality.msaa, depthBuffer: true });
     this.levels = [];
@@ -144,7 +145,7 @@ export class PostPipeline {
   setSize(w, h, pr) {
     const W = Math.floor(w * pr), H = Math.floor(h * pr);
     this.sceneRT.setSize(W, H);
-    let lw = Math.max(1, W >> 1), lh = Math.max(1, H >> 1);
+    let lw = Math.max(1, W >> this.bloomShift), lh = Math.max(1, H >> this.bloomShift);
     for (const l of this.levels) {
       l.a.setSize(lw, lh); l.b.setSize(lw, lh);
       l.w = lw; l.h = lh;

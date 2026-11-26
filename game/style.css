@@ -156,7 +156,8 @@ body.touch[data-state="playing"] #touch { display: block; }
 #touch .throttle { pointer-events: auto; position: absolute; right: var(--pad-r); bottom: var(--pad-b); width: 58px; height: min(220px, 56vh); touch-action: none;
   display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #touch .throttle .cap, #touch .throttle .value { font: 700 10px/1 var(--label); letter-spacing: 1.5px; color: var(--gold); }
-#touch .throttle .value { color: #fff; font-size: 12px; }
+#touch .throttle .value { color: #fff; font-size: 12px; margin-top: 8px; }
+#touch .throttle .cap { margin-bottom: 9px; }
 #touch .throttle .value::after { content: "%"; font-size: 9px; color: var(--muted); }
 #touch .throttle .track { position: relative; flex: 1; width: 40px; border-radius: 10px; background: rgba(10, 6, 4, 0.5); border: 1.5px solid rgba(255, 210, 160, 0.4); overflow: visible; }
 #touch .throttle .fill { position: absolute; left: 3px; right: 3px; bottom: 3px; border-radius: 7px; background: linear-gradient(0deg, rgba(255, 120, 40, 0.75), rgba(255, 210, 120, 0.45)); }
@@ -227,3 +228,9 @@ body.touch.portrait #touch .topbar { right: auto; left: 50%; transform: translat
 /* Bigger tap targets on touch screens for the menus. */
 body.touch .stages button { padding: 12px 4px; }
 body.touch .hint-key { display: none; }
+
+/* Feature badges on the title */
+.badges { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 14px 0 0; }
+.badges li { font: 700 9.5px/1 var(--label); letter-spacing: 1.6px; color: #ffe6c8; padding: 6px 9px; border-radius: 20px;
+  background: linear-gradient(rgba(255, 140, 70, 0.22), rgba(150, 40, 10, 0.25)); border: 1px solid rgba(255, 170, 110, 0.45); }
+@media (max-height: 500px), (max-width: 620px) { .badges { display: none; } }
