@@ -6,6 +6,8 @@ import { radar } from './hud-radar.js';
 import { statusStrip, systemsPanel, readouts, gMeter } from './hud-systems.js';
 import { radioBox, bannerDraw, toastsDraw, alertsDraw, dropResultDraw, objectiveMarker, missionPanel } from './hud-messages.js';
 import { activeLights } from '../flight/annunciators.js';
+import { InstrumentCluster } from './hud-cluster.js';
+import { keyName } from '../input/key-names.js';
 
 const KT = 1.944, FT = 3.281;
 
@@ -24,6 +26,7 @@ export class Hud {
     this.alpha = 0;
     this.spdRate = 0;
     this.prevKt = null;
+    this.cluster = new InstrumentCluster();
   }
 
   resize(w, h, dpr) {
@@ -54,6 +57,8 @@ export class Hud {
     const W = this.w, H = this.h;
     const u = Math.max(0.6, Math.min(1.2, Math.min(W / 1280, H / 600)));
     const compact = W < 900 || H < 430;
+    // Phones: tapes pulled in, left column for radar + systems, right column free for the thumbs.
+    const touch = compact && game.controls.isTouch;
     const M = 14 * u;
     g.lineWidth = 1.5;
     g.textBaseline = 'middle';
@@ -68,14 +73,14 @@ export class Hud {
     // the panel itself carries the engine, fuel and map displays.
     const cockpit = game.cameraMode === 'cockpit';
     const cy = cockpit ? H * 0.27 : H * 0.48;
-    const tapeH = cockpit ? Math.min(150, (H * 0.36) / u) : 210;
+    const tapeH = cockpit ? Math.min(150, (H * 0.36) / u) : touch ? 150 : 210;
     if (cockpit) {
       pitchLadder(g, s, W / 2, cy, u, tapeH / 2);
       bankScale(g, s, W / 2, cy, 92 * u, u);
     } else pathMarker(g, game, W, H, u);
 
     // Speed and altitude tapes with their readouts.
-    const tx = cockpit ? Math.min(W * 0.2, 300 * u) : Math.min(W * (compact ? 0.3 : 0.27), 430 * u);
+    const tx = cockpit ? Math.min(W * 0.2, 300 * u) : Math.min(W * (touch ? 0.19 : compact ? 0.3 : 0.27), 430 * u);
     const mass = 12500 + s.fuel + s.water;
     const clmax = 0.32 + s.flaps * 0.55 + 4.6 * (0.28 - s.flaps * 0.03);
     const vs = Math.sqrt((2 * mass * 9.81) / (1.2 * 128 * clmax)) * KT;
@@ -90,7 +95,7 @@ export class Hud {
     });
     const below = cy + (tapeH / 2) * u + 14 * u;
     const gear = game.plane.userData.parts.gearExt;
-    if (!cockpit) readouts(g, W / 2 - tx, below, [
+    if (!cockpit && !touch) readouts(g, W / 2 - tx, below, [
       ['THR', `${Math.round(s.throttle * 100)}%`],
       ['FLAPS', ['UP', '1', 'FULL'][Math.round(s.flapTarget * 2)]],
       ['GEAR', gear > 0.95 ? 'DOWN' : gear < 0.05 ? 'UP' : 'TRANS', gear > 0.95 ? C.green : gear < 0.05 ? C.white : C.amber],
@@ -99,7 +104,7 @@ export class Hud {
     if (cockpit) {
       readouts(g, W / 2 + tx + 96 * u, cy - 26 * u, [['VS', `${fpm >= 0 ? '+' : ''}${fpm}`, fpm < -1000 ? C.amber : C.green], ['RA', `${Math.max(0, Math.round(s.agl * FT))}`, s.agl < 30 && !s.onGround ? C.amber : C.green]], u);
       readouts(g, W / 2 - tx - 96 * u, cy - 26 * u, [['THR', `${Math.round(s.throttle * 100)}%`], ['G', s.gLoad.toFixed(1), s.gLoad > 3.2 ? C.red : C.green]], u);
-    } else readouts(g, W / 2 + tx, below, [
+    } else if (!touch) readouts(g, W / 2 + tx, below, [
       ['VS', `${fpm >= 0 ? '+' : ''}${fpm}`, fpm < -1000 ? C.amber : C.green],
       ['RA', `${Math.max(0, Math.round(s.agl * FT))}`, s.agl < 30 && !s.onGround ? C.amber : C.green],
       ['AOA', `${(s.alpha * 57.3).toFixed(1)}°`, s.stall ? C.red : C.green],
@@ -107,17 +112,20 @@ export class Hud {
     if (!compact && !cockpit) gMeter(g, W / 2 - tx - 66 * u, cy + 78 * u, 20 * u, s.gLoad, s.damage.maxG, u);
 
     const bug = game.objective ? (Math.atan2(game.objective.pos.x - s.position.x, -(game.objective.pos.z - s.position.z)) * 180) / Math.PI : null;
-    headingTape(g, W / 2, M + 2 * u, s.heading, u, bug == null ? null : (bug + 360) % 360, game.wind);
+    // Portrait phones: the corner panels fill the top row, so the heading tape drops below them.
+    const portrait = touch && H > W;
+    const headY = portrait ? M + 124 * u : M + 2 * u;
+    headingTape(g, W / 2, headY, s.heading, u, bug == null ? null : (bug + 360) % 360, game.wind);
 
     // Centre call-outs
     const cy2 = cockpit ? cy + (tapeH / 2 - 14) * u : cy + 76 * u;
     if (s.stall) flash(g, 'STALL · PUSH', W / 2, cy2, C.red, u, this.time);
     else if (s.scooping) flash(g, `SCOOPING · ${Math.round((100 * s.water) / s.waterMax)}%`, W / 2, cy2, C.blue, u, this.time, true);
-    else if (game.dropWindow > 0 && s.water > 0) flash(g, 'DROP NOW · SPACE', W / 2, cy2, C.amber, u, this.time);
+    else if (game.dropWindow > 0 && s.water > 0) flash(g, `DROP NOW · ${keyName(game, 'drop')}`, W / 2, cy2, C.amber, u, this.time);
     if (s.turbulence > 0.2) flash(g, 'SMOKE · TURBULENCE', W / 2, cy2 + 26 * u, C.amber, u, this.time, true);
 
     const lights = activeLights(s, game.plane.userData.parts);
-    alertsDraw(g, this, lights, W / 2, M + 64 * u, u);
+    alertsDraw(g, this, lights, W / 2, headY + (portrait ? 92 : 62) * u, u);
 
     // Corners
     const status = statusStrip(g, game, M, M, u);
@@ -127,6 +135,10 @@ export class Hud {
     let radarR = (compact ? 50 : 72) * u;
     if (cockpit) {
       radarR = 0;
+    } else if (touch) {
+      radarR = 40 * u;
+      radar(g, game, M + 6 * u + radarR, status.bottom + 12 * u + radarR, radarR, u, this.time);
+      systemsPanel(g, game, M, status.bottom + 24 * u + radarR * 2, sw * 0.9, u);
     } else if (compact) {
       radar(g, game, M + 6 * u + radarR, status.bottom + 14 * u + radarR, radarR, u, this.time);
       systemsPanel(g, game, W - M - sw, M + mh + 8 * u, sw, u);
@@ -134,10 +146,14 @@ export class Hud {
       radar(g, game, M + 6 * u + radarR, H - M - 6 * u - radarR, radarR, u, this.time);
       systemsPanel(g, game, W - M - sw, H - M - 128 * u, sw, u);
     }
+    this.touchBarTop = portrait ? headY + 44 * u : M + mh + 6 * u; // the phone's CAM/TILT/HUD/pause buttons sit under the checklist
     objectiveMarker(g, game, W, H, u, this.time);
+    // Chase view: the glass instrument cluster along the bottom (I toggles it); the radio sits above.
+    let radioBottom = H - M;
+    if (!cockpit && game.showCluster && !compact) radioBottom = this.cluster.draw(g, game, W / 2, H - M, u * 0.95, dt, this.time) - 8 * u;
     const side = compact ? Math.min(280, W * 0.3) : radarR * 2 + M * 3 + 12 * u;
     const rw = Math.min(W - side * 2, 560 * u);
-    radioBox(g, this, W / 2 - rw / 2, H - M, rw, u, dt);
+    radioBox(g, this, W / 2 - rw / 2, radioBottom, rw, u, dt);
     dropResultDraw(g, this, W / 2, H * 0.4, u, dt);
     toastsDraw(g, this, W, H, u, dt);
     bannerDraw(g, this, W, H, u, dt);

@@ -5,6 +5,9 @@ import * as THREE from 'three';
 export function makeCanvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
+  // Painted once on the CPU and read back: a CPU-backed context is much faster for that than a
+  // GPU canvas (and avoids a GPU readback on phones).
+  c.getContext('2d', { willReadFrequently: true });
   return c;
 }
 

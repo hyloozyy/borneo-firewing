@@ -44,7 +44,8 @@ master warning and caution lights and a mode panel on the glareshield. The needl
 warnings flash, the yokes and overhead power levers follow your inputs, and soot, spray droplets and a bird-strike
 crack build up on the windscreen. The HUD has speed and altitude tapes with trend arrows, stall and scoop speed bands,
 a heading tape with the objective bug and wind, a radar mini-map with fires, village, rings and objective, engine and
-systems panels, G-meter, master caution alerts, radio messages with a typing effect, and hit/miss feedback for drops.
+systems panels, a glass instrument cluster in the chase view (airspeed, attitude, altimeter, heading card,
+vertical speed, twin-needle engine RPM and a row of STALL / LOW FUEL / ITT / SMOKE / GEAR / FLAPS / DOORS / WATER lights), G-meter, master caution alerts, radio messages with a typing effect, and hit/miss feedback for drops.
 
 ## Controls
 
@@ -61,9 +62,23 @@ systems panels, G-meter, master caution alerts, radio messages with a typing eff
 | C | chase / cockpit camera |
 | Mouse drag / wheel | look around / zoom |
 | P or Esc | pause |
-| M / H | sound / HUD |
+| M / H / I | sound / HUD / chase-view instrument cluster |
 
-On phones and tablets, touch controls appear (stick, throttle slider, drop, flaps, brake, camera, tilt steering), and a lighter graphics level is chosen automatically.
+### On a phone
+
+Open the game in the phone browser and hold it sideways (a full-screen landscape button is offered in portrait).
+A short how-to-play card shows before the first flight. The touch controls appear only while flying:
+
+* **Left thumb**: touch anywhere on the left side and a stick appears under the thumb (pull back to climb, sideways to bank).
+* **Right edge**: the throttle slider. Under the right thumb: a big **DROP** button (hold; it shows how full the tank is),
+  **FLAPS**, **BRAKE** and the **FIRE BOTTLE** (flashes when an engine burns).
+* **Swipe the free screen to look around** the aircraft like in a mobile action game (it glides and recentres by
+  itself), **pinch to zoom**, double tap to recentre. In the cockpit the swipe turns your head and the pinch zooms.
+* Top right: **CAM** (chase / cockpit), **TILT** (steer by tilting the phone), **HUD** and pause.
+
+Every finger is tracked on its own, so you can hold the stick, slide the throttle and look around at the same time.
+Phones get a lighter graphics level automatically (fewer trees and particles, no shadows or water reflections,
+lower resolution), a loading bar while the forest grows, and a light-mode reload if the browser drops the graphics context.
 
 ## How it is built
 
@@ -83,12 +98,12 @@ game/src/flight     flight physics, damage model, annunciators
 game/src/world      terrain, water, sky, forest, village, airstrip, clouds and hornbills
 game/src/fire       fire spread, flames, smoke, water drop and scoop spray
 game/src/mission    the five stages, rings, mission director, crash and landing report
-game/src/hud        head-up display: tapes, radar, systems, messages
+game/src/hud        head-up display: tapes, radar, systems, instrument cluster, messages
 game/src/cockpit    cockpit shell, instrument panel, gauges, moving map, windscreen, yokes and levers
 game/src/camera     chase and cockpit cameras
 game/src/audio      synthesised sound
-game/src/input      keyboard, mouse and touch controls
-game/src/ui         title, briefing, pause and result screens, bundled fonts
+game/src/input      keyboard and mouse, phone stick/throttle/buttons, swipe-to-look and pinch zoom
+game/src/ui         title, briefing, pause and result screens, loading bar, phone flow, bundled fonts
 game/src/shots      staged scenes for the screenshots (?shot=title|cover|cockpit|scoop|landing)
 ```
 

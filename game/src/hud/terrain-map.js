@@ -10,7 +10,7 @@ export function terrainMap() {
   if (baked) return baked;
   const c = document.createElement('canvas');
   c.width = c.height = SIZE;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   const img = g.createImageData(SIZE, SIZE);
   const step = MAP_EXTENT / SIZE;
   const hAt = (i, j) => terrainHeight(-MAP_EXTENT / 2 + (i + 0.5) * step, -MAP_EXTENT / 2 + (j + 0.5) * step);

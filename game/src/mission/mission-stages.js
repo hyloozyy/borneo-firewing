@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { PLACES, terrainHeight } from '../world/terrain.js';
 import { makeRing, orientRing, passedRing } from './rings.js';
+import { keyName } from '../input/key-names.js';
 
 const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
 
@@ -45,9 +46,9 @@ export const STAGES = [
     checklist(game) {
       const s = game.flight, d = game.stageData;
       return [
-        [s.rpm > 0.3, 'Engines running (R throttle)'],
-        [s.flaps > 0.2 || !s.onGround, 'Flaps 1 (V)'],
-        [!s.onGround, 'Rotate at 75 kt (S)'],
+        [s.rpm > 0.3, `Engines running (${keyName(game, 'throttle')})`],
+        [s.flaps > 0.2 || !s.onGround, `Flaps 1 (${keyName(game, 'flaps')})`],
+        [!s.onGround, `Rotate at 75 kt (${keyName(game, 'pull')})`],
         [d.index >= 3, `Patrol rings ${Math.min(3, d.index)}/3`],
       ];
     },
@@ -79,7 +80,7 @@ export const STAGES = [
   {
     id: 'attack',
     title: 'STAGE 3 · FIRE ATTACK',
-    subtitle: 'Fly through the target ring over the fire and drop (SPACE). Refill and repeat.',
+    subtitle: 'Fly through the target ring over the fire and drop the water. Refill and repeat.',
     radio: ['POSKO DAMKAR: The fire is running downwind! Fly through the target ring and open the doors right over it.', 'POSKO DAMKAR: Mind your engine temperatures in that smoke, 218. Ease the power if ITT climbs.'],
     enter(game) {
       const d = game.stageData;
@@ -113,7 +114,7 @@ export const STAGES = [
       return [
         [s.water > 600, `Water on board ${Math.round((100 * s.water) / s.waterMax)}%`],
         [game.dropWindow > 0, 'Through the target ring'],
-        [d.drops > 0, `Drops (SPACE) ${d.drops}`],
+        [d.drops > 0, `Drops (${keyName(game, 'drop')}) ${d.drops}`],
         [out >= 55, `Main fire out ${Math.min(100, out)}% / 55%`],
       ];
     },
@@ -196,9 +197,9 @@ export const STAGES = [
       const s = game.flight, d = game.stageData;
       return [
         [d.gate, 'Approach gate (green ring)'],
-        [s.flaps > 0.6, 'Flaps full (V)'],
+        [s.flaps > 0.6, `Flaps full (${keyName(game, 'flaps')})`],
         [!!(s.lastTouchdown && !s.lastTouchdown.water && s.onGround), 'Smooth touchdown'],
-        [s.onGround && s.velocity.length() < 3, 'Stop (B brakes)'],
+        [s.onGround && s.velocity.length() < 3, `Stop (${keyName(game, 'brake')})`],
       ];
     },
     exit(game) { game.scene.remove(game.stageData.ring); },

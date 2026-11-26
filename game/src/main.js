@@ -34,69 +34,86 @@ import { AutoQuality } from './render/auto-quality.js';
 import { BurnMap } from './fire/burn-map.js';
 import { loadFonts } from './ui/fonts.js';
 import { buildGroundTextures } from './textures/ground-textures.js';
+import { setupPhone, syncBodyState } from './ui/phone.js';
+import { loadingProgress, hideLoading, watchContext } from './ui/loading.js';
 
 const params = new URLSearchParams(location.search);
 const deg = Math.PI / 180;
 
 class Game {
-  constructor() {
+  // Build the world step by step, yielding to the browser between steps so the loading bar moves
+  // (phones take a while) and reporting how long each step took (?boottime).
+  async init(progress) {
     seedRandom(Number(params.get('seed') || 218));
     this.quality = pickQuality();
     installAtmosphereFog();
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: params.has('shot') });
+    const renderer = new THREE.WebGLRenderer({ antialias: !this.quality.phone, powerPreference: 'high-performance', preserveDrawingBuffer: params.has('shot') });
     renderer.setPixelRatio(this.quality.pixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = this.quality.shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById('view').appendChild(renderer.domElement);
+    watchContext(renderer.domElement, this);
     this.renderer = renderer;
     this.post = new PostPipeline(renderer, this.quality);
     this.autoQuality = new AutoQuality(this);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.5, 30000);
+    const q = this.quality;
+    if (params.has('boottime')) console.info(`boot start ${Math.round(performance.now())} ms after navigation`);
+    const step = async (label, frac, fn) => { await progress(label, frac); const t = performance.now(); fn(); if (params.has('boottime')) console.info(`boot ${label} ${Math.round(performance.now() - t)} ms`); };
 
-    this.sky = buildSky(this.scene, this.quality);
-    this.burnMap = new BurnMap();
-    this.terrain = buildTerrain(this.quality.terrainSegments, this.burnMap, buildGroundTextures(this.quality.groundTexture));
-    this.scene.add(this.terrain);
-    this.water = null;
-    this.waterSurface = buildWater(this.quality);
-    this.scene.add(this.waterSurface.mesh);
-    this.forest = buildForest(this.scene, this.quality, renderer);
-    this.grass = buildGrass(this.scene, this.quality.grass);
-    this.village = buildVillage(this.scene);
-    this.airstrip = buildAirstrip(this.scene);
-    this.clouds = buildClouds(this.scene, this.quality.clouds);
-    this.birds = buildBirds(this.scene, this.quality.birds);
-    // Sky reflections for the chrome spinners and the water.
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envScene = new THREE.Scene();
-    envScene.add(this.sky.dome.clone());
-    this.scene.environment = pmrem.fromScene(envScene, 0.02).texture;
-
-    this.plane = buildFW218();
-    this.scene.add(this.plane);
-    this.cockpit = buildCockpit(this.quality);
-    this.plane.add(this.cockpit.group);
-    this.flight = createFlightState();
-    this.wind = new THREE.Vector3(-2, 0, -3);
-    this.fire = new FireSystem(this.scene, this.forest, this.quality, this.burnMap);
-    this.fire.seedScenario();
-    this.water = new WaterEffects(this.scene, this.fire, this.quality);
-    this.engineFx = new EngineEffects(this.fire);
+    await step('Sky and sun', 0.05, () => { this.sky = buildSky(this.scene, q); this.burnMap = new BurnMap(); });
+    await step('Terrain', 0.12, () => {
+      this.terrain = buildTerrain(q.terrainSegments, this.burnMap, buildGroundTextures(q.groundTexture));
+      this.scene.add(this.terrain);
+    });
+    await step('Lake, river and sea', 0.24, () => { this.water = null; this.waterSurface = buildWater(q); this.scene.add(this.waterSurface.mesh); });
+    await step('Growing the rainforest', 0.32, () => { this.forest = buildForest(this.scene, q, renderer); });
+    await step('Grass, village and airstrip', 0.7, () => {
+      this.grass = buildGrass(this.scene, q.grass);
+      this.village = buildVillage(this.scene);
+      this.airstrip = buildAirstrip(this.scene);
+    });
+    await step('Clouds and hornbills', 0.78, () => {
+      this.clouds = buildClouds(this.scene, q.clouds);
+      this.birds = buildBirds(this.scene, q.birds);
+      // Sky reflections for the chrome spinners and the water.
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envScene = new THREE.Scene();
+      envScene.add(this.sky.dome.clone());
+      this.scene.environment = pmrem.fromScene(envScene, 0.02).texture;
+    });
+    await step('FW-218 Enggang', 0.84, () => {
+      this.plane = buildFW218();
+      this.scene.add(this.plane);
+      this.cockpit = buildCockpit(q);
+      this.plane.add(this.cockpit.group);
+      this.flight = createFlightState();
+    });
+    await step('Lighting the fire', 0.92, () => {
+      this.wind = new THREE.Vector3(-2, 0, -3);
+      this.fire = new FireSystem(this.scene, this.forest, q, this.burnMap);
+      this.fire.seedScenario();
+      this.water = new WaterEffects(this.scene, this.fire, q);
+      this.engineFx = new EngineEffects(this.fire);
+    });
     this.stats = { flown: 0, dropped: 0, scoops: 0, drops: 0 };
-
-    this.hud = new Hud(document.getElementById('hud'));
-    this.rig = new CameraRig(this.camera);
-    this.audio = new SoundEngine();
-    this.controls = new Controls(renderer.domElement);
-    this.mission = new MissionDirector(this);
+    await step('Instruments and radio', 0.94, () => {
+      this.hud = new Hud(document.getElementById('hud'));
+      this.rig = new CameraRig(this.camera);
+      this.audio = new SoundEngine();
+      this.controls = new Controls(renderer.domElement, this);
+      if (this.controls.isTouch) this.rig.recentreDelay = 2.2;
+      this.mission = new MissionDirector(this);
+    });
     this.events = { ring: () => { this.audio.ringChime(); this.hud.toast('RING!'); } };
     this.stageData = {};
     this.prevPos = new THREE.Vector3();
     this.state = 'menu';
     this.showHud = false;
+    this.showCluster = true;
     this.cameraMode = 'chase';
     this.dropWindow = 0;
     this.dropping = false;
@@ -106,12 +123,20 @@ class Game {
     this.kinematic = false;
 
     addEventListener('resize', () => this.resize());
-    this.resize();
+    await step('Screen', 0.95, () => this.resize());
     for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, () => this.audio.unlock());
     addEventListener('focus', () => this.audio.ctx && this.audio.unlock());
     document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); else if (this.state === 'playing') this.setPaused(true); });
     bindScreens(this);
+    setupPhone(this);
     this.menuFlyby();
+    // Compile every shader now (in parallel where the GPU driver allows) instead of on the first frames.
+    await progress('Warming up the engines', 0.97);
+    const t = performance.now();
+    this.syncVisuals(0);
+    try { await renderer.compileAsync(this.scene, this.camera); } catch (e) { console.warn('compile', e.message); }
+    if (params.has('boottime')) console.info(`boot shaders ${Math.round(performance.now() - t)} ms`);
+    await progress('Ready', 1);
   }
 
   resize() {
@@ -205,12 +230,15 @@ class Game {
     if (c.hit('KeyV')) this.flight.flapTarget = this.flight.flapTarget >= 1 ? 0 : this.flight.flapTarget + 0.5;
     if (c.hit('KeyM')) { this.audio.muted = !this.audio.muted; if (this.audio.muted) this.audio.silence(); }
     if (c.hit('KeyH')) this.showHud = !this.showHud;
+    if (c.hit('KeyI')) this.showCluster = !this.showCluster;
     if (c.hit('KeyX') && this.state === 'playing') {
       if (fireBottle(this.flight.damage, this.time)) this.audio.extinguisher();
       else this.hud.toast('NO ENGINE FIRE', '#ffc861');
     }
-    if (c.mouse.dx || c.mouse.dy) this.rig.orbit(c.mouse.dx, c.mouse.dy);
+    if (c.mouse.dx || c.mouse.dy) this.rig.orbit(c.mouse.dx, c.mouse.dy, this.lastDt);
     if (c.mouse.wheel) this.rig.zoom(c.mouse.wheel);
+    if (c.mouse.pinch !== 1) this.rig.pinch(c.mouse.pinch);
+    if (c.hit('Recentre')) this.rig.recentre();
   }
 
   // Advance the world by dt (fixed sub-steps for the flight model).
@@ -247,7 +275,7 @@ class Game {
       if (s.scooping && !this.wasScooping) this.stats.scoops++;
       this.wasScooping = s.scooping;
     }
-    for (const e of s.damage.events) { this.hud.alert(e.text, e.level); this.audio.caution(e.level); }
+    for (const e of s.damage.events) { this.hud.alert(this.controls.isTouch ? e.text.replace('PRESS X', 'TAP FIRE BOTTLE') : e.text, e.level); this.audio.caution(e.level); }
     s.damage.events.length = 0;
     this.engineFx.update(this.plane, s, dt);
 
@@ -296,7 +324,7 @@ class Game {
     this.cockpit.group.visible = this.cameraMode === 'cockpit';
     if (this.cockpit.group.visible) updateCockpit(this.cockpit, this, dt);
     this.rig.shake = Math.max(s.turbulence * 1.5, this.rig.shake * (1 - dt * 2));
-    this.rig.update(s, dt, this.controls.mouse.dragging);
+    this.rig.update(s, dt, this.controls.looking);
     this.focus = (this.focus || new THREE.Vector3()).set(0, 0, -1).applyQuaternion(this.camera.quaternion).setY(0).normalize().multiplyScalar(this.quality.shadowBox * 0.55).add(this.camera.position);
     this.focus.y = Math.max(terrainHeight(this.focus.x, this.focus.z), 0);
     this.sky.follow(this.camera.position, this.focus);
@@ -319,20 +347,26 @@ class Game {
   }
 
   frame(dt) {
+    this.lastDt = dt;
     this.autoQuality.sample(dt);
     this.handleKeys();
     if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
     this.waterSurface.renderReflection(this.renderer, this.scene, this.camera);
     this.post.render(this.scene, this.camera, SUN_DIR, this.time);
     this.hud.draw(this, dt);
-    this.controls.syncThrottle(this.flight.throttle);
+    this.controls.syncThrottle(this.flight.throttle, this.flight);
     this.controls.endFrame();
+    syncBodyState(this);
   }
 }
 
+if (params.has('shot')) document.body.classList.add('shot');
 await loadFonts();
 const game = new Game();
+await game.init(loadingProgress);
 window.__game = game;
+if (params.has('boottime')) console.info(`boot init done ${Math.round(performance.now())}`);
+hideLoading();
 const shot = params.get('shot');
 if (shot && SHOTS[shot]) {
   document.body.classList.add('shot');

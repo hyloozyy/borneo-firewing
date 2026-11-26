@@ -58,7 +58,7 @@ function onSide(g, side, t, phi, fn) {
 
 export function buildLiveryTexture() {
   const c = makeCanvas(W, H);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   const red = '#c8102e';
   const yOf = (phi) => (phi / (Math.PI * 2)) * H;
   g.fillStyle = '#f4f4f1';
@@ -179,7 +179,7 @@ export function buildLiveryTexture() {
 // Tail fin artwork: red fin with a white band and the big emblem.
 export function buildFinTexture() {
   const c = makeCanvas(512, 512);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   g.fillStyle = '#c8102e';
   g.fillRect(0, 0, 512, 512);
   g.fillStyle = '#f4f4f1';
@@ -214,7 +214,7 @@ function drawPanelLines(g, alpha) {
 export function buildHullDetailMaps() {
   const w = 1024, h = 512;
   const c = makeCanvas(w, h);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   g.fillStyle = '#808080';
   g.fillRect(0, 0, w, h);
   g.scale(w / W, h / H);

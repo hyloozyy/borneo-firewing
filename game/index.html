@@ -47,7 +47,7 @@
         <div><dt>W S</dt><dd>pitch</dd></div><div><dt>A D</dt><dd>roll</dd></div><div><dt>Q E</dt><dd>rudder</dd></div>
         <div><dt>R F</dt><dd>throttle</dd></div><div><dt>V</dt><dd>flaps</dd></div><div><dt>SPACE</dt><dd>drop water</dd></div>
         <div><dt>B</dt><dd>brakes</dd></div><div><dt>X</dt><dd>fire bottle</dd></div><div><dt>C</dt><dd>cockpit</dd></div>
-        <div><dt>MOUSE</dt><dd>look</dd></div><div><dt>P</dt><dd>pause</dd></div><div><dt>H</dt><dd>HUD</dd></div>
+        <div><dt>MOUSE</dt><dd>look</dd></div><div><dt>I</dt><dd>gauges</dd></div><div><dt>H</dt><dd>HUD</dd></div>
       </dl>
     </aside>
   </div>
@@ -87,7 +87,7 @@
     <h2>PAUSED</h2>
     <button id="btn-resume" class="primary">RESUME</button>
     <button id="btn-restart">RESTART MISSION</button>
-    <p class="hint">M sound · H HUD · C cockpit / chase · X engine fire bottle</p>
+    <p class="hint">M sound · H HUD · I gauges · C cockpit / chase · X engine fire bottle · P pause</p>
   </div>
 </section>
 
@@ -110,15 +110,65 @@
 </section>
 
 <div id="touch" hidden>
-  <div class="stick"><div class="knob"></div></div>
-  <div class="throttle"><i></i><span>THR</span></div>
-  <div class="buttons">
-    <button class="b-drop">DROP</button><button class="b-flaps">FLAPS</button><button class="b-brake">BRAKE</button>
-    <button class="b-cam">CAM</button><button class="b-tilt">TILT</button><button class="b-pause">II</button>
-    <button class="b-ext">FIRE X</button>
+  <div class="stick" aria-label="Flight stick"><div class="stick-base"><div class="knob"></div></div><span class="zone-label">PITCH · ROLL</span></div>
+  <div class="throttle" aria-label="Throttle"><span class="cap">THR</span><div class="track"><div class="fill"></div><i class="knob"></i></div><span class="value">0</span></div>
+  <div class="actions">
+    <button class="b-drop"><span>DROP</span><small>WATER</small></button>
+    <button class="b-flaps"><span>FLAPS</span><small>UP</small></button>
+    <button class="b-brake"><span>BRAKE</span></button>
+    <button class="b-ext"><span>FIRE</span><small>BOTTLE</small></button>
+  </div>
+  <div class="topbar">
+    <button class="b-cam" aria-label="Camera">CAM</button>
+    <button class="b-tilt" aria-label="Tilt steering">TILT</button>
+    <button class="b-hud" aria-label="HUD">HUD</button>
+    <button class="b-pause" aria-label="Pause">II</button>
+  </div>
+  <div class="look-hint">SWIPE TO LOOK · PINCH TO ZOOM</div>
+</div>
+
+<section id="howto" class="screen" hidden>
+  <div class="panel howto">
+    <p class="kicker"><i class="dot"></i>HOW TO PLAY ON A PHONE</p>
+    <h2>Fly with your thumbs</h2>
+    <div class="howto-grid">
+      <div class="hcard"><i class="ic ic-stick"></i><b>LEFT THUMB</b><span>Put it anywhere on the left side: a stick appears. Pull back to climb, push to dive, sideways to bank.</span></div>
+      <div class="hcard"><i class="ic ic-thr"></i><b>THROTTLE</b><span>Slide the bar on the right edge. Full power for take-off, about 60% to cruise, low to land.</span></div>
+      <div class="hcard"><i class="ic ic-drop"></i><b>DROP · FLAPS</b><span>Hold DROP over the target ring to release water. FLAPS for take-off, scooping and landing.</span></div>
+      <div class="hcard"><i class="ic ic-look"></i><b>LOOK AROUND</b><span>Swipe the free screen to orbit the camera, pinch to zoom, double tap to recentre. CAM switches to the cockpit.</span></div>
+    </div>
+    <p class="hint">Tip: TILT steers by tilting the phone. Play in landscape, full screen.</p>
+    <button id="btn-howto-go" class="primary">GOT IT · FLY</button>
+  </div>
+</section>
+
+<div id="rotate" hidden>
+  <div class="rot-card">
+    <div class="phone-ico"><i></i></div>
+    <h2>Turn your phone sideways</h2>
+    <p>BORNEO FIREWING is flown in landscape.</p>
+    <button id="btn-rotate-fs" class="primary">FULL SCREEN · LANDSCAPE</button>
+    <button id="btn-rotate-skip">CONTINUE IN PORTRAIT</button>
   </div>
 </div>
-<div id="rotate">Rotate your phone to landscape ↻</div>
+
+<div id="loading">
+  <div class="load-card">
+    <p class="kicker"><i class="dot"></i>KARHUTLA FIRE MISSION</p>
+    <h1 class="logo">BORNEO<span>FIREWING</span></h1>
+    <div class="load-track"><div id="load-bar"></div></div>
+    <p class="load-line"><span id="load-step">Loading</span><span id="load-pct">0%</span></p>
+  </div>
+</div>
+
+<div id="ctxlost" hidden>
+  <div class="panel small">
+    <p class="kicker">GRAPHICS RESET</p>
+    <h2>The phone ran short of graphics memory</h2>
+    <p class="hint">Reload in the light graphics mode and continue the stage you were flying.</p>
+    <button class="primary">RELOAD</button>
+  </div>
+</div>
 
 <script type="module" src="./src/main.js"></script>
 </body>

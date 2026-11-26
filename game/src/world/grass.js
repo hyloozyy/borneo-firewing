@@ -9,7 +9,7 @@ import { treeUniforms } from './trees/tree-materials.js';
 
 function grassTexture() {
   const c = makeCanvas(256, 256);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   const rnd = painterRandom(77);
   for (let i = 0; i < 110; i++) {
     const x = 20 + rnd() * 216, h = 120 + rnd() * 130, lean = (rnd() - 0.5) * 90, w = 2 + rnd() * 4;

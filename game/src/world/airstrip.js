@@ -10,7 +10,7 @@ import { PLACES } from './terrain.js';
 function runwayTexture(lengthM) {
   const W = 384, H = 3072;
   const c = makeCanvas(W, H);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   const img = g.createImageData(W, H);
   const d = img.data;
   for (let y = 0; y < H; y++) {
@@ -67,7 +67,7 @@ function runwayTexture(lengthM) {
 // Laterite and trampled grass verge around the runway, fading out into the terrain at its edge.
 function vergeTexture() {
   const c = makeCanvas(256, 512);
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   const img = g.createImageData(256, 512);
   for (let y = 0; y < 512; y++) {
     for (let x = 0; x < 256; x++) {

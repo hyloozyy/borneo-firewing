@@ -1,4 +1,6 @@
 // Title, briefing, pause and mission report screens (DOM overlays).
+import { withHowTo } from './phone.js';
+
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
@@ -14,13 +16,13 @@ const visible = (id) => !$(id).hidden;
 
 export function bindScreens(game) {
   $('btn-start').onclick = () => { game.audio.unlock(); showScreen('briefing'); };
-  $('btn-brief-go').onclick = () => { game.audio.unlock(); game.startMission(0); };
+  $('btn-brief-go').onclick = () => { game.audio.unlock(); withHowTo(game, () => game.startMission(0)); };
   $('btn-resume').onclick = () => game.setPaused(false);
   $('btn-restart').onclick = () => game.startMission(0);
   $('btn-again').onclick = () => game.startMission(0);
   $('btn-retry-stage').onclick = () => game.startMission(game.mission.index);
   $('btn-menu').onclick = () => location.reload();
-  for (const b of document.querySelectorAll('[data-stage]')) b.onclick = () => { game.audio.unlock(); game.startMission(Number(b.dataset.stage)); };
+  for (const b of document.querySelectorAll('[data-stage]')) b.onclick = () => { game.audio.unlock(); withHowTo(game, () => game.startMission(Number(b.dataset.stage))); };
   addEventListener('keydown', (e) => {
     if (e.code !== 'Enter') return;
     if (visible('title')) $('btn-start').click();
