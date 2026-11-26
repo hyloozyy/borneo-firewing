@@ -93,6 +93,25 @@ export class TreeMeshBuilder {
     this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
 
+  // Same as card() but each corner's normal comes from normalAt(corner) (clump + crown blend).
+  cardN(p, facing, spin, w, h, rect, normalAt, ao, sw, flip = false) {
+    const f = facing;
+    const up0 = Math.abs(f.y) > 0.95 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+    const right = new THREE.Vector3().crossVectors(up0, f).normalize();
+    const up = new THREE.Vector3().crossVectors(f, right).normalize();
+    right.applyAxisAngle(f, spin); up.applyAxisAngle(f, spin);
+    const base = this.count;
+    const [ua, va, ub, vb] = rect;
+    const q = new THREE.Vector3();
+    for (const [cx, cy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      q.copy(p).addScaledVector(right, cx * w * 0.5).addScaledVector(up, cy * h * 0.5);
+      const n = normalAt(q).clone().multiplyScalar(0.85).addScaledVector(f, 0.15).normalize();
+      const u = flip ? (cx < 0 ? ub : ua) : (cx < 0 ? ua : ub);
+      this.vertex(q, n, u, cy < 0 ? vb : va, [ao, ao, ao], sw);
+    }
+    this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
   // A drooping palm/fern frond from `base` along heading `yaw`, rising at `pitch`, folded in a V.
   frond(base, yaw, pitch, length, width, droop, rect, sw, segs = 7, fold = 0.35) {
     const [ua, va, ub, vb] = rect;

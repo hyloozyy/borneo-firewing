@@ -117,7 +117,7 @@ export function buildLiveryTexture() {
     // FIRE FIGHTER titles with slash marks
     onSide(g, side, side === 'right' ? 0.84 : 0.52, 0.3 * Math.PI, (gg) => {
       gg.fillStyle = '#121a2c';
-      gg.font = 'italic 900 84px Arial, sans-serif';
+      gg.font = 'italic 900 92px "Saira Condensed", Arial, sans-serif';
       gg.textAlign = 'left';
       gg.textBaseline = 'middle';
       gg.fillStyle = red;
@@ -140,7 +140,7 @@ export function buildLiveryTexture() {
     // Nose number 218 in white on the red
     onSide(g, side, 0.115, 0.43 * Math.PI, (gg) => {
       gg.fillStyle = '#ffffff';
-      gg.font = '900 58px Arial, sans-serif';
+      gg.font = '900 66px "Saira Condensed", Arial, sans-serif';
       gg.textAlign = 'center';
       gg.textBaseline = 'middle';
       gg.fillText('218', 0, 0);
@@ -159,8 +159,8 @@ export function buildLiveryTexture() {
     });
   }
   // Small registration under the tail
-  onSide(g, 'left', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = 'bold 26px Arial'; gg.fillText('PK-FWE', 0, 0); });
-  onSide(g, 'right', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = 'bold 26px Arial'; gg.fillText('PK-FWE', -120, 0); });
+  onSide(g, 'left', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = '700 26px B612, Arial'; gg.fillText('PK-FWE', 0, 0); });
+  onSide(g, 'right', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = '700 26px B612, Arial'; gg.fillText('PK-FWE', -120, 0); });
 
   drawPanelLines(g, 0.16);
   // Soft grime along the waterline and exhaust staining, so the paint looks used.

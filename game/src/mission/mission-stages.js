@@ -8,8 +8,8 @@ const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
 export const STAGES = [
   {
     id: 'takeoff',
-    title: 'TAHAP 1 · TAKE-OFF & PATROL',
-    subtitle: 'Lepas landas dari landasan hutan dan lewati 3 cincin patroli di atas sungai.',
+    title: 'STAGE 1 · TAKE-OFF & PATROL',
+    subtitle: 'Take off from the jungle strip and fly through 3 patrol rings along the river.',
     radio: [
       'POSKO DAMKAR: Enggang 218, titik api besar terpantau di utara. Mesin hidup, flaps 1, lepas landas landasan 36.',
       'POSKO DAMKAR: Ikuti sungai ke utara, lewati cincin patroli.',
@@ -33,53 +33,53 @@ export const STAGES = [
         game.events.ring();
         ring.visible = false;
         d.index++;
-        game.addScore(150, 'Cincin patroli');
+        game.addScore(150, 'PATROL RING');
       }
       return d.index >= d.rings.length ? 'pass' : null;
     },
     objective(game) {
       const d = game.stageData;
       const ring = d.rings[d.index];
-      return ring ? { pos: ring.position, label: `CINCIN ${d.index + 1}/3` } : null;
+      return ring ? { pos: ring.position, label: `RING ${d.index + 1}/3` } : null;
     },
     checklist(game) {
       const s = game.flight, d = game.stageData;
       return [
-        [s.rpm > 0.3, 'Mesin hidup (R = gas)'],
+        [s.rpm > 0.3, 'Engines running (R throttle)'],
         [s.flaps > 0.2 || !s.onGround, 'Flaps 1 (V)'],
-        [!s.onGround, 'Rotate ±75 kt, tarik (S)'],
-        [d.index >= 3, `Cincin patroli ${Math.min(3, d.index)}/3`],
+        [!s.onGround, 'Rotate at 75 kt (S)'],
+        [d.index >= 3, `Patrol rings ${Math.min(3, d.index)}/3`],
       ];
     },
     exit(game) { for (const r of game.stageData.rings) game.scene.remove(r); },
   },
   {
     id: 'scoop',
-    title: 'TAHAP 2 · FIRST SCOOP',
-    subtitle: 'Terbang ke danau, sentuh air pelan (60–115 kt) dan isi tangki air.',
+    title: 'STAGE 2 · FIRST SCOOP',
+    subtitle: 'Fly to the lake, touch down gently at 60–115 kt and fill the tank.',
     radio: ['POSKO DAMKAR: Isi air di danau barat. Turun landai, kecepatan di bawah 115 knot, jangan menukik!'],
     enter(game) { game.stageData.min = 0.8; },
     update(game) {
       return game.flight.water >= game.flight.waterMax * game.stageData.min && !game.flight.onWater ? 'pass' : null;
     },
     objective(game) {
-      return { pos: v3(PLACES.lake.x + 250, 0, PLACES.lake.z), label: 'DANAU' };
+      return { pos: v3(PLACES.lake.x + 250, 0, PLACES.lake.z), label: 'LAKE' };
     },
     checklist(game) {
       const s = game.flight;
       const pct = Math.round((100 * s.water) / s.waterMax);
       return [
-        [s.position.distanceTo(v3(PLACES.lake.x, 0, PLACES.lake.z)) < 900, 'Menuju danau'],
-        [s.onWater || s.water > 0, 'Sentuh air (VS > -6 m/s)'],
-        [pct >= 80, `Tangki air ${pct}% / 80%`],
-        [pct >= 80 && !s.onWater, 'Naik kembali'],
+        [s.position.distanceTo(v3(PLACES.lake.x, 0, PLACES.lake.z)) < 900, 'Head for the lake'],
+        [s.onWater || s.water > 0, 'Touch the water gently'],
+        [pct >= 80, `Water tank ${pct}% / 80%`],
+        [pct >= 80 && !s.onWater, 'Climb away'],
       ];
     },
   },
   {
     id: 'attack',
-    title: 'TAHAP 3 · FIRE ATTACK',
-    subtitle: 'Lewati cincin target di atas api lalu jatuhkan air (SPACE). Isi ulang dan ulangi.',
+    title: 'STAGE 3 · FIRE ATTACK',
+    subtitle: 'Fly through the target ring over the fire and drop (SPACE). Refill and repeat.',
     radio: ['POSKO DAMKAR: Api menyebar ke arah angin! Lewati cincin target, buka pintu air tepat di atasnya.'],
     enter(game) {
       const d = game.stageData;
@@ -95,7 +95,7 @@ export const STAGES = [
       if (passedRing(d.ring, game.prevPos, game.flight.position)) {
         game.events.ring();
         game.dropWindow = 2.5;
-        game.addScore(100, 'Masuk cincin target');
+        game.addScore(100, 'TARGET RING');
       }
       if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
       const ratio = game.fire.totalHeat() / d.startHeat;
@@ -104,25 +104,25 @@ export const STAGES = [
     },
     objective(game) {
       const d = game.stageData;
-      if (game.flight.water < 600) return { pos: v3(PLACES.lake.x + 250, 0, PLACES.lake.z), label: 'ISI AIR' };
-      return { pos: d.ring.position, label: 'CINCIN TARGET' };
+      if (game.flight.water < 600) return { pos: v3(PLACES.lake.x + 250, 0, PLACES.lake.z), label: 'REFILL' };
+      return { pos: d.ring.position, label: 'TARGET RING' };
     },
     checklist(game) {
       const d = game.stageData, s = game.flight;
       const out = Math.max(0, Math.round((1 - (d.ratio ?? 1)) * 100));
       return [
-        [s.water > 600, `Air di tangki ${Math.round((100 * s.water) / s.waterMax)}%`],
-        [game.dropWindow > 0, 'Masuk cincin target'],
-        [d.drops > 0, `Jatuhkan air (SPACE) · ${d.drops}x`],
-        [out >= 55, `Api utama padam ${Math.min(100, out)}% / 55%`],
+        [s.water > 600, `Water on board ${Math.round((100 * s.water) / s.waterMax)}%`],
+        [game.dropWindow > 0, 'Through the target ring'],
+        [d.drops > 0, `Drops (SPACE) ${d.drops}`],
+        [out >= 55, `Main fire out ${Math.min(100, out)}% / 55%`],
       ];
     },
     exit(game) { game.scene.remove(game.stageData.ring); },
   },
   {
     id: 'village',
-    title: 'TAHAP 4 · SAVE THE VILLAGE',
-    subtitle: 'Angin berbalik! Api mengejar desa panggung. Padamkan api dekat desa sebelum waktu habis.',
+    title: 'STAGE 4 · SAVE THE VILLAGE',
+    subtitle: 'Wind shift! The fire races toward the stilt village. Lay a wet line before time runs out.',
     radio: ['POSKO DAMKAR: DARURAT! Angin berbalik ke timur, api bergerak ke desa. Buat garis basah di depan desa!'],
     enter(game) {
       const d = game.stageData;
@@ -141,7 +141,7 @@ export const STAGES = [
     update(game, dt) {
       const d = game.stageData;
       d.timer -= dt;
-      if (passedRing(d.ring, game.prevPos, game.flight.position)) { game.events.ring(); game.dropWindow = 2.5; game.addScore(120, 'Cincin desa'); }
+      if (passedRing(d.ring, game.prevPos, game.flight.position)) { game.events.ring(); game.dropWindow = 2.5; game.addScore(120, 'VILLAGE RING'); }
       if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
       d.threat = villageThreat(game);
       if (d.threat.near === 0 && d.drops > 0) return 'pass';
@@ -151,25 +151,25 @@ export const STAGES = [
     },
     objective(game) {
       const d = game.stageData;
-      if (game.flight.water < 600) return { pos: v3(PLACES.lake.x + 250, 0, PLACES.lake.z), label: 'ISI AIR' };
-      return { pos: d.ring.position, label: 'LINDUNGI DESA' };
+      if (game.flight.water < 600) return { pos: v3(PLACES.lake.x + 250, 0, PLACES.lake.z), label: 'REFILL' };
+      return { pos: d.ring.position, label: 'PROTECT VILLAGE' };
     },
     checklist(game) {
       const d = game.stageData;
       const t = d.threat || { near: 0, closest: 999 };
       return [
-        [false, `Waktu ${Math.max(0, Math.ceil(d.timer))} dtk`],
-        [d.drops > 0, `Garis basah di depan desa · ${d.drops}x`],
-        [t.near === 0, `Titik api < 350 m dari desa: ${t.near}`],
-        [t.closest > 200, `Jarak api terdekat ${Math.round(t.closest)} m`],
+        [false, `Time left ${Math.max(0, Math.ceil(d.timer))} s`],
+        [d.drops > 0, `Wet line drops ${d.drops}`],
+        [t.near === 0, `Fires within 350 m: ${t.near}`],
+        [t.closest > 200, `Nearest fire ${Math.round(t.closest)} m`],
       ];
     },
     exit(game) { game.scene.remove(game.stageData.ring); game.fire.target = null; game.fire.spreadRate = 0.45; },
   },
   {
     id: 'land',
-    title: 'TAHAP 5 · RETURN & LAND',
-    subtitle: 'Bahan bakar menipis. Kembali dan mendarat di landasan 36, ikuti lampu PAPI.',
+    title: 'STAGE 5 · RETURN & LAND',
+    subtitle: 'Fuel is low. Return and land on runway 36, follow the PAPI lights.',
     radio: ['POSKO DAMKAR: Kerja bagus, Enggang 218! BBM menipis, kembali ke landasan 36. Angin tenang.'],
     enter(game) {
       game.flight.fuel = Math.min(game.flight.fuel, 900);
@@ -183,22 +183,22 @@ export const STAGES = [
     },
     update(game) {
       const s = game.flight, d = game.stageData;
-      if (!d.gate && passedRing(d.ring, game.prevPos, s.position)) { d.gate = true; game.events.ring(); game.addScore(150, 'Gerbang final approach'); }
+      if (!d.gate && passedRing(d.ring, game.prevPos, s.position)) { d.gate = true; game.events.ring(); game.addScore(150, 'APPROACH GATE'); }
       if (s.onGround && !s.onWater && s.velocity.length() < 3) return 'pass';
       return null;
     },
     objective(game) {
       const r = PLACES.runway, d = game.stageData;
       if (!d.gate) return { pos: d.ring.position, label: 'FINAL APPROACH' };
-      return { pos: v3(r.x, r.h, r.z + r.length / 2 - 200), label: 'LANDASAN 36' };
+      return { pos: v3(r.x, r.h, r.z + r.length / 2 - 200), label: 'RUNWAY 36' };
     },
     checklist(game) {
       const s = game.flight, d = game.stageData;
       return [
-        [d.gate, 'Gerbang approach (cincin hijau)'],
-        [s.flaps > 0.6, 'Flaps penuh (V)'],
-        [!!(s.lastTouchdown && !s.lastTouchdown.water && s.onGround), 'Touchdown halus (VS > -2.5 m/s)'],
-        [s.onGround && s.velocity.length() < 3, 'Berhenti (B = rem)'],
+        [d.gate, 'Approach gate (green ring)'],
+        [s.flaps > 0.6, 'Flaps full (V)'],
+        [!!(s.lastTouchdown && !s.lastTouchdown.water && s.onGround), 'Smooth touchdown'],
+        [s.onGround && s.velocity.length() < 3, 'Stop (B brakes)'],
       ];
     },
     exit(game) { game.scene.remove(game.stageData.ring); },

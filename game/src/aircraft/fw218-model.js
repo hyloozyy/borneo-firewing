@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { buildLiveryTexture, buildFinTexture, buildHullDetailMaps } from './livery-texture.js';
 import { glowTexture } from '../core/canvas-textures.js';
 import { planarUV } from '../core/geometry-utils.js';
+import { latheZ, profileOf, bladeGeometry, strutGeometry, plateYZ } from './fw218-parts.js';
 
 const RED = 0xc8102e;
 const WHITE = 0xf2f2ee;
@@ -130,9 +131,21 @@ export function buildFW218() {
   canopy.scale.set(0.9, 0.18, 0.9);
   parts.canopy = canopy;
   // Wing root fairing / pylon on top of the hull
-  const pylon = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.7, 4.2), white);
-  pylon.position.set(0, 1.85, -1.6);
+  const pylon = new THREE.Mesh(latheZ(profileOf(-4.1, 1.2, 16, (t) => Math.pow(Math.sin(Math.PI * Math.pow(t, 0.75)), 0.7)), { sx: 0.7, sy: 0.62 }), white);
+  pylon.position.set(0, 1.62, 0);
   model.add(pylon);
+  // Spray rails along the lower nose (the chine that throws the bow wave sideways).
+  for (const side of [-1, 1]) {
+    const pts = [];
+    for (let i = 0; i <= 12; i++) {
+      const t = 0.03 + (i / 12) * 0.47;
+      const { w, top, bot } = hullSection(t);
+      const waist = bot + (top - bot) * 0.48;
+      pts.push(new THREE.Vector3(side * (w * 0.99 + 0.02), waist - 0.12, NOSE_Z + (TAIL_Z - NOSE_Z) * t));
+    }
+    const rail = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.045, 5), paint(0x9e0c22, { roughness: 0.5 }));
+    model.add(rail);
+  }
 
   // Wing: centre + two outer panels, at the top of the pylon.
   const wingY = 2.2, wingLE = -3.6, chord = 3.4, halfSpan = 14.2;
@@ -169,6 +182,15 @@ export function buildFW218() {
     parts.ailerons.push(ah);
   }
 
+  // Flap-track fairings under the trailing edge.
+  for (const side of [-1, 1]) {
+    for (const x of [1.9, 7.4, 9.6, 12.6]) {
+      const ft = new THREE.Mesh(latheZ(profileOf(-0.9, 1.0, 8, (t) => Math.sin(Math.PI * Math.pow(t, 0.6)) * 0.13), { segments: 10, sy: 1.3 }), grey);
+      ft.position.set(side * x, wingY - 0.12, te - 0.2);
+      model.add(ft);
+    }
+  }
+
   // Engine nacelles on the wing with spinners and 4-blade propellers.
   parts.props = [];
   parts.discs = [];
@@ -189,42 +211,54 @@ export function buildFW218() {
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
   })();
+  const bladeGeo = bladeGeometry(0.3, 2.2, { chord: 0.36 }), tipGeo = bladeGeometry(0.3, 2.2, { chord: 0.36, thick: 0.058, from: 0.9 });
+  const bladeMat = std(0x2b2d30, { roughness: 0.5, metalness: 0.3 }), tipMat = std(0xf0c419, { roughness: 0.45 });
   for (const side of [-1, 1]) {
     const nac = new THREE.Group();
     nac.position.set(side * nacX, wingY + 0.12, 0);
     model.add(nac);
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.74, 4.4, 6, 16), red);
-    body.rotation.x = Math.PI / 2;
-    body.scale.set(1, 1, 1.15);
-    body.position.z = -1.9;
+    // Cowling: intake lip behind the spinner, full cowl, long tail cone past the trailing edge.
+    const cowl = (t) => t < 0.1 ? 0.45 + 0.37 * Math.sin((t / 0.1) * Math.PI / 2) : t < 0.55 ? 0.82 + 0.05 * Math.sin(((t - 0.1) / 0.45) * Math.PI) : Math.max(0.12, 0.82 * Math.pow(Math.cos(((t - 0.55) / 0.45) * Math.PI / 2), 0.8));
+    const body = new THREE.Mesh(latheZ(profileOf(-5.15, 2.6, 30, cowl), { segments: 28, sy: 1.14 }), red);
     body.castShadow = true;
     nac.add(body);
-    const intake = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 1.2), dark);
-    intake.position.set(0, -0.62, -4.3);
+    // Cowl panel seams and the dark chin intake under the spinner.
+    for (const z of [-4.2, -2.6]) {
+      const seam = new THREE.Mesh(new THREE.TorusGeometry(0.86, 0.012, 4, 40), dark);
+      seam.scale.set(1, 1.14, 1);
+      seam.position.z = z;
+      nac.add(seam);
+    }
+    const intake = new THREE.Mesh(latheZ(profileOf(-4.9, -3.1, 10, (t) => Math.sin(Math.PI * Math.pow(t, 0.5)) * 0.34), { segments: 14, sy: 0.55 }), dark);
+    intake.position.set(0, -0.74, 0);
     nac.add(intake);
-    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.9, 8), dark);
-    exhaust.rotation.z = Math.PI / 2;
-    exhaust.position.set(side * 0.62, 0.05, -2.4);
+    const intakeMouth = new THREE.Mesh(new THREE.CircleGeometry(0.3, 16), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+    intakeMouth.scale.set(1, 0.5, 1);
+    intakeMouth.position.set(0, -0.74, -4.82);
+    intakeMouth.rotation.y = Math.PI;
+    nac.add(intakeMouth);
+    // Exhaust stub on the outboard side, angled back, with soot behind it.
+    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.8, 12, 1, true), dark);
+    exhaust.rotation.set(Math.PI / 2 - 0.5, 0, side * 0.5);
+    exhaust.position.set(side * 0.78, 0.12, -2.2);
     nac.add(exhaust);
+    const soot = new THREE.Mesh(latheZ(profileOf(-2.0, 0.6, 8, (t) => Math.sin(Math.PI * Math.pow(t, 0.4)) * 0.16), { segments: 10, sx: 0.4 }), std(0x2a2522, { roughness: 0.9 }));
+    soot.position.set(side * 0.8, 0.12, 0);
+    nac.add(soot);
     const badge = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), white);
     badge.position.set(side * 0.64, 0.25, -3.4);
     badge.rotation.y = side * Math.PI / 2;
     nac.add(badge);
-    const spinner = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.0, 18), chrome);
-    spinner.rotation.x = -Math.PI / 2;
-    spinner.position.z = -5.65;
+    const spinner = new THREE.Mesh(latheZ(profileOf(-6.25, -5.12, 14, (t) => 0.45 * Math.pow(Math.sin((t * Math.PI) / 2), 0.55)), { segments: 28 }), chrome);
     nac.add(spinner);
     const prop = new THREE.Group();
     prop.position.z = -5.4;
     for (let b = 0; b < 4; b++) {
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.28, 2.05, 0.05), dark);
-      blade.position.y = 1.15;
-      const tipM = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.06), std(0xf0c419));
-      tipM.position.y = 2.1;
+      const blade = new THREE.Mesh(bladeGeo, bladeMat);
+      const tipM = new THREE.Mesh(tipGeo, tipMat);
       const arm = new THREE.Group();
       arm.add(blade, tipM);
-      arm.rotation.z = (b * Math.PI) / 2;
-      blade.rotation.y = 0.35;
+      arm.rotation.z = (b * Math.PI) / 2 + 0.4;
       prop.add(arm);
     }
     nac.add(prop);
@@ -241,15 +275,15 @@ export function buildFW218() {
     const floatBody = new THREE.Group();
     floatBody.position.set(fx, wingY - 2.6, wingLE + 1.6);
     model.add(floatBody);
-    const lower = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), red);
-    lower.scale.set(0.55, 0.45, 2.1);
+    // Float hull: pointed bow, flat run, tapering stern; red with a white top band.
+    const fl = (t) => t < 0.3 ? Math.pow(Math.sin((t / 0.3) * Math.PI / 2), 0.65) : t < 0.6 ? 1 : Math.max(0.1, Math.cos(((t - 0.6) / 0.4) * Math.PI / 2));
+    const lower = new THREE.Mesh(latheZ(profileOf(-2.3, 2.2, 22, fl), { segments: 22, sx: 0.56, sy: 0.46 }), red);
     floatBody.add(lower);
-    const upper = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), white);
-    upper.scale.set(0.55, 0.35, 2.1);
+    const upper = new THREE.Mesh(latheZ(profileOf(-2.3, 2.2, 22, (t) => fl(t) * 1.012), { segments: 14, sx: 0.56, sy: 0.46, phiStart: Math.PI - 1.15, phiLength: 2.3 }), white);
     floatBody.add(upper);
-    const strut = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.5, 1.5), red);
-    strut.position.set(fx, wingY - 1.3, wingLE + 1.8);
-    strut.rotation.x = -0.15;
+    const strut = new THREE.Mesh(strutGeometry(1.6, 0.16, 2.35, 0.82), red);
+    strut.position.set(fx, wingY - 2.35, wingLE + 0.85);
+    strut.rotation.z = side * 0.06;
     model.add(strut);
   }
 
@@ -265,14 +299,25 @@ export function buildFW218() {
   fin.castShadow = true;
   model.add(fin);
   const rudderH = hinge(model, 0, 1.4, 9.35);
-  const rudder = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5.3, 1.0), red);
-  rudder.position.set(0, 2.75, 0.5);
+  const rudder = new THREE.Mesh(plateYZ([[0, 0.1], [1.05, 0.1], [0.82, 5.2], [0, 5.42]], 0.14, 0.04), red);
   rudderH.add(rudder);
+  // Dorsal fillet blending the fin into the hull top.
+  const fillet = new THREE.Mesh(plateYZ([[3.0, 1.5], [6.0, 1.5], [6.0, 2.7]], 0.16, 0.05), white);
+  model.add(fillet);
+  // Tail cone with the white tail light.
+  const tailLight = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  tailLight.position.set(0, 1.55, TAIL_Z + 0.05);
+  model.add(tailLight);
   parts.rudder = rudderH;
   const stabY = 4.6;
   const stab = new THREE.Mesh(wingPanel(2.0, 0.12, 10), white);
   stab.position.set(-5, stabY, 7.6);
   model.add(stab);
+  for (const side of [-1, 1]) {
+    const cap = new THREE.Mesh(latheZ(profileOf(-0.05, 2.0, 10, (t) => Math.sin(Math.PI * Math.pow(t, 0.5)) * 0.14), { segments: 10, sy: 0.7 }), red);
+    cap.position.set(side * 5.02, stabY + 0.05, 7.6);
+    model.add(cap);
+  }
   const elevH = hinge(model, 0, stabY, 9.6);
   const elev = new THREE.Mesh(wingPanel(0.75, 0.1, 9.6), red);
   elev.position.set(-4.8, 0, 0);
@@ -308,10 +353,34 @@ export function buildFW218() {
   parts.strobes = [strobeTail];
   parts.beacon = beacon;
 
-  // Pitot, antennas, step
-  const ant = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.3), dark);
-  ant.position.set(0, 1.55, 4.5);
-  model.add(ant);
+  // Pitot tubes, blade antennas, whip antenna and static wicks.
+  for (const side of [-1, 1]) {
+    const pitot = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.7, 6), chrome);
+    pitot.rotation.x = Math.PI / 2;
+    pitot.position.set(side * 0.95, 0.75, -8.6);
+    model.add(pitot);
+  }
+  for (const [z, h] of [[-4.6, 0.55], [3.2, 0.45]]) {
+    const ant = new THREE.Mesh(plateYZ([[0, 0], [0.42, 0], [0.32, h], [0.22, h]], 0.04, 0.012), dark);
+    ant.position.set(0, hullSection((z - NOSE_Z) / (TAIL_Z - NOSE_Z)).top - 0.04, z);
+    model.add(ant);
+  }
+  const whip = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 0.9, 5), dark);
+  whip.position.set(0.3, -1.1, 3.2);
+  whip.rotation.x = 0.5;
+  model.add(whip);
+  const wick = new THREE.CylinderGeometry(0.008, 0.008, 0.32, 4);
+  wick.rotateX(Math.PI / 2 - 0.2);
+  for (const side of [-1, 1]) {
+    for (const x of [11.5, 12.8, 13.8]) {
+      const w = new THREE.Mesh(wick, dark);
+      w.position.set(side * x, wingY - 0.02, te + chord * 0.22 + 0.12);
+      model.add(w);
+    }
+    const w2 = new THREE.Mesh(wick, dark);
+    w2.position.set(side * 4.4, stabY, 9.6 + 0.75 + 0.12);
+    model.add(w2);
+  }
 
   root.userData.parts = parts;
   root.traverse((o) => { if (o.isMesh && o !== parts.discs[0] && o !== parts.discs[1]) o.castShadow = true; });

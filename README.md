@@ -48,6 +48,12 @@ Plain static files in `game/` with no build step and no network requests. Three.
 `game/vendor/three.module.min.js`. Everything else was written for this game: the aircraft is modelled in code
 (`game/src/aircraft`), its livery is painted on canvases, and every sound is synthesised with Web Audio.
 
+The rainforest covers the whole island, hills included: every tree grows from a branching skeleton
+(trunk, buttress roots, scaffold limbs that fork two or three times, a leaf clump on every twig) in ten
+variants (emergent dipterocarps, canopy and sub-canopy trees, light-green pioneers, palms, shrubs and ferns).
+Trees near the camera are full models, further out a lighter model of the same tree, and beyond that an
+impostor card baked at start-up from that tree in eight directions (colour and normals) and lit in the shader.
+
 ```
 game/src/aircraft   FW-218 model and livery
 game/src/flight     flight physics (lift, stall, drag, water load, ground and water contact)
@@ -59,7 +65,7 @@ game/src/cockpit    cockpit interior and lit instrument panel
 game/src/camera     chase and cockpit cameras
 game/src/audio      synthesised sound
 game/src/input      keyboard, mouse and touch controls
-game/src/ui         title, briefing, pause and result screens
+game/src/ui         title, briefing, pause and result screens, bundled fonts
 game/src/shots      staged scenes for the screenshots (?shot=cover|cockpit|scoop|landing)
 ```
 
@@ -67,4 +73,6 @@ Run it locally with `node serve.ts` (Node 22) and open http://localhost:8080.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The bundled fonts in `game/fonts/` (Saira Condensed, Saira Stencil One,
+B612, B612 Mono, Barlow, from the google/fonts repository) are under the SIL Open Font License 1.1;
+their licence texts are next to them (`OFL-*.txt`).

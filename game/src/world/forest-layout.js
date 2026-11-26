@@ -6,7 +6,7 @@ import { smoothstep } from '../core/noise.js';
 export function forestMask(x, z, h = terrainHeight(x, z)) {
   if (h < 3.2) return 0;
   if (isOnRunway(x, z, 105)) return 0;
-  let m = smoothstep(3.2, 7, h) * (1 - smoothstep(380, 560, h));
+  let m = smoothstep(3.2, 7, h) * (1 - smoothstep(760, 980, h));
   m *= smoothstep(150, 200, Math.hypot(x - PLACES.village.x, z - PLACES.village.z));
   m *= smoothstep(34, 60, riverDistance(x, z));
   // Approach lanes off both runway ends are kept clear.

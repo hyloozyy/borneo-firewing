@@ -29,6 +29,7 @@ import { installAtmosphereFog } from './render/atmosphere-fog.js';
 import { PostPipeline } from './render/post-pipeline.js';
 import { AutoQuality } from './render/auto-quality.js';
 import { BurnMap } from './fire/burn-map.js';
+import { loadFonts } from './ui/fonts.js';
 import { buildGroundTextures } from './textures/ground-textures.js';
 
 const params = new URLSearchParams(location.search);
@@ -59,7 +60,7 @@ class Game {
     this.water = null;
     this.waterSurface = buildWater(this.quality);
     this.scene.add(this.waterSurface.mesh);
-    this.forest = buildForest(this.scene, this.quality);
+    this.forest = buildForest(this.scene, this.quality, renderer);
     this.grass = buildGrass(this.scene, this.quality.grass);
     this.village = buildVillage(this.scene);
     this.airstrip = buildAirstrip(this.scene);
@@ -247,7 +248,7 @@ class Game {
     if (s.lastTouchdown && s.lastTouchdown !== this.seenTouchdown) {
       this.seenTouchdown = s.lastTouchdown;
       const td = s.lastTouchdown;
-      if (td.bounce) this.hud.toast('BOUNCE! Terlalu cepat/curam', '#ff7a5a');
+      if (td.bounce) this.hud.toast('BOUNCE · TOO FAST OR STEEP', '#ff7a5a');
       else this.hud.toast(`TOUCHDOWN ${Math.round(td.vs * 196.85)} FPM · ${landingRating(td)}`, td.vs > -2.5 ? '#9dffb0' : '#ffc861');
     }
 
@@ -300,6 +301,7 @@ class Game {
   }
 }
 
+await loadFonts();
 const game = new Game();
 window.__game = game;
 const shot = params.get('shot');
@@ -307,6 +309,18 @@ if (shot && SHOTS[shot]) {
   document.body.classList.add('shot');
   hideScreens();
   runShot(game, shot);
+  // Optional free camera for inspection shots: &cam=x,y,z&look=x,y,z
+  if (params.get('cam')) {
+    const [cx, cy, cz] = params.get('cam').split(',').map(Number);
+    const [lx, ly, lz] = (params.get('look') || '0,0,0').split(',').map(Number);
+    game.camera.position.set(cx, cy, cz);
+    game.camera.up.set(0, 1, 0);
+    game.camera.lookAt(lx, ly, lz);
+    game.camera.updateMatrixWorld();
+    game.forest.update(game.camera, game.time, SUN_DIR);
+    game.sky.follow(game.camera.position, new THREE.Vector3(lx, Math.max(0, ly), lz));
+    if (params.get('nohud')) game.showHud = false;
+  }
   game.waterSurface.renderReflection(game.renderer, game.scene, game.camera);
   game.post.render(game.scene, game.camera, SUN_DIR, game.time);
   game.hud.draw(game, 0);

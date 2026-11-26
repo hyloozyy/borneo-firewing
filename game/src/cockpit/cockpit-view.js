@@ -98,7 +98,7 @@ function dial(g, x, y, r, label) {
   g.fillStyle = grad;
   g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
   g.strokeStyle = '#6b7178'; g.lineWidth = 4; g.stroke();
-  g.fillStyle = '#d8f5ff'; g.font = 'bold 13px Arial'; g.textAlign = 'center';
+  g.fillStyle = '#d8f5ff'; g.font = '700 13px B612, Arial'; g.textAlign = 'center';
   g.fillText(label, x, y + r * 0.55);
 }
 
@@ -151,11 +151,11 @@ function drawPanel(g, s) {
   const ft = Math.max(0, s.position.y * 3.281);
   needle(g, 470, 120, r * 0.7, (ft / 10000) * Math.PI * 2, '#9cf');
   needle(g, 470, 120, r, ((ft % 1000) / 1000) * Math.PI * 2);
-  g.fillStyle = '#fff'; g.font = 'bold 16px monospace'; g.fillText(String(Math.round(ft)), 470, 100);
+  g.fillStyle = '#fff'; g.font = '700 16px "B612 Mono", monospace'; g.fillText(String(Math.round(ft)), 470, 100);
   // Heading (compass card)
   dial(g, 650, 120, r, 'HDG');
   g.save(); g.translate(650, 120); g.rotate(-s.heading * Math.PI / 180);
-  g.fillStyle = '#fff'; g.font = 'bold 14px Arial'; g.textAlign = 'center';
+  g.fillStyle = '#fff'; g.font = '700 14px B612, Arial'; g.textAlign = 'center';
   ['N', 'E', 'S', 'W'].forEach((l, i) => { g.save(); g.rotate(i * Math.PI / 2); g.fillText(l, 0, -r * 0.62); g.restore(); });
   g.restore();
   g.fillStyle = '#ffc020'; g.beginPath(); g.moveTo(650, 55); g.lineTo(642, 70); g.lineTo(658, 70); g.fill();
@@ -173,13 +173,13 @@ function drawPanel(g, s) {
     const x = 70 + i * 120, y = 230;
     g.fillStyle = '#0b0d10'; g.fillRect(x, y, 70, 110);
     g.fillStyle = c; g.fillRect(x + 6, y + 6 + 98 * (1 - v), 58, 98 * v);
-    g.fillStyle = '#d8f5ff'; g.font = 'bold 14px Arial'; g.textAlign = 'center';
+    g.fillStyle = '#d8f5ff'; g.font = '700 14px B612, Arial'; g.textAlign = 'center';
     g.fillText(l, x + 35, y + 128 > 380 ? 376 : y + 126);
   });
   const warn = [['STALL', s.stall, '#ff3020'], ['SCOOP', s.scooping, '#30a0ff'], ['DOORS', s.doors > 0.1, '#ffb020'], ['LOW FUEL', s.fuel / s.fuelMax < 0.15, '#ff3020']];
   warn.forEach(([l, on, c], i) => {
     const x = 800 + (i % 2) * 100, y = 240 + Math.floor(i / 2) * 60;
     g.fillStyle = on ? c : '#26292d'; g.fillRect(x, y, 90, 44);
-    g.fillStyle = on ? '#000' : '#555'; g.font = 'bold 14px Arial'; g.fillText(l, x + 45, y + 27);
+    g.fillStyle = on ? '#000' : '#555'; g.font = '700 14px B612, Arial'; g.fillText(l, x + 45, y + 27);
   });
 }

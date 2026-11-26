@@ -137,8 +137,8 @@ export function buildLeafAtlas(scale = 1) {
   const S = Math.round(512 * scale);
   const c = makeCanvas(S * 4, S * 2);
   const g = c.getContext('2d');
-  drawCluster(g, 0, 0, S, { twigs: 7, count: 150, len: 0.13, width: 0.36, spread: 1.6, hue: 100, hueVar: 14, sat: 44, light: 19, contrast: 22 }, 11);
-  drawCluster(g, S, 0, S, { twigs: 6, count: 70, len: 0.22, width: 0.34, spread: 1.4, hue: 98, hueVar: 12, sat: 46, light: 21, contrast: 24 }, 23);
+  drawCluster(g, 0, 0, S, { twigs: 7, count: 150, len: 0.13, width: 0.36, spread: 1.6, hue: 98, hueVar: 14, sat: 46, light: 23, contrast: 22 }, 11);
+  drawCluster(g, S, 0, S, { twigs: 6, count: 70, len: 0.22, width: 0.34, spread: 1.4, hue: 96, hueVar: 12, sat: 48, light: 25, contrast: 24 }, 23);
   drawCluster(g, 0, S, S, { twigs: 6, count: 95, len: 0.19, width: 0.42, spread: 1.5, hue: 84, hueVar: 12, sat: 52, light: 29, contrast: 22 }, 37);
   drawCluster(g, S, S, S, { twigs: 9, count: 80, len: 0.26, width: 0.2, spread: 0.7, hue: 104, hueVar: 16, sat: 42, light: 22, contrast: 20 }, 41);
   // Fronds are painted horizontally squeezed: leaflets angle toward the tip (down the cell).

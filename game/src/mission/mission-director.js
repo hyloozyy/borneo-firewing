@@ -101,5 +101,5 @@ function stageBonus(id, g, took) {
 export function landingRating(td) {
   if (!td) return '-';
   const v = Math.abs(td.vs);
-  return v < 1 ? 'BUTTER!' : v < 2 ? 'Mulus' : v < 3 ? 'Keras' : 'Sangat keras';
+  return v < 1 ? 'BUTTER' : v < 2 ? 'SMOOTH' : v < 3 ? 'FIRM' : 'HARD';
 }

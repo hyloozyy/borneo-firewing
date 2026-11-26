@@ -16,13 +16,19 @@
 <section id="title" class="screen" hidden>
   <div class="panel hero">
     <p class="kicker">MISI KARHUTLA · KALIMANTAN</p>
-    <h1>BORNEO <span>FIREWING</span></h1>
-    <p class="sub">Terbangkan <b>FW-218 Enggang</b>, pesawat amfibi pemadam api. Ambil air di danau, padamkan kebakaran hutan, selamatkan desa, lalu mendarat dengan selamat.</p>
+    <h1 class="logo">BORNEO <span>FIREWING</span></h1>
+    <p class="tag">FW-218 ENGGANG · AMPHIBIOUS WATER BOMBER</p>
+    <p class="sub">Terbangkan pesawat amfibi pemadam api. Ambil air di danau, padamkan kebakaran hutan, selamatkan desa, lalu mendarat dengan selamat.</p>
     <button id="btn-start" class="primary">MULAI MISI</button>
+    <p class="label">ATAU PILIH TAHAP</p>
     <div class="stages">
-      <button data-stage="0">1 Take-off</button><button data-stage="1">2 Scoop</button><button data-stage="2">3 Fire Attack</button><button data-stage="3">4 Desa</button><button data-stage="4">5 Landing</button>
+      <button data-stage="0"><b>1</b>Take-off</button><button data-stage="1"><b>2</b>Scoop</button><button data-stage="2"><b>3</b>Fire Attack</button><button data-stage="3"><b>4</b>Village</button><button data-stage="4"><b>5</b>Landing</button>
     </div>
-    <p class="keys">W/S pitch · A/D roll · Q/E rudder · R/F gas · V flaps · SPACE jatuhkan air · B rem · C kamera · drag mouse = lihat · P pause</p>
+    <dl class="keys">
+      <div><dt>W S</dt><dd>pitch</dd></div><div><dt>A D</dt><dd>roll</dd></div><div><dt>Q E</dt><dd>rudder</dd></div><div><dt>R F</dt><dd>gas</dd></div>
+      <div><dt>V</dt><dd>flaps</dd></div><div><dt>SPACE</dt><dd>jatuhkan air</dd></div><div><dt>B</dt><dd>rem</dd></div><div><dt>C</dt><dd>kamera</dd></div>
+      <div><dt>MOUSE</dt><dd>lihat sekitar</dd></div><div><dt>P</dt><dd>pause</dd></div>
+    </dl>
   </div>
 </section>
 
@@ -30,35 +36,39 @@
   <div class="panel">
     <p class="kicker">BRIEFING · POSKO DAMKAR</p>
     <h2>Karhutla di utara landasan</h2>
-    <ol>
-      <li><b>Take-off &amp; Patrol</b> — lepas landas, lewati 3 cincin di atas sungai.</li>
-      <li><b>First Scoop</b> — sentuh danau 60–115 kt dengan pelan, isi tangki 80%.</li>
-      <li><b>Fire Attack</b> — lewati cincin target di atas api, tahan SPACE untuk menjatuhkan air.</li>
-      <li><b>Save the Village</b> — angin berbalik, lindungi desa panggung sebelum waktu habis.</li>
-      <li><b>Return &amp; Land</b> — BBM menipis, mendarat di landasan 36 dan berhenti.</li>
+    <ol class="steps">
+      <li><b>Take-off &amp; Patrol</b><span>Lepas landas, lewati 3 cincin di atas sungai.</span></li>
+      <li><b>First Scoop</b><span>Sentuh danau pelan pada 60–115 kt, isi tangki 80%.</span></li>
+      <li><b>Fire Attack</b><span>Lewati cincin target di atas api, tahan SPACE untuk menjatuhkan air.</span></li>
+      <li><b>Save the Village</b><span>Angin berbalik: lindungi desa panggung sebelum waktu habis.</span></li>
+      <li><b>Return &amp; Land</b><span>BBM menipis: mendarat di landasan 36 dan berhenti.</span></li>
     </ol>
-    <p class="warn">Gagal jika: menabrak, kehabisan BBM, desa terbakar, atau waktu misi habis. Asap = turbulensi &amp; jarak pandang rendah. Tangki penuh = pesawat berat.</p>
-    <button id="btn-brief-go" class="primary">TERBANG!</button>
+    <p class="warn">Gagal jika menabrak, kehabisan BBM, desa terbakar, atau waktu misi habis. Asap = turbulensi dan jarak pandang rendah. Tangki penuh = pesawat berat.</p>
+    <button id="btn-brief-go" class="primary">TERBANG</button>
   </div>
 </section>
 
 <section id="pause" class="screen" hidden>
   <div class="panel small">
+    <p class="kicker">FW-218 ENGGANG</p>
     <h2>PAUSE</h2>
     <button id="btn-resume" class="primary">LANJUT</button>
     <button id="btn-restart">ULANG MISI</button>
-    <p class="keys">M = suara · H = HUD · C = kamera kokpit/chase</p>
+    <p class="hint">M suara · H HUD · C kamera kokpit/chase</p>
   </div>
 </section>
 
 <section id="result" class="screen" hidden>
   <div class="panel">
+    <p class="kicker">LAPORAN MISI</p>
     <h2 id="result-title">MISI</h2>
     <p id="result-reason"></p>
     <table id="result-table"></table>
-    <button id="btn-retry-stage" class="primary">ULANG TAHAP INI</button>
-    <button id="btn-again">ULANG DARI AWAL</button>
-    <button id="btn-menu">MENU</button>
+    <div class="row">
+      <button id="btn-retry-stage" class="primary">ULANG TAHAP INI</button>
+      <button id="btn-again">ULANG DARI AWAL</button>
+      <button id="btn-menu">MENU</button>
+    </div>
   </div>
 </section>
 

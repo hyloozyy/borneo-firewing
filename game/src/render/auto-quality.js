@@ -30,6 +30,7 @@ export class AutoQuality {
     } else if (this.level === 2) {
       q.reflections = false;
       g.waterSurface.uniforms.useRefl.value = 0;
+      g.forest.reduceDetail();
     }
   }
 }

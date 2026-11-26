@@ -53,6 +53,14 @@ export const SHOTS = {
     game.rig.yaw = 0.5; game.rig.pitch = 0.3; game.rig.dist = 30;
     return { warm: 1.0, mode: 'chase' };
   },
+  // Close look at the aircraft from behind and above, cruising over the hills (detail check).
+  rear(game) {
+    game.startMission(1, { quiet: true });
+    setFlying(game.flight, new THREE.Vector3(-200, 230, 200), 200 * deg, 60, 1 * deg, 8 * deg);
+    game.flight.flaps = game.flight.flapTarget = 0.5;
+    game.rig.yaw = 2.75; game.rig.pitch = 0.2; game.rig.dist = 22;
+    return { warm: 1.0, mode: 'chase' };
+  },
 };
 
 // Move the aircraft along its velocity for the warm-up so particles and trails look natural.
