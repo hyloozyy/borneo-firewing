@@ -1,0 +1,50 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #120a06; font-family: "Segoe UI", Arial, sans-serif; color: #fff; touch-action: none; user-select: none; }
+#view, #view canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#hud { position: fixed; inset: 0; pointer-events: none; }
+.screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(20,8,0,0.25), rgba(10,4,0,0.7)); }
+.screen[hidden] { display: none; }
+.panel { background: rgba(14,10,8,0.82); border: 1px solid rgba(255,150,70,0.45); border-radius: 14px; padding: 26px 34px; max-width: 640px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.panel.small { max-width: 320px; text-align: center; }
+.hero { text-align: center; }
+.kicker { color: #ff9a4a; letter-spacing: 3px; font-size: 12px; font-weight: 700; margin: 0 0 6px; }
+h1 { font-size: 54px; margin: 0; letter-spacing: 4px; font-weight: 900; text-shadow: 0 4px 18px rgba(255,90,20,0.5); }
+h1 span { color: #ff4a2a; }
+h2 { margin: 0 0 12px; }
+h2.ok, #result-title.ok { color: #8dff9e; }
+#result-title.bad { color: #ff6a50; }
+.sub { color: #f2dccb; line-height: 1.5; }
+.keys { color: #b9a898; font-size: 12px; margin-top: 16px; }
+.warn { color: #ffc861; font-size: 13px; }
+ol { line-height: 1.6; padding-left: 20px; color: #f2e6dc; }
+button { font: inherit; font-weight: 700; margin: 6px 4px; padding: 10px 18px; border-radius: 8px; border: 1px solid rgba(255,160,90,0.6); background: rgba(60,30,15,0.8); color: #fff; cursor: pointer; }
+button:hover { background: rgba(120,50,20,0.9); }
+button.primary { background: linear-gradient(#e8442a, #a82012); border-color: #ff8a5a; font-size: 18px; padding: 12px 34px; }
+.stages button { font-size: 12px; padding: 6px 10px; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; }
+td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+td:nth-child(2) { text-align: right; font-weight: 700; }
+td.stars { color: #ffd34a; letter-spacing: 2px; }
+tr.total td { font-size: 17px; font-weight: 900; color: #ffd27a; }
+body.shot .screen, body.shot #touch { display: none !important; }
+
+#touch { position: fixed; inset: 0; pointer-events: none; }
+#touch[hidden] { display: none; }
+#touch .stick { pointer-events: auto; position: absolute; left: 4vw; bottom: 6vh; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.35); }
+#touch .knob { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,140,70,0.75); }
+#touch .throttle { pointer-events: auto; position: absolute; right: 3vw; bottom: 8vh; width: 54px; height: 170px; border-radius: 10px; background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.35); }
+#touch .throttle i { position: absolute; left: 4px; right: 4px; bottom: 0%; height: 22px; margin-bottom: -11px; border-radius: 6px; background: #ffb347; }
+#touch .throttle span { position: absolute; top: -20px; width: 100%; text-align: center; font-size: 11px; }
+#touch .buttons { pointer-events: auto; position: absolute; right: calc(3vw + 70px); bottom: 6vh; display: grid; grid-template-columns: repeat(3, 58px); gap: 6px; }
+#touch .buttons button { margin: 0; padding: 12px 0; font-size: 12px; background: rgba(30,20,15,0.6); }
+#touch .buttons .b-drop { background: rgba(40,120,220,0.75); }
+#touch .buttons .on { background: rgba(60,180,90,0.8); }
+#rotate { display: none; }
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate { display: flex; position: fixed; inset: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); font-size: 20px; z-index: 10; }
+}
+@media (max-height: 500px) {
+  .panel { padding: 12px 18px; max-height: 92vh; overflow: auto; }
+  h1 { font-size: 34px; }
+  ol { font-size: 13px; line-height: 1.35; }
+  .sub { font-size: 13px; }
+}

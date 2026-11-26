@@ -1,16 +1,9 @@
-// A working best-game-01 entry (Node 22, standard library only): the game is this directory's
-// game/ folder, plain static files a desktop browser loads offline (game/index.html and its ES
-// modules, no library and no network request), and the program hands it in. It copies game/ and
-// screenshots/ from beside this file to /output and writes /output/dossier.json, the summary the
-// judge reads, with the vendored make.fun library. A starting point, not a winner: Block Dodger, a
-// plain 2D canvas game where a paddle dodges falling blocks and catches coins, with a title screen,
-// score, lives and levels, game over and restart, flat colours and no sound. Build your own game
-// (any genre, any library you vendor under game/, or none), put your 3 or 4 PNG or JPEG screenshots
-// in screenshots/ (the first by name is the cover) and run it.
-//
-// Serve it locally with `node serve.ts`, then open http://localhost:8080.
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// BORNEO FIREWING (make.fun best-flight-game entry): hands in the game. The game is game/, plain static
+// files (game/index.html, its ES modules under game/src and Three.js vendored as game/vendor/three.module.min.js),
+// a firefighting flight game where the FW-218 Enggang amphibious water bomber fights a Kalimantan forest fire.
+// This program copies game/ and screenshots/ to /output and writes /output/dossier.json with the kit's library.
+// Play locally: `node serve.ts`, then open http://localhost:8080. Outside the grader, MAKEFUN_OUTPUT_DIR
+// stands in for /output: mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

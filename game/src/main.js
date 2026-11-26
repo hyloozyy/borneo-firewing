@@ -1,134 +1,275 @@
-// Boot and the one loop: input is read every frame, the world advances in fixed 1/60 s steps
-// (several in a slow frame, none in a fast one), and the renderer paints what is there. The game
-// moves between four screens: title, play, paused and game over.
-//
-// ?seed=N fixes the falling pattern. ?shot=start|play|end (with &seed=N) stages that scene
-// instead of running the loop, paints it twice and sets window.__shotReady for a screenshot.
-import { BEST_KEY, LIVES, STEP } from './config.js';
-import { createRandom } from './random.js';
-import { createWorld, EVENT_HIT, EVENT_OVER } from './world.js';
-import { ACTION_CONFIRM, ACTION_PAUSE, createInput } from './input.js';
-import { createRenderer, SCREEN_OVER, SCREEN_PAUSED, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
-import { stageShot } from './shots.js';
+// BORNEO FIREWING: boot, game state, the main loop that ties flight, fire, mission, camera, HUD and audio.
+import * as THREE from 'three';
+import { seedRandom } from './core/rng.js';
+import { pickQuality } from './core/quality.js';
+import { buildTerrain, PLACES, terrainHeight } from './world/terrain.js';
+import { buildWater } from './world/water.js';
+import { buildSky } from './world/sky.js';
+import { buildForest } from './world/forest.js';
+import { buildVillage } from './world/village.js';
+import { buildAirstrip } from './world/airstrip.js';
+import { buildClouds, buildBirds } from './world/clouds-and-birds.js';
+import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
+import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
+import { FireSystem } from './fire/fire-system.js';
+import { WaterEffects } from './fire/water-effects.js';
+import { MissionDirector } from './mission/mission-director.js';
+import { pulseRing } from './mission/rings.js';
+import { Hud } from './hud/hud.js';
+import { buildCockpit, updateCockpit } from './cockpit/cockpit-view.js';
+import { CameraRig } from './camera/camera-rig.js';
+import { SoundEngine } from './audio/sound-engine.js';
+import { Controls } from './input/controls.js';
+import { bindScreens, showScreen, hideScreens, showResult } from './ui/screens.js';
+import { runShot, SHOTS } from './shots/shot-scenes.js';
 
-/** The longest frame the loop catches up on; a longer stall (a hidden tab) is dropped, not replayed. */
-const MAX_FRAME = 0.25;
+const params = new URLSearchParams(location.search);
+const deg = Math.PI / 180;
 
-const params = new URLSearchParams(window.location.search);
-const shot = params.get('shot');
-const seedParam = Number.parseInt(params.get('seed') ?? '', 10);
-const seed = Number.isInteger(seedParam) ? seedParam : Math.floor(Math.random() * 4294967296);
+class Game {
+  constructor() {
+    seedRandom(Number(params.get('seed') || 218));
+    this.quality = pickQuality();
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: params.has('shot') });
+    renderer.setPixelRatio(this.quality.pixelRatio);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = this.quality.shadows;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('view').appendChild(renderer.domElement);
+    this.renderer = renderer;
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(62, 1, 0.5, 30000);
 
-const canvas = document.getElementById('game');
-const status = document.getElementById('status');
-const world = createWorld(createRandom(seed));
-const renderer = createRenderer(canvas);
+    this.sky = buildSky(this.scene);
+    this.scene.add(buildTerrain(this.quality.terrainSegments));
+    this.water = null;
+    this.waterSurface = buildWater();
+    this.scene.add(this.waterSurface.mesh);
+    this.forest = buildForest(this.scene, this.quality);
+    this.village = buildVillage(this.scene);
+    this.airstrip = buildAirstrip(this.scene);
+    this.clouds = buildClouds(this.scene, this.quality.clouds);
+    this.birds = buildBirds(this.scene, this.quality.birds);
+    // Sky reflections for the chrome spinners and the water.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envScene = new THREE.Scene();
+    envScene.add(this.sky.dome.clone());
+    this.scene.environment = pmrem.fromScene(envScene, 0.02).texture;
 
-function readBest() {
-  try {
-    return Number.parseInt(window.localStorage.getItem(BEST_KEY) ?? '0', 10) || 0;
-  } catch {
-    return 0;
+    this.plane = buildFW218();
+    this.scene.add(this.plane);
+    this.cockpit = buildCockpit();
+    this.plane.add(this.cockpit.group);
+    this.flight = createFlightState();
+    this.wind = new THREE.Vector3(-2, 0, -3);
+    this.fire = new FireSystem(this.scene, this.forest, this.quality);
+    this.fire.seedScenario();
+    this.water = new WaterEffects(this.scene, this.fire, this.quality);
+
+    this.hud = new Hud(document.getElementById('hud'));
+    this.rig = new CameraRig(this.camera);
+    this.audio = new SoundEngine();
+    this.controls = new Controls(renderer.domElement);
+    this.mission = new MissionDirector(this);
+    this.events = { ring: () => { this.audio.ringChime(); this.hud.toast('RING!'); } };
+    this.stageData = {};
+    this.prevPos = new THREE.Vector3();
+    this.state = 'menu';
+    this.showHud = false;
+    this.cameraMode = 'chase';
+    this.dropWindow = 0;
+    this.dropping = false;
+    this.dropReleased = 0;
+    this.time = 0;
+    this.objective = null;
+    this.kinematic = false;
+
+    addEventListener('resize', () => this.resize());
+    this.resize();
+    for (const ev of ['pointerdown', 'keydown', 'touchstart', 'focus']) addEventListener(ev, () => this.audio.ctx && this.audio.unlock());
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); else if (this.state === 'playing') this.setPaused(true); });
+    bindScreens(this);
+    this.menuFlyby();
   }
-}
 
-function saveBest(value) {
-  try {
-    window.localStorage.setItem(BEST_KEY, String(value));
-  } catch {
-    // Storage can be off (private windows): the best score then lasts this visit only.
-  }
-}
-
-function runShot(name) {
-  const scene = stageShot(name, world);
-  let painted = 0;
-  function paint() {
-    renderer.draw(world.state, scene.screen, scene.best);
-    painted += 1;
-    if (painted < 2) requestAnimationFrame(paint);
-    else window.__shotReady = true;
-  }
-  requestAnimationFrame(paint);
-}
-
-function runGame() {
-  const input = createInput(canvas);
-  let screen = SCREEN_TITLE;
-  let best = readBest();
-  let accumulator = 0;
-  let last = performance.now();
-
-  // Screen readers (and anyone watching the page's text) hear the screen changes and each hit.
-  function announce(message) {
-    status.textContent = message;
+  resize() {
+    const w = innerWidth, h = innerHeight;
+    this.renderer.setSize(w, h);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.hud.resize(w, h, Math.min(devicePixelRatio, 2));
+    for (const p of [this.fire.flames, this.fire.smoke, this.water.pool]) p.setViewportHeight(h * this.quality.pixelRatio);
   }
 
-  function startGame() {
-    world.reset();
-    accumulator = 0;
-    screen = SCREEN_PLAY;
-    announce(`Playing. ${LIVES} lives.`);
+  menuFlyby() {
+    setFlying(this.flight, new THREE.Vector3(PLACES.fire.x - 600, 260, PLACES.fire.z + 300), 60 * deg, 60, 0, -12 * deg);
+    this.kinematic = 'orbit';
+    this.rig.yaw = 0.8;
   }
 
-  function endGame() {
-    screen = SCREEN_OVER;
-    if (world.state.score > best) {
-      best = world.state.score;
-      saveBest(best);
-    }
-    announce(`Game over. Score ${world.state.score}. Best ${best}.`);
-  }
+  addScore(n, why) { this.mission.addPoints(n); this.hud.toast(`+${n} ${why}`); }
 
-  function handleActions() {
-    const actions = input.takeActions();
-    if (actions & ACTION_CONFIRM && (screen === SCREEN_TITLE || screen === SCREEN_OVER)) startGame();
-    else if (actions & ACTION_PAUSE && screen === SCREEN_PLAY) {
-      screen = SCREEN_PAUSED;
-      announce('Paused.');
-    } else if (actions & (ACTION_PAUSE | ACTION_CONFIRM) && screen === SCREEN_PAUSED) {
-      screen = SCREEN_PLAY;
-      announce('Playing.');
-    }
-  }
-
-  function step() {
-    if (screen === SCREEN_TITLE) {
-      world.step(STEP, 0, true);
+  startMission(index, opts = {}) {
+    if (this.mission.state !== 'idle' && !opts.quiet) {
+      location.search = `?play=1&stage=${index}`;
       return;
     }
-    const events = world.step(STEP, input.direction(), false);
-    if (events & EVENT_OVER) endGame();
-    else if (events & EVENT_HIT) announce(world.state.lives === 1 ? 'Hit. 1 life left.' : `Hit. ${world.state.lives} lives left.`);
-  }
-
-  function frame(now) {
-    requestAnimationFrame(frame);
-    accumulator += Math.min((now - last) / 1000, MAX_FRAME);
-    last = now;
-    handleActions();
-    if (screen === SCREEN_TITLE || screen === SCREEN_PLAY) {
-      while (accumulator >= STEP && (screen === SCREEN_TITLE || screen === SCREEN_PLAY)) {
-        step();
-        accumulator -= STEP;
-      }
+    hideScreens();
+    const s = this.flight;
+    const r = PLACES.runway;
+    s.crashed = null; s.engines = true; s.fuel = s.fuelMax; s.water = 0; s.angular.set(0, 0, 0);
+    s.flapTarget = s.flaps = 0;
+    this.kinematic = false;
+    if (index === 0) {
+      placeOnRunway(s, r.x, r.z + r.length / 2 - 40, 0);
+      s.throttle = 0; s.rpm = 0; s.flapTarget = 0.5;
+    } else if (index === 1) {
+      setFlying(s, new THREE.Vector3(-300, 260, -650), 100 * deg, 70);
+      s.fuel = s.fuelMax * 0.9;
+    } else if (index === 2 || index === 3) {
+      setFlying(s, new THREE.Vector3(-700, 240, -900), -80 * deg, 70);
+      s.water = s.waterMax; s.fuel = s.fuelMax * 0.75;
     } else {
-      accumulator = 0;
+      setFlying(s, new THREE.Vector3(r.x + 400, 420, r.z + r.length / 2 + 5200), 4 * deg, 70);
+      s.fuel = s.fuelMax * 0.3;
     }
-    renderer.draw(world.state, screen, best);
+    this.state = 'playing';
+    this.showHud = true;
+    this.rig.first = true;
+    this.mission.start(index);
+    this.prevPos.copy(s.position);
   }
 
-  // Leaving the tab pauses a running game rather than letting blocks fall unseen.
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && screen === SCREEN_PLAY) {
-      screen = SCREEN_PAUSED;
-      announce('Paused.');
-    }
-  });
+  setPaused(p) {
+    if (this.state !== 'playing' && this.state !== 'paused') return;
+    this.state = p ? 'paused' : 'playing';
+    if (p) { showScreen('pause'); this.audio.silence(); } else hideScreens();
+  }
 
-  announce('Block Dodger. Press Space or click to start.');
-  requestAnimationFrame(frame);
+  onMissionEnd(passed) {
+    this.state = 'result';
+    if (!passed && this.flight.crashed) { this.audio.crash(); this.rig.shake = 2; }
+    setTimeout(() => showResult(this, passed), passed ? 1200 : 1800);
+  }
+
+  handleKeys() {
+    const c = this.controls;
+    if (c.hit('KeyC')) { this.cameraMode = this.cameraMode === 'chase' ? 'cockpit' : 'chase'; this.rig.mode = this.cameraMode; this.rig.first = true; }
+    if (c.hit('KeyP') || c.hit('Escape')) this.setPaused(this.state === 'playing');
+    if (c.hit('KeyV')) this.flight.flapTarget = this.flight.flapTarget >= 1 ? 0 : this.flight.flapTarget + 0.5;
+    if (c.hit('KeyM')) { this.audio.muted = !this.audio.muted; if (this.audio.muted) this.audio.silence(); }
+    if (c.hit('KeyH')) this.showHud = !this.showHud;
+    if (c.mouse.dx || c.mouse.dy) this.rig.orbit(c.mouse.dx, c.mouse.dy);
+    if (c.mouse.wheel) this.rig.zoom(c.mouse.wheel);
+  }
+
+  // Advance the world by dt (fixed sub-steps for the flight model).
+  simulate(dt) {
+    const s = this.flight;
+    this.time += dt;
+    this.prevPos.copy(s.position);
+    const input = this.state === 'playing' ? this.controls.read() : { pitch: 0, roll: 0, yaw: 0, throttleDelta: 0, drop: false, brakes: false };
+    if (input.throttleSet != null) s.throttle = input.throttleSet;
+    s.turbulence = this.fire.smokeAt(s.position);
+
+    if (this.kinematic) {
+      if (this.kinematic === 'orbit') {
+        const c = new THREE.Vector3(PLACES.fire.x, 0, PLACES.fire.z);
+        const a = this.time * 0.07;
+        s.position.set(c.x + Math.cos(a) * 700, 250, c.z + Math.sin(a) * 700);
+        s.quaternion.setFromEuler(new THREE.Euler(0, Math.PI - a, -14 * deg, 'YXZ'));
+        s.velocity.set(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(49);
+        s.airspeed = 49; s.rpm = 0.8;
+      } else {
+        s.position.addScaledVector(s.velocity, dt);
+        s.airspeed = s.velocity.length();
+        s.rpm = Math.max(s.rpm, 0.85);
+        if (this.forceScoop) { s.scooping = true; s.onWater = true; s.water = Math.min(s.waterMax, s.water + 520 * dt); }
+        const e = new THREE.Euler().setFromQuaternion(s.quaternion, 'YXZ');
+        s.pitch = e.x; s.roll = e.z; s.heading = ((-e.y / deg) + 360) % 360; s.vs = s.velocity.y;
+        s.agl = s.position.y - Math.max(0, terrainHeight(s.position.x, s.position.z));
+      }
+    } else if (this.state === 'playing') {
+      const steps = Math.ceil(dt / (1 / 120));
+      for (let i = 0; i < steps; i++) stepFlight(s, input, dt / steps, { wind: this.wind, time: this.time, fuelBurn: 1.6 });
+    }
+
+    // Water drop: hold SPACE (or the touch button) to open the belly doors.
+    const wantDrop = (input.drop || this.forceDrop) && s.water > 0 && !s.onGround;
+    s.doors += ((wantDrop ? 1 : 0) - s.doors) * Math.min(1, dt * 6);
+    if (wantDrop && s.doors > 0.3) {
+      this.dropReleased += this.water.emitDrop(s, dt, 2400);
+      this.dropping = true;
+    } else if (this.dropping && !wantDrop) {
+      this.dropping = false;
+      if (this.dropReleased > 400) this.lastDropDone = true;
+      this.dropReleased = 0;
+    }
+    if (s.scooping) this.water.emitScoopSpray(s);
+    this.dropWindow = Math.max(0, this.dropWindow - dt);
+
+    this.fire.update(dt, this.wind, this.time, this.camera.position);
+    this.water.update(dt, this.wind);
+    if (this.state === 'playing') this.mission.update(dt);
+    if (this.mission.stage) this.objective = this.mission.stage.objective(this);
+    this.syncVisuals(dt);
+  }
+
+  syncVisuals(dt) {
+    const s = this.flight;
+    this.plane.position.copy(s.position);
+    this.plane.quaternion.copy(s.quaternion);
+    animateFW218(this.plane, { ...s, cockpit: this.cameraMode === 'cockpit' }, dt, this.time);
+    this.cockpit.group.visible = this.cameraMode === 'cockpit';
+    if (this.cockpit.group.visible) updateCockpit(this.cockpit, s);
+    this.rig.shake = Math.max(s.turbulence * 1.5, this.rig.shake * (1 - dt * 2));
+    this.rig.update(s, dt, this.controls.mouse.dragging);
+    this.sky.follow(this.camera.position);
+    this.sky.sun.position.copy(s.position).addScaledVector(new THREE.Vector3(-0.62, 0.2, 0.76).normalize(), 400);
+    this.sky.sun.target.position.copy(s.position);
+    // Smoke thickens the haze around the fire.
+    const smoke = s.turbulence;
+    this.scene.fog.near = 900 - smoke * 850;
+    this.scene.fog.far = 7600 - smoke * 6400;
+    this.waterSurface.update(this.time);
+    this.airstrip.update(this.time, s);
+    this.birds.update(this.time);
+    this.clouds.update(this.time);
+    for (const key of ['rings']) for (const r of this.stageData[key] || []) pulseRing(r, this.time, true);
+    if (this.stageData.ring) pulseRing(this.stageData.ring, this.time, true);
+    const near = Math.max(0, 1 - this.camera.position.distanceTo(new THREE.Vector3(PLACES.fire.x, 50, PLACES.fire.z)) / 900);
+    this.audio.update(s, near, this.time);
+  }
+
+  frame(dt) {
+    this.handleKeys();
+    if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
+    this.renderer.render(this.scene, this.camera);
+    this.hud.draw(this, dt);
+    this.controls.endFrame();
+  }
 }
 
-if (shot) runShot(shot);
-else runGame();
+const game = new Game();
+window.__game = game;
+const shot = params.get('shot');
+if (shot && SHOTS[shot]) {
+  document.body.classList.add('shot');
+  hideScreens();
+  runShot(game, shot);
+  game.renderer.render(game.scene, game.camera);
+  game.hud.draw(game, 0);
+  window.__shotReady = true;
+} else {
+  if (params.get('play')) game.startMission(Number(params.get('stage') || 0));
+  else showScreen('title');
+  let last = performance.now();
+  const loop = (now) => {
+    const dt = (now - last) / 1000;
+    last = now;
+    game.frame(dt);
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}

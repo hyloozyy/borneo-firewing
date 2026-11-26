@@ -1,19 +1,76 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
-<style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a0f08">
+<title>BORNEO FIREWING · FW-218 Enggang</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
-<p id="status" role="status" aria-live="polite"></p>
+<div id="view"></div>
+<canvas id="hud"></canvas>
+
+<section id="title" class="screen" hidden>
+  <div class="panel hero">
+    <p class="kicker">MISI KARHUTLA · KALIMANTAN</p>
+    <h1>BORNEO <span>FIREWING</span></h1>
+    <p class="sub">Terbangkan <b>FW-218 Enggang</b>, pesawat amfibi pemadam api. Ambil air di danau, padamkan kebakaran hutan, selamatkan desa, lalu mendarat dengan selamat.</p>
+    <button id="btn-start" class="primary">MULAI MISI</button>
+    <div class="stages">
+      <button data-stage="0">1 Take-off</button><button data-stage="1">2 Scoop</button><button data-stage="2">3 Fire Attack</button><button data-stage="3">4 Desa</button><button data-stage="4">5 Landing</button>
+    </div>
+    <p class="keys">W/S pitch · A/D roll · Q/E rudder · R/F gas · V flaps · SPACE jatuhkan air · B rem · C kamera · drag mouse = lihat · P pause</p>
+  </div>
+</section>
+
+<section id="briefing" class="screen" hidden>
+  <div class="panel">
+    <p class="kicker">BRIEFING · POSKO DAMKAR</p>
+    <h2>Karhutla di utara landasan</h2>
+    <ol>
+      <li><b>Take-off &amp; Patrol</b> — lepas landas, lewati 3 cincin di atas sungai.</li>
+      <li><b>First Scoop</b> — sentuh danau 60–115 kt dengan pelan, isi tangki 80%.</li>
+      <li><b>Fire Attack</b> — lewati cincin target di atas api, tahan SPACE untuk menjatuhkan air.</li>
+      <li><b>Save the Village</b> — angin berbalik, lindungi desa panggung sebelum waktu habis.</li>
+      <li><b>Return &amp; Land</b> — BBM menipis, mendarat di landasan 36 dan berhenti.</li>
+    </ol>
+    <p class="warn">Gagal jika: menabrak, kehabisan BBM, desa terbakar, atau waktu misi habis. Asap = turbulensi &amp; jarak pandang rendah. Tangki penuh = pesawat berat.</p>
+    <button id="btn-brief-go" class="primary">TERBANG!</button>
+  </div>
+</section>
+
+<section id="pause" class="screen" hidden>
+  <div class="panel small">
+    <h2>PAUSE</h2>
+    <button id="btn-resume" class="primary">LANJUT</button>
+    <button id="btn-restart">ULANG MISI</button>
+    <p class="keys">M = suara · H = HUD · C = kamera kokpit/chase</p>
+  </div>
+</section>
+
+<section id="result" class="screen" hidden>
+  <div class="panel">
+    <h2 id="result-title">MISI</h2>
+    <p id="result-reason"></p>
+    <table id="result-table"></table>
+    <button id="btn-retry-stage" class="primary">ULANG TAHAP INI</button>
+    <button id="btn-again">ULANG DARI AWAL</button>
+    <button id="btn-menu">MENU</button>
+  </div>
+</section>
+
+<div id="touch" hidden>
+  <div class="stick"><div class="knob"></div></div>
+  <div class="throttle"><i></i><span>GAS</span></div>
+  <div class="buttons">
+    <button class="b-drop">AIR</button><button class="b-flaps">FLAP</button><button class="b-brake">REM</button>
+    <button class="b-cam">CAM</button><button class="b-tilt">TILT</button><button class="b-pause">II</button>
+  </div>
+</div>
+<div id="rotate">Putar HP ke posisi landscape ↻</div>
+
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>
