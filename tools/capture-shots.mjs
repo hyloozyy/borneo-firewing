@@ -20,7 +20,7 @@ for (const s of shots) {
   const out = `${outDir}/${s.name}`;
   let q = 88;
   do {
-    await page.screenshot({ path: out, type: 'jpeg', quality: q });
+    await page.screenshot({ path: out, type: 'jpeg', quality: q, timeout: 300000 });
     q -= 6;
   } while (statSync(out).size > 250 * 1024 && q > 40);
   console.log(s.name, statSync(out).size, 'q', q + 6);

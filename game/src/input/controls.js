@@ -93,6 +93,7 @@ export class Controls {
     btn('.b-cam', 'KeyC');
     btn('.b-pause', 'KeyP');
     btn('.b-brake', 'KeyB');
+    btn('.b-ext', 'KeyX');
     root.querySelector('.b-tilt').addEventListener('touchstart', (e) => {
       e.preventDefault();
       this.touch.tilt = !this.touch.tilt;

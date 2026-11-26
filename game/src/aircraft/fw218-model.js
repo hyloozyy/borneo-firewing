@@ -433,14 +433,14 @@ export function animateFW218(root, s, dt, time) {
   p.elevator.rotation.x = -s.elevator * 0.4;
   p.rudder.rotation.y = s.rudder * 0.4;
   for (const d of p.doors) d.rotation.z = -d.userData.side * s.doors * 1.2;
-  const spin = s.rpm * 28 * dt;
+  // Each propeller follows its own engine: a failed engine's prop winds down and stops.
   p.props.forEach((pr, i) => {
-    pr.rotation.z += spin * (i ? -1 : 1);
-    pr.visible = s.rpm < 0.55 || s.cockpit;
-  });
-  p.discs.forEach((d) => {
-    d.visible = s.rpm > 0.3;
-    d.material.opacity = Math.min(1, (s.rpm - 0.3) * 2.5);
+    const rpm = s.engRpm ? s.engRpm[i] : s.rpm;
+    pr.rotation.z += rpm * 28 * dt * (i ? -1 : 1);
+    pr.visible = rpm < 0.55 || s.cockpit;
+    const d = p.discs[i];
+    d.visible = rpm > 0.3;
+    d.material.opacity = Math.min(1, (rpm - 0.3) * 2.5);
     d.rotation.z += dt * 3;
   });
   // Gear comes down on the runway, on final with full flaps, or when slow; up on the water.

@@ -13,6 +13,9 @@ import { buildBirds } from './world/birds.js';
 import { buildGrass } from './world/grass.js';
 import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
+import { createDamage, updateDamage, fireBottle } from './flight/damage-model.js';
+import { buildFlightReport } from './mission/flight-report.js';
+import { EngineEffects } from './fire/engine-effects.js';
 import { FireSystem } from './fire/fire-system.js';
 import { WaterEffects } from './fire/water-effects.js';
 import { particleUniforms } from './fire/particles.js';
@@ -81,6 +84,8 @@ class Game {
     this.fire = new FireSystem(this.scene, this.forest, this.quality, this.burnMap);
     this.fire.seedScenario();
     this.water = new WaterEffects(this.scene, this.fire, this.quality);
+    this.engineFx = new EngineEffects(this.fire);
+    this.stats = { flown: 0, dropped: 0, scoops: 0, drops: 0 };
 
     this.hud = new Hud(document.getElementById('hud'));
     this.rig = new CameraRig(this.camera);
@@ -137,11 +142,13 @@ class Game {
     const s = this.flight;
     const r = PLACES.runway;
     s.crashed = null; s.engines = true; s.fuel = s.fuelMax; s.water = 0; s.angular.set(0, 0, 0);
+    s.damage = createDamage(); s.gLoad = 1; s.lastTouchdown = null;
+    this.stats = { flown: 0, dropped: 0, scoops: 0, drops: 0 };
     s.flapTarget = s.flaps = 0;
     this.kinematic = false;
     if (index === 0) {
       placeOnRunway(s, r.x, r.z + r.length / 2 - 40, 0);
-      s.throttle = 0; s.rpm = 0; s.flapTarget = 0.5;
+      s.throttle = 0; s.rpm = 0; s.engRpm[0] = s.engRpm[1] = 0; s.flapTarget = 0.5;
     } else if (index === 1) {
       setFlying(s, new THREE.Vector3(-300, 260, -650), 100 * deg, 70);
       s.fuel = s.fuelMax * 0.9;
@@ -169,6 +176,7 @@ class Game {
 
   onMissionEnd(passed) {
     this.state = 'result';
+    this.report = buildFlightReport(this, passed);
     if (!passed && this.flight.crashed) { this.audio.crash(); this.rig.shake = 3; this.crashEffect(); }
     setTimeout(() => { this.showHud = false; showResult(this, passed); }, passed ? 1200 : 1800);
   }
@@ -197,6 +205,10 @@ class Game {
     if (c.hit('KeyV')) this.flight.flapTarget = this.flight.flapTarget >= 1 ? 0 : this.flight.flapTarget + 0.5;
     if (c.hit('KeyM')) { this.audio.muted = !this.audio.muted; if (this.audio.muted) this.audio.silence(); }
     if (c.hit('KeyH')) this.showHud = !this.showHud;
+    if (c.hit('KeyX') && this.state === 'playing') {
+      if (fireBottle(this.flight.damage, this.time)) this.audio.extinguisher();
+      else this.hud.toast('NO ENGINE FIRE', '#ffc861');
+    }
     if (c.mouse.dx || c.mouse.dy) this.rig.orbit(c.mouse.dx, c.mouse.dy);
     if (c.mouse.wheel) this.rig.zoom(c.mouse.wheel);
   }
@@ -217,11 +229,11 @@ class Game {
         s.position.set(c.x + Math.cos(a) * 700, 250, c.z + Math.sin(a) * 700);
         s.quaternion.setFromEuler(new THREE.Euler(0, Math.PI - a, -14 * deg, 'YXZ'));
         s.velocity.set(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(49);
-        s.airspeed = 49; s.rpm = 0.8;
+        s.airspeed = 49; s.rpm = 0.8; s.engRpm[0] = s.engRpm[1] = 0.8;
       } else {
         s.position.addScaledVector(s.velocity, dt);
         s.airspeed = s.velocity.length();
-        s.rpm = Math.max(s.rpm, 0.85);
+        s.rpm = Math.max(s.rpm, 0.85); s.engRpm[0] = s.engRpm[1] = s.rpm;
         if (this.forceScoop) { s.scooping = true; s.onWater = true; s.water = Math.min(s.waterMax, s.water + 520 * dt); }
         const e = new THREE.Euler().setFromQuaternion(s.quaternion, 'YXZ');
         s.pitch = e.x; s.roll = e.z; s.heading = ((-e.y / deg) + 360) % 360; s.vs = s.velocity.y;
@@ -230,18 +242,34 @@ class Game {
     } else if (this.state === 'playing') {
       const steps = Math.ceil(dt / (1 / 120));
       for (let i = 0; i < steps; i++) stepFlight(s, input, dt / steps, { wind: this.wind, time: this.time, fuelBurn: 1.6 });
+      if (!s.crashed) updateDamage(s, s.damage, { dt, time: this.time, heat: s.turbulence * 0.8, birds: this.birds.list });
+      this.stats.flown += s.velocity.length() * dt;
+      if (s.scooping && !this.wasScooping) this.stats.scoops++;
+      this.wasScooping = s.scooping;
     }
+    for (const e of s.damage.events) { this.hud.alert(e.text, e.level); this.audio.caution(e.level); }
+    s.damage.events.length = 0;
+    this.engineFx.update(this.plane, s, dt);
 
     // Water drop: hold SPACE (or the touch button) to open the belly doors.
     const wantDrop = (input.drop || this.forceDrop) && s.water > 0 && !s.onGround;
     s.doors += ((wantDrop ? 1 : 0) - s.doors) * Math.min(1, dt * 6);
     if (wantDrop && s.doors > 0.3) {
-      this.dropReleased += this.water.emitDrop(s, dt, 2400);
+      if (!this.dropping) this.dropMark = { hits: this.water.hits, landed: this.water.landed };
+      const r = this.water.emitDrop(s, dt, 2400);
+      this.dropReleased += r;
+      this.stats.dropped += r;
       this.dropping = true;
     } else if (this.dropping && !wantDrop) {
       this.dropping = false;
-      if (this.dropReleased > 400) this.lastDropDone = true;
+      if (this.dropReleased > 400) { this.lastDropDone = true; this.stats.drops++; this.dropCheck = { ...this.dropMark, at: this.time + 4.5 }; }
       this.dropReleased = 0;
+    }
+    // Score the drop once the water has landed: direct hit, partial or miss.
+    if (this.dropCheck && this.time > this.dropCheck.at) {
+      const landed = this.water.landed - this.dropCheck.landed;
+      this.hud.dropResult(landed ? (this.water.hits - this.dropCheck.hits) / landed : 0);
+      this.dropCheck = null;
     }
     if (s.scooping) this.water.emitScoopSpray(s);
     if (s.stall && this.state === 'playing' && Math.floor(this.time * 3) !== Math.floor((this.time - dt) * 3)) this.audio.stallWarn();

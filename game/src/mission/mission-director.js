@@ -44,9 +44,9 @@ export class MissionDirector {
     this.elapsed += dt;
     const s = g.flight;
     if (s.crashed) return this.fail(s.crashed);
-    if (this.elapsed > MISSION_TIME_LIMIT) return this.fail('Waktu misi habis.');
-    if (s.fuel <= 0 && s.onGround && !s.onWater && this.stage.id !== 'land') return this.fail('Kehabisan bahan bakar.');
-    if (s.fuel <= 0 && s.onWater) return this.fail('Kehabisan bahan bakar di atas air.');
+    if (this.elapsed > MISSION_TIME_LIMIT) return this.fail('The 25-minute mission clock ran out.');
+    if (s.fuel <= 0 && s.onGround && !s.onWater && this.stage.id !== 'land') return this.fail('Out of fuel: both engines starved.');
+    if (s.fuel <= 0 && s.onWater) return this.fail('Out of fuel, adrift on the water.');
     const r = this.stage.update(g, dt);
     if (r === 'pass') this.passStage();
     else if (r && r.startsWith('fail:')) this.fail(r.slice(5));

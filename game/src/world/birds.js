@@ -78,6 +78,7 @@ export function buildBirds(scene, flocks) {
   }
   scene.add(group);
   return {
+    list: birds.map((b) => b.g), // for bird-strike checks
     update(t) {
       for (const b of birds) {
         const a = t * b.sp + b.ph;

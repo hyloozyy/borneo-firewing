@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -14,73 +14,111 @@
 <canvas id="hud"></canvas>
 
 <section id="title" class="screen" hidden>
-  <div class="panel hero">
-    <p class="kicker">MISI KARHUTLA · KALIMANTAN</p>
-    <h1 class="logo">BORNEO <span>FIREWING</span></h1>
-    <p class="tag">FW-218 ENGGANG · AMPHIBIOUS WATER BOMBER</p>
-    <p class="sub">Terbangkan pesawat amfibi pemadam api. Ambil air di danau, padamkan kebakaran hutan, selamatkan desa, lalu mendarat dengan selamat.</p>
-    <button id="btn-start" class="primary">MULAI MISI</button>
-    <p class="label">ATAU PILIH TAHAP</p>
-    <div class="stages">
-      <button data-stage="0"><b>1</b>Take-off</button><button data-stage="1"><b>2</b>Scoop</button><button data-stage="2"><b>3</b>Fire Attack</button><button data-stage="3"><b>4</b>Village</button><button data-stage="4"><b>5</b>Landing</button>
+  <div class="title-wrap">
+    <div class="hero">
+      <p class="kicker"><i class="dot"></i>KARHUTLA FIRE MISSION · KALIMANTAN, BORNEO</p>
+      <h1 class="logo">BORNEO<span>FIREWING</span></h1>
+      <p class="tag">FW-218 "ENGGANG" · TWIN-TURBOPROP AMPHIBIOUS WATER BOMBER</p>
+      <p class="sub">The rainforest is burning. Scoop the lake, knock down the fire front, save the stilt village and bring the aircraft home, on two engines if you can, on one if you must.</p>
+      <div class="cta">
+        <button id="btn-start" class="primary">START MISSION</button>
+        <span class="hint-key">or press <b>ENTER</b></span>
+      </div>
+      <p class="label">STAGE SELECT</p>
+      <div class="stages">
+        <button data-stage="0"><b>01</b>Take-off<small>Patrol rings</small></button>
+        <button data-stage="1"><b>02</b>First Scoop<small>Skim the lake</small></button>
+        <button data-stage="2"><b>03</b>Fire Attack<small>Target rings</small></button>
+        <button data-stage="3"><b>04</b>Village<small>Wind shift</small></button>
+        <button data-stage="4"><b>05</b>Return<small>Land on 36</small></button>
+      </div>
     </div>
-    <dl class="keys">
-      <div><dt>W S</dt><dd>pitch</dd></div><div><dt>A D</dt><dd>roll</dd></div><div><dt>Q E</dt><dd>rudder</dd></div><div><dt>R F</dt><dd>gas</dd></div>
-      <div><dt>V</dt><dd>flaps</dd></div><div><dt>SPACE</dt><dd>jatuhkan air</dd></div><div><dt>B</dt><dd>rem</dd></div><div><dt>C</dt><dd>kamera</dd></div>
-      <div><dt>MOUSE</dt><dd>lihat sekitar</dd></div><div><dt>P</dt><dd>pause</dd></div>
-    </dl>
+    <aside class="spec">
+      <p class="label">AIRCRAFT</p>
+      <dl class="specs">
+        <div><dt>TYPE</dt><dd>FW-218 Enggang</dd></div>
+        <div><dt>ENGINES</dt><dd>2 × turboprop</dd></div>
+        <div><dt>TANK</dt><dd>6 000 L water</dd></div>
+        <div><dt>SCOOP</dt><dd>12 s at 60–115 kt</dd></div>
+        <div><dt>CREW</dt><dd>Callsign Enggang 218</dd></div>
+      </dl>
+      <p class="label">CONTROLS</p>
+      <dl class="keys">
+        <div><dt>W S</dt><dd>pitch</dd></div><div><dt>A D</dt><dd>roll</dd></div><div><dt>Q E</dt><dd>rudder</dd></div>
+        <div><dt>R F</dt><dd>throttle</dd></div><div><dt>V</dt><dd>flaps</dd></div><div><dt>SPACE</dt><dd>drop water</dd></div>
+        <div><dt>B</dt><dd>brakes</dd></div><div><dt>X</dt><dd>fire bottle</dd></div><div><dt>C</dt><dd>cockpit</dd></div>
+        <div><dt>MOUSE</dt><dd>look</dd></div><div><dt>P</dt><dd>pause</dd></div><div><dt>H</dt><dd>HUD</dd></div>
+      </dl>
+    </aside>
   </div>
 </section>
 
 <section id="briefing" class="screen" hidden>
-  <div class="panel">
-    <p class="kicker">BRIEFING · POSKO DAMKAR</p>
-    <h2>Karhutla di utara landasan</h2>
-    <ol class="steps">
-      <li><b>Take-off &amp; Patrol</b><span>Lepas landas, lewati 3 cincin di atas sungai.</span></li>
-      <li><b>First Scoop</b><span>Sentuh danau pelan pada 60–115 kt, isi tangki 80%.</span></li>
-      <li><b>Fire Attack</b><span>Lewati cincin target di atas api, tahan SPACE untuk menjatuhkan air.</span></li>
-      <li><b>Save the Village</b><span>Angin berbalik: lindungi desa panggung sebelum waktu habis.</span></li>
-      <li><b>Return &amp; Land</b><span>BBM menipis: mendarat di landasan 36 dan berhenti.</span></li>
-    </ol>
-    <p class="warn">Gagal jika menabrak, kehabisan BBM, desa terbakar, atau waktu misi habis. Asap = turbulensi dan jarak pandang rendah. Tangki penuh = pesawat berat.</p>
-    <button id="btn-brief-go" class="primary">TERBANG</button>
+  <div class="panel wide">
+    <p class="kicker"><i class="dot"></i>BRIEFING · POSKO DAMKAR · 17:42 LOCAL</p>
+    <h2>Wildfire north of the airstrip</h2>
+    <div class="brief-grid">
+      <ol class="steps">
+        <li><b>Take-off &amp; Patrol</b><span>Start the engines, flaps 1, take off from runway 36 and fly the 3 patrol rings along the river.</span></li>
+        <li><b>First Scoop</b><span>Touch down gently on the lake at 60–115 kt and skim until the tank is 80% full.</span></li>
+        <li><b>Fire Attack</b><span>Fly through the target ring over the fire and hold SPACE. Refill and repeat until the main fire is down.</span></li>
+        <li><b>Save the Village</b><span>The wind turns east: lay a wet line between the fire and the stilt village before the timer ends.</span></li>
+        <li><b>Return &amp; Land</b><span>Fuel is low. Fly the approach gate, follow the PAPI lights, land on runway 36 and stop.</span></li>
+      </ol>
+      <div class="threats">
+        <p class="label">THREATS</p>
+        <ul>
+          <li><b>SMOKE</b>turbulence, low visibility, hot air that overheats the engines</li>
+          <li><b>ENGINES</b>watch ITT; an engine can catch fire. Press X to fire the bottle, then fly on one</li>
+          <li><b>BIRDS</b>hornbills over the canopy can strike the aircraft</li>
+          <li><b>STRUCTURE</b>hard landings and high g damage the airframe</li>
+          <li><b>FUEL</b>limited; a damaged tank leaks</li>
+        </ul>
+      </div>
+    </div>
+    <p class="warn">Mission fails on a crash, empty tanks, a burned village or when the 25-minute mission clock runs out.</p>
+    <button id="btn-brief-go" class="primary">FLY</button>
   </div>
 </section>
 
 <section id="pause" class="screen" hidden>
   <div class="panel small">
     <p class="kicker">FW-218 ENGGANG</p>
-    <h2>PAUSE</h2>
-    <button id="btn-resume" class="primary">LANJUT</button>
-    <button id="btn-restart">ULANG MISI</button>
-    <p class="hint">M suara · H HUD · C kamera kokpit/chase</p>
+    <h2>PAUSED</h2>
+    <button id="btn-resume" class="primary">RESUME</button>
+    <button id="btn-restart">RESTART MISSION</button>
+    <p class="hint">M sound · H HUD · C cockpit / chase · X engine fire bottle</p>
   </div>
 </section>
 
 <section id="result" class="screen" hidden>
-  <div class="panel">
-    <p class="kicker">LAPORAN MISI</p>
-    <h2 id="result-title">MISI</h2>
+  <div class="panel wide">
+    <p class="kicker" id="result-kicker">MISSION REPORT</p>
+    <h2 id="result-title">MISSION</h2>
     <p id="result-reason"></p>
-    <table id="result-table"></table>
+    <div class="report">
+      <div id="result-flight" class="flight-data"></div>
+      <table id="result-table"></table>
+    </div>
+    <ul id="result-damage" class="damage-log"></ul>
     <div class="row">
-      <button id="btn-retry-stage" class="primary">ULANG TAHAP INI</button>
-      <button id="btn-again">ULANG DARI AWAL</button>
-      <button id="btn-menu">MENU</button>
+      <button id="btn-retry-stage" class="primary">RETRY STAGE</button>
+      <button id="btn-again">RESTART MISSION</button>
+      <button id="btn-menu">MAIN MENU</button>
     </div>
   </div>
 </section>
 
 <div id="touch" hidden>
   <div class="stick"><div class="knob"></div></div>
-  <div class="throttle"><i></i><span>GAS</span></div>
+  <div class="throttle"><i></i><span>THR</span></div>
   <div class="buttons">
-    <button class="b-drop">AIR</button><button class="b-flaps">FLAP</button><button class="b-brake">REM</button>
+    <button class="b-drop">DROP</button><button class="b-flaps">FLAPS</button><button class="b-brake">BRAKE</button>
     <button class="b-cam">CAM</button><button class="b-tilt">TILT</button><button class="b-pause">II</button>
+    <button class="b-ext">FIRE X</button>
   </div>
 </div>
-<div id="rotate">Putar HP ke posisi landscape ↻</div>
+<div id="rotate">Rotate your phone to landscape ↻</div>
 
 <script type="module" src="./src/main.js"></script>
 </body>

@@ -11,8 +11,8 @@ export const STAGES = [
     title: 'STAGE 1 · TAKE-OFF & PATROL',
     subtitle: 'Take off from the jungle strip and fly through 3 patrol rings along the river.',
     radio: [
-      'POSKO DAMKAR: Enggang 218, titik api besar terpantau di utara. Mesin hidup, flaps 1, lepas landas landasan 36.',
-      'POSKO DAMKAR: Ikuti sungai ke utara, lewati cincin patroli.',
+      'POSKO DAMKAR: Enggang 218, large hotspot reported north of the strip. Start both engines, flaps 1, cleared for take-off runway 36.',
+      'POSKO DAMKAR: Follow the river north and fly the patrol rings. Report the fire front.',
     ],
     enter(game) {
       const pts = [v3(-420, 160, 900), v3(-640, 210, 250), v3(-300, 260, -650)];
@@ -57,7 +57,7 @@ export const STAGES = [
     id: 'scoop',
     title: 'STAGE 2 · FIRST SCOOP',
     subtitle: 'Fly to the lake, touch down gently at 60–115 kt and fill the tank.',
-    radio: ['POSKO DAMKAR: Isi air di danau barat. Turun landai, kecepatan di bawah 115 knot, jangan menukik!'],
+    radio: ['POSKO DAMKAR: Fill up on the west lake. Shallow descent, under 115 knots, keep the nose up and do not dive at the water!'],
     enter(game) { game.stageData.min = 0.8; },
     update(game) {
       return game.flight.water >= game.flight.waterMax * game.stageData.min && !game.flight.onWater ? 'pass' : null;
@@ -80,7 +80,7 @@ export const STAGES = [
     id: 'attack',
     title: 'STAGE 3 · FIRE ATTACK',
     subtitle: 'Fly through the target ring over the fire and drop (SPACE). Refill and repeat.',
-    radio: ['POSKO DAMKAR: Api menyebar ke arah angin! Lewati cincin target, buka pintu air tepat di atasnya.'],
+    radio: ['POSKO DAMKAR: The fire is running downwind! Fly through the target ring and open the doors right over it.', 'POSKO DAMKAR: Mind your engine temperatures in that smoke, 218. Ease the power if ITT climbs.'],
     enter(game) {
       const d = game.stageData;
       d.ring = makeRing(55, 0xff5a1e);
@@ -123,7 +123,7 @@ export const STAGES = [
     id: 'village',
     title: 'STAGE 4 · SAVE THE VILLAGE',
     subtitle: 'Wind shift! The fire races toward the stilt village. Lay a wet line before time runs out.',
-    radio: ['POSKO DAMKAR: DARURAT! Angin berbalik ke timur, api bergerak ke desa. Buat garis basah di depan desa!'],
+    radio: ['POSKO DAMKAR: MAYDAY RELAY! The wind has swung east and the fire is racing toward the village. Lay a wet line in front of it!'],
     enter(game) {
       const d = game.stageData;
       const v = PLACES.village;
@@ -145,8 +145,8 @@ export const STAGES = [
       if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
       d.threat = villageThreat(game);
       if (d.threat.near === 0 && d.drops > 0) return 'pass';
-      if (d.threat.closest < 70) return 'fail:Api mencapai desa. Desa terbakar.';
-      if (d.timer <= 0) return 'fail:Waktu habis, api menelan desa.';
+      if (d.threat.closest < 70) return 'fail:The fire reached the village. The stilt houses are burning.';
+      if (d.timer <= 0) return 'fail:Out of time: the fire swallowed the village.';
       return null;
     },
     objective(game) {
@@ -170,7 +170,7 @@ export const STAGES = [
     id: 'land',
     title: 'STAGE 5 · RETURN & LAND',
     subtitle: 'Fuel is low. Return and land on runway 36, follow the PAPI lights.',
-    radio: ['POSKO DAMKAR: Kerja bagus, Enggang 218! BBM menipis, kembali ke landasan 36. Angin tenang.'],
+    radio: ['POSKO DAMKAR: Outstanding work, Enggang 218! Fuel is low, return to runway 36. Wind calm, PAPI lights on.'],
     enter(game) {
       game.flight.fuel = Math.min(game.flight.fuel, 900);
       game.wind.set(1, 0, 0.5);

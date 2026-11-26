@@ -71,11 +71,15 @@ export class SoundEngine {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
     const rpm = s.rpm;
-    for (const e of this.engine) {
-      e.o.frequency.setTargetAtTime(38 + rpm * 62 + e.det, t, 0.1);
-      e.f.frequency.setTargetAtTime(220 + rpm * 900, t, 0.1);
-      e.g.gain.setTargetAtTime(rpm > 0.02 ? 0.05 + rpm * 0.09 : 0, t, 0.2);
-    }
+    // One voice per engine: a failed engine falls silent, a damaged one runs rough.
+    this.engine.forEach((e, i) => {
+      const r = s.engRpm ? s.engRpm[i] : rpm;
+      const eng = s.damage?.engines[i];
+      const rough = eng ? (1 - eng.health) * Math.sin(time * 17 + i) * 6 : 0;
+      e.o.frequency.setTargetAtTime(38 + r * 62 + e.det + rough, t, 0.1);
+      e.f.frequency.setTargetAtTime(220 + r * 900, t, 0.1);
+      e.g.gain.setTargetAtTime(r > 0.02 ? 0.05 + r * 0.09 : 0, t, 0.2);
+    });
     this.whine.frequency.setTargetAtTime(1800 + rpm * 2600, t, 0.2);
     this.whineGain.gain.setTargetAtTime(rpm * 0.012, t, 0.2);
     const v = s.airspeed;
@@ -102,6 +106,23 @@ export class SoundEngine {
   radioBeep() { this.beep(1200, 0.08); this.beep(1600, 0.1, 0.1); }
   ringChime() { this.beep(880, 0.15, 0, 'triangle', 0.15); this.beep(1320, 0.25, 0.08, 'triangle', 0.12); }
   success() { [523, 659, 784, 1046].forEach((f, i) => this.beep(f, 0.35, i * 0.12, 'triangle', 0.13)); }
+  // Master caution chime (single) or master warning (triple, harsher) for damage events.
+  caution(level) {
+    if (level === 'warning') [0, 0.22, 0.44].forEach((w) => this.beep(740, 0.16, w, 'square', 0.07));
+    else { this.beep(1046, 0.18, 0, 'sine', 0.12); this.beep(784, 0.3, 0.16, 'sine', 0.1); }
+  }
+  // Fire bottle discharge: a short hiss.
+  extinguisher() {
+    if (!this.ctx) return;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noise;
+    const f = this.ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3000;
+    const g = this.ctx.createGain();
+    const t = this.ctx.currentTime;
+    g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    src.connect(f).connect(g).connect(this.master);
+    src.start(); src.stop(t + 1.5);
+  }
   stallWarn() { this.beep(420, 0.12, 0, 'square', 0.06); }
   crash() {
     if (!this.ctx) return;

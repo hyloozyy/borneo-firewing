@@ -1,8 +1,10 @@
 // FW-218 flight physics: thrust, lift with stall, drag, weight of the water load, banked turns,
 // ground roll on the runway, water landing and scooping, touchdown and crash detection.
+// Each engine gives its own thrust (see damage-model.js): one engine out yaws the aircraft.
 import * as THREE from 'three';
 import { terrainHeight, isOnRunway } from '../world/terrain.js';
 import { clamp } from '../core/noise.js';
+import { createDamage, engineOutput, landingDamage } from './damage-model.js';
 
 const RHO = 1.2, WING_AREA = 128, G = 9.81;
 const EMPTY_MASS = 12500, FUEL_MAX = 3200, WATER_MAX = 6000;
@@ -25,6 +27,7 @@ export function createFlightState() {
     engines: true, onGround: true, onWater: false, scooping: false, crashed: null,
     airspeed: 0, alpha: 0, stall: false, vs: 0, agl: 0, heading: 0, pitch: 0, roll: 0,
     lastTouchdown: null, turbulence: 0, brakes: false,
+    engRpm: [0, 0], gLoad: 1, damage: createDamage(),
   };
 }
 
@@ -42,6 +45,7 @@ export function setFlying(s, pos, headingRad, speed, pitchRad = 0, rollRad = 0) 
   s.velocity.set(0, 0, -speed).applyQuaternion(s.quaternion);
   s.onGround = false;
   s.throttle = s.rpm = 0.7;
+  s.engRpm[0] = s.engRpm[1] = 0.7;
 }
 
 function surfaceUnder(x, z) {
@@ -54,9 +58,12 @@ export function stepFlight(s, input, dt, env) {
   if (s.crashed) return;
   s.throttle = clamp(s.throttle + input.throttleDelta * dt * 0.6, 0, 1);
   if (s.fuel <= 0) { s.fuel = 0; s.engines = false; }
+  const dmg = s.damage;
+  const out = dmg.engines.map(engineOutput);
+  const running = out.filter((o) => o > 0).length;
   const power = s.engines ? s.throttle : 0;
-  s.rpm += ((s.engines ? 0.25 + power * 0.75 : 0) - s.rpm) * Math.min(1, dt * 1.5);
-  s.fuel = Math.max(0, s.fuel - (0.35 + power * 2.4) * dt * env.fuelBurn);
+  s.rpm = (s.engRpm[0] + s.engRpm[1]) / 2;
+  s.fuel = Math.max(0, s.fuel - (0.35 + power * 2.4) * (running / 2) * dt * env.fuelBurn);
   s.flaps += (s.flapTarget - s.flaps) * Math.min(1, dt * 0.8);
   s.brakes = input.brakes;
 
@@ -80,10 +87,11 @@ export function stepFlight(s, input, dt, env) {
   s.stall = alpha > stallA && V > 5 && !s.onGround;
   if (alpha > stallA) cl = Math.max(0.2, (0.32 + s.flaps * 0.55 + 4.6 * stallA) - (alpha - stallA) * 6);
   if (alpha < -0.25) cl = Math.min(cl, -0.6);
-  const cd = 0.034 + s.flaps * 0.05 + 0.045 * cl * cl + s.doors * 0.02 + (s.onWater ? 0.12 : 0);
+  const dead = dmg.engines.filter((e) => e.failed).length * 0.012; // windmilling / feathered prop drag
+  const cd = 0.034 + s.flaps * 0.05 + 0.045 * cl * cl + s.doors * 0.02 + (s.onWater ? 0.12 : 0) + (1 - dmg.structure) * 0.03 + dead;
 
-  _force.set(0, -mass * G, 0);
-  _force.addScaledVector(_f, power * MAX_THRUST * clamp(1.15 - V / 140, 0.35, 1.1));
+  _force.set(0, 0, 0);
+  _force.addScaledVector(_f, power * MAX_THRUST * ((out[0] + out[1]) / 2) * clamp(1.15 - V / 140, 0.35, 1.1));
   if (V > 1) {
     // Lift perpendicular to airflow in the body's symmetry plane.
     _tmp.copy(_v).normalize();
@@ -94,6 +102,10 @@ export function stepFlight(s, input, dt, env) {
     // Side force keeps the aircraft from sliding.
     _force.addScaledVector(_r, -vr * Math.min(V, 60) * 220);
   }
+  // Load factor felt by the crew: aerodynamic force along the aircraft's up axis.
+  const g = _force.dot(_u) / (mass * G);
+  s.gLoad += ((s.onGround ? 1 : g) - s.gLoad) * Math.min(1, dt * 8);
+  _force.y -= mass * G;
   // Smoke turbulence
   if (s.turbulence > 0) {
     _force.x += (Math.random() - 0.5) * s.turbulence * mass * 6;
@@ -101,15 +113,17 @@ export function stepFlight(s, input, dt, env) {
   }
 
   // Control authority grows with dynamic pressure.
-  const auth = clamp(q / 1600, 0.1, 1.2);
+  const auth = clamp(q / 1600, 0.1, 1.2) * (0.6 + 0.4 * dmg.structure);
   s.aileron += (input.roll - s.aileron) * Math.min(1, dt * 6);
   s.elevator += (input.pitch - s.elevator) * Math.min(1, dt * 6);
   s.rudder += (input.yaw - s.rudder) * Math.min(1, dt * 5);
   const heavy = 1 - (s.water / WATER_MAX) * 0.3;
   const targetPitch = s.elevator * 0.75 * auth * heavy;
-  const targetRoll = -s.aileron * 1.45 * auth * heavy;
+  const targetRoll = -s.aileron * 1.45 * auth * heavy + asym * 0.6;
   const bank = Math.asin(clamp(_r.y, -1, 1));
-  const targetYaw = s.rudder * -0.3 * auth + (s.onGround ? 0 : bank * 0.12 * auth);
+  // Asymmetric thrust: the live engine swings the nose toward the dead one (engine 1 is the left).
+  const asym = (out[1] - out[0]) * power * 0.16;
+  const targetYaw = s.rudder * -0.3 * auth + (s.onGround ? 0 : bank * 0.12 * auth) + asym;
   const k = Math.min(1, dt * 3.5);
   s.angular.x += (targetPitch - s.angular.x) * k;
   s.angular.y += (targetYaw - s.angular.y) * k;
@@ -149,7 +163,7 @@ function contact(s, dt, input, env, fwd) {
   const runway = isOnRunway(s.position.x, s.position.z, 4);
   if (surf.water) {
     // Hull on the water: gentle enough is a landing / scoop, too hard is a crash.
-    if (vs < -9 || Math.abs(e.z) > 0.45 || e.x < -0.25 || speed > 85) { s.crashed = speed > 85 ? 'Lambung pecah: terlalu cepat di air' : 'Menghantam air terlalu keras'; return; }
+    if (vs < -9 || Math.abs(e.z) > 0.45 || e.x < -0.25 || speed > 85) { s.crashed = speed > 85 ? 'Hull broke up: far too fast on the water' : vs < -9 ? 'Hit the water too hard' : 'Wingtip or nose dug into the water'; return; }
     if (vs < -3.5 || speed > 66) {
       // Too steep or too fast: the hull skips off the water.
       s.velocity.y = Math.abs(vs) * 0.45 + 1;
@@ -161,7 +175,7 @@ function contact(s, dt, input, env, fwd) {
     s.onWater = true;
     s.position.y = Math.max(s.position.y, surf.h + GEAR_HEIGHT - 0.25);
     s.velocity.y = Math.max(0, s.velocity.y) * 0.3;
-    if (wasAir) s.lastTouchdown = { vs, speed, water: true, time: env.time };
+    if (wasAir) s.lastTouchdown = { vs, speed, water: true, time: env.time, g: 1 + Math.abs(vs) * 0.3 };
     s.onGround = true;
     // Scoop when skimming between 30 and 60 m/s with the probes down.
     if (speed > 28 && speed < 62 && s.water < s.waterMax) {
@@ -171,9 +185,13 @@ function contact(s, dt, input, env, fwd) {
     // Water drag
     s.velocity.multiplyScalar(1 - dt * 0.035);
   } else {
-    if (!runway && speed > 8) { s.crashed = 'Menabrak hutan'; return; }
-    if (vs < -4.5 || Math.abs(e.z) > 0.3 || e.x < -0.15) { s.crashed = vs < -4.5 ? 'Pendaratan terlalu keras: roda patah' : 'Sayap atau hidung menghantam landasan'; return; }
-    if (wasAir) s.lastTouchdown = { vs, speed, water: false, time: env.time, x: s.position.x };
+    if (!runway && speed > 8) { s.crashed = s.agl < -0.5 && speed > 30 ? 'Flew into the forest canopy' : 'Ran off the runway into the trees'; return; }
+    const limit = -4.5 * (0.5 + 0.5 * s.damage.gear);
+    if (vs < limit || Math.abs(e.z) > 0.3 || e.x < -0.15) { s.crashed = vs < limit ? 'Touchdown far too hard: the landing gear collapsed' : 'A wingtip or the nose struck the runway'; return; }
+    if (wasAir) {
+      s.lastTouchdown = { vs, speed, water: false, time: env.time, x: s.position.x, z: s.position.z, g: 1 + Math.abs(vs) * 0.42, bank: e.z, pitch: e.x };
+      landingDamage(s, s.damage, vs, env.time);
+    }
     s.onGround = true;
     s.position.y = Math.max(s.position.y, surf.h + GEAR_HEIGHT);
     s.velocity.y = Math.max(0, s.velocity.y);

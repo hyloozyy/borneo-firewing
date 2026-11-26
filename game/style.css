@@ -16,10 +16,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #120a06; fon
   box-sizing: border-box; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px); }
 .panel::before { content: ""; position: absolute; left: 34px; right: 34px; top: -1px; height: 3px; border-radius: 0 0 3px 3px; background: linear-gradient(90deg, var(--fire-deep), var(--fire), var(--gold)); }
 .panel.small { width: min(340px, 100%); text-align: center; }
-.hero { text-align: center; width: min(640px, 100%); }
 .kicker { font: 700 11px/1 var(--label); letter-spacing: 3px; color: var(--fire); margin: 0 0 10px; }
-.logo { font: 400 64px/0.95 var(--logo); letter-spacing: 3px; margin: 0; text-shadow: 0 4px 22px rgba(255, 80, 20, 0.45); }
-.logo span { color: #ff5232; }
+.logo { font: 400 88px/0.86 var(--logo); letter-spacing: 4px; margin: 0; text-shadow: 0 6px 30px rgba(255, 80, 20, 0.5); }
+.logo span { display: block; color: transparent; background: linear-gradient(180deg, #ffd27a 0%, #ff7a3d 45%, #d6261a 100%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 4px 16px rgba(255, 70, 20, 0.55)); }
 .tag { font: 700 11px/1 var(--label); letter-spacing: 2.5px; color: var(--gold); margin: 12px 0 0; }
 h2 { font: 900 30px/1.05 var(--display); letter-spacing: 1px; text-transform: uppercase; margin: 0 0 14px; }
 #result-title.ok { color: var(--ok); }
@@ -55,9 +54,48 @@ td:nth-child(2) { text-align: right; font: 700 14px/1 var(--label); }
 td.stars { color: #ffd34a; letter-spacing: 2px; text-align: right; width: 70px; }
 tr.total td { font: 900 19px/1 var(--display); color: var(--gold); border-bottom: none; }
 tr.total td:nth-child(2) { font: 700 17px/1 var(--label); }
-body.shot .screen, body.shot #touch { display: none !important; }
+/* Title: hero on the left over the fly-by, aircraft card and controls on the right. */
+#title { justify-content: flex-start; background: linear-gradient(90deg, rgba(8, 4, 2, 0.86) 0%, rgba(8, 4, 2, 0.55) 46%, rgba(8, 4, 2, 0.05) 75%, rgba(8, 4, 2, 0.5) 100%); }
+.title-wrap { display: flex; gap: 40px; align-items: center; justify-content: space-between; width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 2vw; }
+.hero { width: min(600px, 100%); animation: rise 0.9s ease-out both; }
+.hero .sub { margin-left: 0; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fire); margin-right: 9px; vertical-align: 1px; box-shadow: 0 0 10px var(--fire); animation: pulse 1.2s ease-in-out infinite; }
+.cta { display: flex; align-items: center; gap: 16px; }
+.cta button { margin: 0; }
+.hint-key { font: 400 13px/1 var(--body); color: var(--muted); }
+.hint-key b { font: 700 11px/1 var(--label); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); border-bottom-width: 2px; border-radius: 4px; padding: 3px 6px; }
+.stages button { text-align: center; }
+.stages small { font: 400 11px/1 var(--body); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.spec { width: 300px; flex: none; background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 18px 20px; backdrop-filter: blur(6px); animation: rise 0.9s 0.15s ease-out both; }
+.spec .label:first-child { margin-top: 0; }
+.specs { margin: 0; display: grid; gap: 6px; }
+.specs div { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.07); padding-bottom: 5px; }
+.specs dt { font: 700 10px/1.4 var(--label); letter-spacing: 1.5px; color: var(--muted); }
+.specs dd { margin: 0; font: 600 14px/1.2 var(--body); color: var(--ink); }
+.spec .keys { grid-template-columns: repeat(3, 1fr); margin-top: 6px; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+.screen .panel { animation: rise 0.45s ease-out both; }
+.panel.wide { width: min(860px, 100%); }
+.brief-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; }
+.threats ul { list-style: none; margin: 0; padding: 0; }
+.threats li { font: 400 13px/1.35 var(--body); color: #e6d9cc; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.threats b { display: block; font: 700 10px/1.3 var(--label); letter-spacing: 2px; color: var(--gold); }
+.report { display: grid; grid-template-columns: 1fr 1.25fr; gap: 22px; align-items: start; }
+.flight-data { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.flight-data div { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; }
+.flight-data dt { font: 700 9.5px/1.2 var(--label); letter-spacing: 1.5px; color: var(--muted); }
+.flight-data dd { margin: 3px 0 0; font: 700 18px/1.1 var(--label); color: #fff; }
+.flight-data dd.bad { color: var(--bad); } .flight-data dd.ok { color: var(--ok); } .flight-data dd.warn { color: var(--gold); }
+.damage-log { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+.damage-log li { font: 700 11px/1 var(--label); letter-spacing: 1px; padding: 6px 9px; border-radius: 5px; background: rgba(255, 90, 60, 0.16); border: 1px solid rgba(255, 90, 60, 0.45); color: #ffb3a0; }
+.damage-log li.ok { background: rgba(120, 255, 160, 0.1); border-color: rgba(120, 255, 160, 0.4); color: var(--ok); }
+#touch .buttons .b-ext { background: rgba(200, 40, 20, 0.7); }
+@media (max-width: 980px) { .spec { display: none; } #title { background: rgba(8, 4, 2, 0.6); } .title-wrap { justify-content: center; } }
+@media (max-width: 760px), (max-height: 500px) { .brief-grid, .report { grid-template-columns: 1fr; gap: 6px; } .threats { display: none; } }
 
-#touch { display: none !important; }
+body.shot .screen, body.shot #touch { display: none !important; }
+body.shot #title.staged { display: flex !important; }
 
 #touch { position: fixed; inset: 0; pointer-events: none; }
 #touch[hidden] { display: none; }
@@ -79,7 +117,8 @@ body.shot .screen, body.shot #touch { display: none !important; }
   .screen { align-items: flex-start; overflow: auto; padding: 10px; }
   .panel { padding: 16px 20px; margin: auto; }
   .panel::before { left: 20px; right: 20px; }
-  .logo { font-size: 40px; }
+  .logo { font-size: 46px; }
+  .flight-data dd { font-size: 15px; }
   .tag { margin-top: 8px; }
   .sub { font-size: 14px; margin: 10px auto 12px; }
   .label { margin: 12px 0 6px; }
