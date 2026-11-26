@@ -46,12 +46,12 @@ export class WaterEffects {
   emitScoopSpray(s) {
     const p = s.position, v = s.velocity;
     const back = new THREE.Vector3(0, 0, 1).applyQuaternion(s.quaternion);
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const side = i % 2 ? 1 : -1;
       const r = new THREE.Vector3(side, 0, 0).applyQuaternion(s.quaternion);
       this.pool.spawn(p.x + back.x * 3 + r.x * 1.6, 0.4, p.z + back.z * 3 + r.z * 1.6,
         v.x * 0.35 + r.x * randRange(4, 10), randRange(4, 10), v.z * 0.35 + r.z * randRange(4, 10),
-        randRange(0.8, 1.6), 2, randRange(9, 16), [1, 1, 1, 0.85], [0.9, 0.95, 1, 0], 0.8, -9.81, 0);
+        randRange(0.9, 1.9), 3, randRange(12, 24), [1, 1, 1, 0.85], [0.9, 0.95, 1, 0], 0.8, -9.81, 0);
     }
   }
 

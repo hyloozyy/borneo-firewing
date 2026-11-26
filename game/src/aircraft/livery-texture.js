@@ -101,10 +101,11 @@ export function buildLiveryTexture() {
     gg.strokeRect(0, 0, w, h);
   };
   for (const side of ['right', 'left']) {
-    onSide(g, side, 0.082, 0.04 * Math.PI, (gg) => { glass(gg, -46, 52); });
-    onSide(g, side, 0.082, 0.14 * Math.PI, (gg) => { glass(gg, -46, 50); });
-    // Side cockpit windows
-    onSide(g, side, 0.14, 0.24 * Math.PI, (gg) => { glass(gg, -60, 40); glass(gg, -128 + 0, 40); });
+    onSide(g, side, 0.078, 0.03 * Math.PI, (gg) => { glass(gg, -58, 62); });
+    onSide(g, side, 0.078, 0.15 * Math.PI, (gg) => { glass(gg, -58, 62); });
+    // Side cockpit windows: a big sliding pane and a smaller rear one.
+    onSide(g, side, 0.142, 0.2 * Math.PI, (gg) => { glass(gg, -78, 58); });
+    onSide(g, side, 0.168, 0.21 * Math.PI, (gg) => { glass(gg, -40, 50); });
     // Cabin windows and observation bubble
     for (const t of [0.29, 0.34]) onSide(g, side, t, 0.3 * Math.PI, (gg) => { glass(gg, -24, 30); });
     // Door
@@ -175,11 +176,7 @@ export function buildFinTexture() {
   g.fillRect(0, 0, 512, 512);
   g.fillStyle = '#f4f4f1';
   g.fillRect(0, 380, 512, 132);
-  drawEmblem(g, 300, 210, 1.7, '#ffffff', null);
-  g.fillStyle = '#ffffff';
-  g.font = '900 44px Arial';
-  g.textAlign = 'center';
-  g.fillText('218', 300, 460);
+  drawEmblem(g, 205, 215, 1.45, '#ffffff', null);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;

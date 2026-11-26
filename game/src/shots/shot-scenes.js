@@ -39,7 +39,7 @@ export const SHOTS = {
     setFlying(game.flight, new THREE.Vector3(l.x - 260, GEAR_HEIGHT - 0.25, l.z + 40), -80 * deg, 44, 2 * deg, 0);
     game.flight.water = game.flight.waterMax * 0.45;
     game.flight.flaps = game.flight.flapTarget = 0.5;
-    game.rig.yaw = -2.3; game.rig.pitch = 0.08; game.rig.dist = 30;
+    game.rig.yaw = -2.15; game.rig.pitch = 0.12; game.rig.dist = 34;
     return { warm: 1.6, scoop: true, mode: 'chase' };
   },
   // Golden-hour approach to the jungle airstrip, flaps out, lights on.

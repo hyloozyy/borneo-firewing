@@ -138,7 +138,7 @@ export function buildFW218() {
   const tips = [];
   for (const side of [-1, 1]) {
     const tip = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8), red);
-    tip.scale.set(0.9, 0.24, chord * 0.42);
+    tip.scale.set(0.55, 0.2, chord * 0.4);
     tip.position.set(side * halfSpan, wingY + 0.05, wingLE + chord * 0.38);
     model.add(tip);
     tips.push(tip);
