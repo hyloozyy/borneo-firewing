@@ -33,7 +33,7 @@ export class CameraRig {
     this.smoothQuat.slerp(followQ, Math.min(1, dt * 3));
     if (this.mode === 'cockpit') {
       cam.position.copy(EYE).applyQuaternion(s.quaternion).add(s.position);
-      const look = new THREE.Quaternion().setFromEuler(new THREE.Euler((this.pitch - 0.1) * 0.5 - 0.1, this.yaw, 0, 'YXZ'));
+      const look = new THREE.Quaternion().setFromEuler(new THREE.Euler((this.pitch - 0.12) * 0.5 - 0.17, this.yaw, 0, 'YXZ'));
       cam.quaternion.copy(s.quaternion).multiply(look);
       if (this.shake > 0) cam.position.y += (Math.random() - 0.5) * this.shake * 0.08;
       cam.near = 0.05;

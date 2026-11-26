@@ -64,46 +64,53 @@ export class Hud {
       if (this.prevKt != null) this.spdRate += ((kt - this.prevKt) / dt - this.spdRate) * Math.min(1, dt * 2);
       this.prevKt = kt;
     }
-    const cy = H * 0.48;
-    if (game.cameraMode === 'cockpit') {
-      pitchLadder(g, s, W / 2, cy, u);
-      bankScale(g, s, W / 2, cy, 122 * u, u);
+    // In the cockpit the symbology is projected into the windscreen above the glareshield;
+    // the panel itself carries the engine, fuel and map displays.
+    const cockpit = game.cameraMode === 'cockpit';
+    const cy = cockpit ? H * 0.27 : H * 0.48;
+    const tapeH = cockpit ? Math.min(150, (H * 0.36) / u) : 210;
+    if (cockpit) {
+      pitchLadder(g, s, W / 2, cy, u, tapeH / 2);
+      bankScale(g, s, W / 2, cy, 92 * u, u);
     } else pathMarker(g, game, W, H, u);
 
     // Speed and altitude tapes with their readouts.
-    const tx = Math.min(W * (compact ? 0.3 : 0.27), 430 * u);
+    const tx = cockpit ? Math.min(W * 0.2, 300 * u) : Math.min(W * (compact ? 0.3 : 0.27), 430 * u);
     const mass = 12500 + s.fuel + s.water;
     const clmax = 0.32 + s.flaps * 0.55 + 4.6 * (0.28 - s.flaps * 0.03);
     const vs = Math.sqrt((2 * mass * 9.81) / (1.2 * 128 * clmax)) * KT;
     tape(g, W / 2 - tx, cy, kt, u, {
-      left: true, label: 'SPD', unit: 'KT', step: 10, color: s.stall ? C.red : C.green, trend: this.spdRate * 6,
+      left: true, h: tapeH, label: 'SPD', unit: 'KT', step: 10, color: s.stall ? C.red : C.green, trend: this.spdRate * 6,
       bands: [{ from: 0, to: vs, color: C.red, hatch: true }, { from: 60, to: 115, color: 'rgba(92,200,255,0.75)' }],
     });
     const groundFt = (s.position.y - s.agl - 1.75) * FT;
     tape(g, W / 2 + tx, cy, ft, u, {
-      left: false, label: 'ALT', unit: 'FT', step: 100, color: s.agl < 30 && !s.onGround ? C.amber : C.green, trend: s.vs * FT * 6,
+      left: false, h: tapeH, label: 'ALT', unit: 'FT', step: 100, color: s.agl < 30 && !s.onGround ? C.amber : C.green, trend: s.vs * FT * 6,
       bands: [{ from: -2000, to: groundFt, color: 'rgba(190,120,60,0.85)', hatch: true }],
     });
-    const below = cy + 105 * u + 14 * u;
+    const below = cy + (tapeH / 2) * u + 14 * u;
     const gear = game.plane.userData.parts.gearExt;
-    readouts(g, W / 2 - tx, below, [
+    if (!cockpit) readouts(g, W / 2 - tx, below, [
       ['THR', `${Math.round(s.throttle * 100)}%`],
       ['FLAPS', ['UP', '1', 'FULL'][Math.round(s.flapTarget * 2)]],
       ['GEAR', gear > 0.95 ? 'DOWN' : gear < 0.05 ? 'UP' : 'TRANS', gear > 0.95 ? C.green : gear < 0.05 ? C.white : C.amber],
     ], u);
     const fpm = Math.round(s.vs * 196.85);
-    readouts(g, W / 2 + tx, below, [
+    if (cockpit) {
+      readouts(g, W / 2 + tx + 96 * u, cy - 26 * u, [['VS', `${fpm >= 0 ? '+' : ''}${fpm}`, fpm < -1000 ? C.amber : C.green], ['RA', `${Math.max(0, Math.round(s.agl * FT))}`, s.agl < 30 && !s.onGround ? C.amber : C.green]], u);
+      readouts(g, W / 2 - tx - 96 * u, cy - 26 * u, [['THR', `${Math.round(s.throttle * 100)}%`], ['G', s.gLoad.toFixed(1), s.gLoad > 3.2 ? C.red : C.green]], u);
+    } else readouts(g, W / 2 + tx, below, [
       ['VS', `${fpm >= 0 ? '+' : ''}${fpm}`, fpm < -1000 ? C.amber : C.green],
       ['RA', `${Math.max(0, Math.round(s.agl * FT))}`, s.agl < 30 && !s.onGround ? C.amber : C.green],
       ['AOA', `${(s.alpha * 57.3).toFixed(1)}°`, s.stall ? C.red : C.green],
     ], u);
-    if (!compact) gMeter(g, W / 2 - tx - 66 * u, cy + 78 * u, 20 * u, s.gLoad, s.damage.maxG, u);
+    if (!compact && !cockpit) gMeter(g, W / 2 - tx - 66 * u, cy + 78 * u, 20 * u, s.gLoad, s.damage.maxG, u);
 
     const bug = game.objective ? (Math.atan2(game.objective.pos.x - s.position.x, -(game.objective.pos.z - s.position.z)) * 180) / Math.PI : null;
     headingTape(g, W / 2, M + 2 * u, s.heading, u, bug == null ? null : (bug + 360) % 360, game.wind);
 
     // Centre call-outs
-    const cy2 = cy + 76 * u;
+    const cy2 = cockpit ? cy + (tapeH / 2 - 14) * u : cy + 76 * u;
     if (s.stall) flash(g, 'STALL · PUSH', W / 2, cy2, C.red, u, this.time);
     else if (s.scooping) flash(g, `SCOOPING · ${Math.round((100 * s.water) / s.waterMax)}%`, W / 2, cy2, C.blue, u, this.time, true);
     else if (game.dropWindow > 0 && s.water > 0) flash(g, 'DROP NOW · SPACE', W / 2, cy2, C.amber, u, this.time);
@@ -118,7 +125,9 @@ export class Hud {
     const mh = missionPanel(g, game, this, W - M - mw, M, mw, u);
     const sw = 236 * u;
     let radarR = (compact ? 50 : 72) * u;
-    if (compact) {
+    if (cockpit) {
+      radarR = 0;
+    } else if (compact) {
       radar(g, game, M + 6 * u + radarR, status.bottom + 14 * u + radarR, radarR, u, this.time);
       systemsPanel(g, game, W - M - sw, M + mh + 8 * u, sw, u);
     } else {

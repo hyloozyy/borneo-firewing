@@ -10,10 +10,10 @@ import { latheZ, profileOf, bladeGeometry, strutGeometry, plateYZ } from './fw21
 
 const RED = 0xc8102e;
 const WHITE = 0xf2f2ee;
-const NOSE_Z = -10.2, TAIL_Z = 10.2;
+export const NOSE_Z = -10.2, TAIL_Z = 10.2;
 
 // Hull cross-section at station t (0 nose .. 1 tail): half width, top and keel heights.
-function hullSection(t) {
+export function hullSection(t) {
   const nose = Math.min(1, t / 0.2);
   const noseRound = Math.sqrt(Math.sin((nose * Math.PI) / 2));
   const tail = Math.max(0, (t - 0.6) / 0.4);

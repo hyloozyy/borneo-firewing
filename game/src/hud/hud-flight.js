@@ -9,7 +9,7 @@ const DEG = 180 / Math.PI;
 
 // Vertical tape. opts: { left, label, unit, step, color, trend (units per 6 s), bands: [{from,to,color,hatch}] }
 export function tape(g, x, cy, value, u, opts) {
-  const h = 210 * u, w = 60 * u;
+  const h = (opts.h || 210) * u, w = 60 * u;
   const { left, step, color } = opts;
   panel(g, x - w / 2, cy - h / 2, w, h, u, { bracket: color });
   const pxPer = 3.0 * u * (10 / step);
@@ -184,7 +184,7 @@ export function bankScale(g, s, cx, cy, r, u) {
 }
 
 // Pitch ladder (cockpit view): horizon line and 5° rungs, rolling with the aircraft.
-export function pitchLadder(g, s, cx, cy, u) {
+export function pitchLadder(g, s, cx, cy, u, clipH = 110) {
   g.save();
   g.translate(cx, cy);
   g.rotate(-s.roll);
@@ -195,7 +195,7 @@ export function pitchLadder(g, s, cx, cy, u) {
   font(g, 400, 10.5 * u, 'mono');
   const ppd = 7 * u;
   const p = s.pitch * DEG;
-  g.beginPath(); g.rect(-170 * u, -110 * u, 340 * u, 220 * u); g.clip();
+  g.beginPath(); g.rect(-170 * u, -clipH * u, 340 * u, clipH * 2 * u); g.clip();
   for (let d = -30; d <= 30; d += 5) {
     const y = (p - d) * ppd;
     const w = d === 0 ? 170 * u : d % 10 === 0 ? 56 * u : 34 * u;

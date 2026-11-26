@@ -77,7 +77,7 @@ class Game {
 
     this.plane = buildFW218();
     this.scene.add(this.plane);
-    this.cockpit = buildCockpit();
+    this.cockpit = buildCockpit(this.quality);
     this.plane.add(this.cockpit.group);
     this.flight = createFlightState();
     this.wind = new THREE.Vector3(-2, 0, -3);
@@ -294,7 +294,7 @@ class Game {
     this.plane.quaternion.copy(s.quaternion);
     animateFW218(this.plane, { ...s, cockpit: this.cameraMode === 'cockpit' }, dt, this.time);
     this.cockpit.group.visible = this.cameraMode === 'cockpit';
-    if (this.cockpit.group.visible) updateCockpit(this.cockpit, s);
+    if (this.cockpit.group.visible) updateCockpit(this.cockpit, this, dt);
     this.rig.shake = Math.max(s.turbulence * 1.5, this.rig.shake * (1 - dt * 2));
     this.rig.update(s, dt, this.controls.mouse.dragging);
     this.focus = (this.focus || new THREE.Vector3()).set(0, 0, -1).applyQuaternion(this.camera.quaternion).setY(0).normalize().multiplyScalar(this.quality.shadowBox * 0.55).add(this.camera.position);
