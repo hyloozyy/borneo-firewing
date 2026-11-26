@@ -22,30 +22,6 @@ export function glowTexture(inner = 'rgba(255,255,255,1)', outer = 'rgba(255,255
   return t;
 }
 
-// Soft cumulus puff: many overlapping shaded blobs, lit from the top.
-export function cloudTexture() {
-  const c = canvas(256, 256);
-  const g = c.getContext('2d');
-  for (let i = 0; i < 46; i++) {
-    const a = rand() * Math.PI * 2;
-    const r = Math.sqrt(rand()) * 70;
-    const x = 128 + Math.cos(a) * r * 1.2;
-    const y = 140 + Math.sin(a) * r * 0.6;
-    const s = 30 + rand() * 46;
-    const shade = y < 130 ? 255 : 235 - (y - 130) * 0.6;
-    const grad = g.createRadialGradient(x, y - s * 0.25, 0, x, y, s);
-    grad.addColorStop(0, `rgba(${shade},${shade},${shade},0.55)`);
-    grad.addColorStop(1, `rgba(${shade},${shade},${shade},0)`);
-    g.fillStyle = grad;
-    g.beginPath();
-    g.arc(x, y, s, 0, Math.PI * 2);
-    g.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
 // Tileable rippled normal map for the water surfaces.
 export function waterNormalTexture() {
   const size = 256;

@@ -8,12 +8,12 @@ import { ParticlePool } from './particles.js';
 const CELL = 55;
 
 export class FireSystem {
-  constructor(scene, forest, quality) {
+  constructor(scene, forest, quality, burnMap) {
     this.scene = scene;
     this.forest = forest;
     this.cells = new Map(); // key -> {x,z,h,heat,burnt}
-    this.flames = new ParticlePool(quality.flameParticles, { additive: true, soft: 0.0 });
-    this.smoke = new ParticlePool(quality.smokeParticles, { additive: false, soft: 0.0 });
+    this.flames = new ParticlePool(quality.flameParticles, { additive: true, look: 'flame' });
+    this.smoke = new ParticlePool(quality.smokeParticles, { look: 'smoke' });
     scene.add(this.smoke.points);
     scene.add(this.flames.points);
     this.light = new THREE.PointLight(0xff7a2a, 0, 900, 1.4);
@@ -21,18 +21,9 @@ export class FireSystem {
     this.spreadTimer = 0;
     this.spreadRate = 1;
     this.target = null; // optional bias point (the village)
-    this.scorchMarks = [];
     this.emberClock = 0;
-    const scorchGeo = new THREE.CircleGeometry(1, 16);
-    scorchGeo.rotateX(-Math.PI / 2);
-    this.scorchMesh = new THREE.InstancedMesh(scorchGeo, new THREE.MeshBasicMaterial({ color: 0x1a120c, transparent: true, opacity: 0.75, depthWrite: false }), 400);
-    this.scorchMesh.count = 0;
-    this.scorchMesh.frustumCulled = false;
-    scene.add(this.scorchMesh);
-    this.glowMesh = new THREE.InstancedMesh(scorchGeo, new THREE.MeshBasicMaterial({ color: 0xff4a10, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }), 400);
-    this.glowMesh.count = 0;
-    this.glowMesh.frustumCulled = false;
-    scene.add(this.glowMesh);
+    this.burnMap = burnMap;
+    this.glowClock = 0;
   }
 
   key(x, z) { return `${Math.round(x / CELL)},${Math.round(z / CELL)}`; }
@@ -57,6 +48,11 @@ export class FireSystem {
       this.ignite(f.x + Math.cos(a) * r * 1.3, f.z + Math.sin(a) * r, randRange(0.5, 1));
     }
     this.forest.scorch(f.x, f.z, 260, 0.9);
+    // The ground the fire already swept: ash in a ragged patch around the seed.
+    for (let i = 0; i < 40; i++) {
+      const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * 300;
+      this.burnMap.paint(f.x + Math.cos(a) * r * 1.2, f.z + Math.sin(a) * r, randRange(40, 90), 0, randRange(0.6, 1));
+    }
   }
 
   activeCells() {
@@ -94,6 +90,7 @@ export class FireSystem {
   // Water lands at (x,z): cools every cell within the radius. Returns heat removed.
   douse(x, z, radius, amount) {
     let removed = 0;
+    this.burnMap.paint(x, z, radius * 0.7, 2, 0.9);
     for (const c of this.cells.values()) {
       if (c.burnt || c.heat <= 0) continue;
       const d = Math.hypot(c.x - x, c.z - z);
@@ -102,17 +99,16 @@ export class FireSystem {
       c.heat -= cut;
       removed += cut;
       c.wet = 1;
+      this.burnMap.paint(c.x, c.z, CELL * 0.6, 1, 0, 'set');
       if (c.heat < 0.05) { c.heat = 0; c.burnt = true; this.addScorch(c.x, c.z, CELL * 0.8, false); }
     }
     return removed;
   }
 
   addScorch(x, z, r, glowing) {
-    const mesh = glowing ? this.glowMesh : this.scorchMesh;
-    if (mesh.count >= 400) return;
-    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, terrainHeight(x, z) + 0.6 + (glowing ? 0.2 : 0), z), new THREE.Quaternion(), new THREE.Vector3(r, 1, r));
-    mesh.setMatrixAt(mesh.count++, m);
-    mesh.instanceMatrix.needsUpdate = true;
+    this.burnMap.paint(x, z, r * 1.3, 0, 1);
+    if (glowing) this.burnMap.paint(x, z, r, 1, 0.9);
+    else this.burnMap.paint(x, z, r * 1.1, 1, 0, 'set');
   }
 
   spreadStep(wind) {
@@ -169,6 +165,16 @@ export class FireSystem {
           randRange(1.5, 3), 1.6, 0.6, [1, 0.7, 0.2, 1], [1, 0.2, 0, 0], 0.4, -2);
       }
     }
+    // Embers fade on their own; burning cells keep their ground glowing.
+    this.glowClock += dt;
+    if (this.glowClock > 0.5) {
+      this.glowClock = 0;
+      const d = this.burnMap.data;
+      for (let i = 1; i < d.length; i += 4) if (d[i]) d[i] = Math.floor(d[i] * 0.96);
+      for (const c of this.cells.values()) if (!c.burnt && c.heat > 0.05) this.burnMap.paint(c.x, c.z, CELL * 0.75, 1, Math.min(1, 0.35 + c.heat * 0.6));
+      this.burnMap.dirty = true;
+    }
+    this.burnMap.flush();
     this.flames.update(dt, wind, null);
     this.smoke.update(dt, wind, null);
     if (lw > 0) {

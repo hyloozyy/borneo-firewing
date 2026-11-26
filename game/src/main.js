@@ -8,11 +8,13 @@ import { buildSky, SUN_DIR } from './world/sky.js';
 import { buildForest } from './world/forest.js';
 import { buildVillage } from './world/village.js';
 import { buildAirstrip } from './world/airstrip.js';
-import { buildClouds, buildBirds } from './world/clouds-and-birds.js';
+import { buildClouds } from './world/clouds.js';
+import { buildBirds } from './world/birds.js';
 import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
 import { FireSystem } from './fire/fire-system.js';
 import { WaterEffects } from './fire/water-effects.js';
+import { particleUniforms } from './fire/particles.js';
 import { MissionDirector, landingRating } from './mission/mission-director.js';
 import { pulseRing } from './mission/rings.js';
 import { Hud } from './hud/hud.js';
@@ -24,6 +26,8 @@ import { bindScreens, showScreen, hideScreens, showResult } from './ui/screens.j
 import { runShot, SHOTS } from './shots/shot-scenes.js';
 import { installAtmosphereFog } from './render/atmosphere-fog.js';
 import { PostPipeline } from './render/post-pipeline.js';
+import { BurnMap } from './fire/burn-map.js';
+import { buildGroundTextures } from './textures/ground-textures.js';
 
 const params = new URLSearchParams(location.search);
 const deg = Math.PI / 180;
@@ -46,9 +50,11 @@ class Game {
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.5, 30000);
 
     this.sky = buildSky(this.scene, this.quality);
-    this.scene.add(buildTerrain(this.quality.terrainSegments));
+    this.burnMap = new BurnMap();
+    this.terrain = buildTerrain(this.quality.terrainSegments, this.burnMap, buildGroundTextures(this.quality.groundTexture));
+    this.scene.add(this.terrain);
     this.water = null;
-    this.waterSurface = buildWater();
+    this.waterSurface = buildWater(this.quality);
     this.scene.add(this.waterSurface.mesh);
     this.forest = buildForest(this.scene, this.quality);
     this.village = buildVillage(this.scene);
@@ -67,7 +73,7 @@ class Game {
     this.plane.add(this.cockpit.group);
     this.flight = createFlightState();
     this.wind = new THREE.Vector3(-2, 0, -3);
-    this.fire = new FireSystem(this.scene, this.forest, this.quality);
+    this.fire = new FireSystem(this.scene, this.forest, this.quality, this.burnMap);
     this.fire.seedScenario();
     this.water = new WaterEffects(this.scene, this.fire, this.quality);
 
@@ -102,6 +108,7 @@ class Game {
     const w = innerWidth, h = innerHeight;
     this.renderer.setSize(w, h);
     this.post.setSize(w, h, this.quality.pixelRatio);
+    this.waterSurface.setSize(w, h, this.quality.pixelRatio);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.hud.resize(w, h, Math.min(devicePixelRatio, 2));
@@ -260,14 +267,17 @@ class Game {
     this.focus.y = Math.max(terrainHeight(this.focus.x, this.focus.z), 0);
     this.sky.follow(this.camera.position, this.focus);
     this.sky.uniforms.time.value = this.time;
+    this.terrain.userData.uniforms.uTime.value = this.time;
     this.forest.update(this.camera, this.time, SUN_DIR);
+    particleUniforms.time.value = this.time;
+    particleUniforms.sunView.value.copy(SUN_DIR).transformDirection(this.camera.matrixWorldInverse);
     // Smoke thickens the haze around the fire.
     const smoke = s.turbulence;
     this.scene.fog.near = 0.00016 * (1 + smoke * 10);
     this.waterSurface.update(this.time);
     this.airstrip.update(this.time, s);
     this.birds.update(this.time);
-    this.clouds.update(this.time);
+    this.clouds.update(this.time, this.camera);
     for (const key of ['rings']) for (const r of this.stageData[key] || []) pulseRing(r, this.time, true);
     if (this.stageData.ring) pulseRing(this.stageData.ring, this.time, true);
     const near = Math.max(0, 1 - this.camera.position.distanceTo(new THREE.Vector3(PLACES.fire.x, 50, PLACES.fire.z)) / 900);
@@ -277,6 +287,7 @@ class Game {
   frame(dt) {
     this.handleKeys();
     if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
+    this.waterSurface.renderReflection(this.renderer, this.scene, this.camera);
     this.post.render(this.scene, this.camera, SUN_DIR, this.time);
     this.hud.draw(this, dt);
     this.controls.syncThrottle(this.flight.throttle);
@@ -291,6 +302,7 @@ if (shot && SHOTS[shot]) {
   document.body.classList.add('shot');
   hideScreens();
   runShot(game, shot);
+  game.waterSurface.renderReflection(game.renderer, game.scene, game.camera);
   game.post.render(game.scene, game.camera, SUN_DIR, game.time);
   game.hud.draw(game, 0);
   window.__shotReady = true;

@@ -3,7 +3,7 @@
 // wingtip floats, tall fin with mid stabiliser, moving controls, lights and belly water doors.
 // Local axes: nose toward -Z, right wing +X, up +Y. Metres.
 import * as THREE from 'three';
-import { buildLiveryTexture, buildFinTexture } from './livery-texture.js';
+import { buildLiveryTexture, buildFinTexture, buildHullDetailMaps } from './livery-texture.js';
 import { glowTexture } from '../core/canvas-textures.js';
 import { planarUV } from '../core/geometry-utils.js';
 
@@ -105,15 +105,21 @@ export function buildFW218() {
   root.add(model);
   const parts = { model };
 
-  const white = std(WHITE, { roughness: 0.35 });
-  const red = std(RED, { roughness: 0.4 });
-  const grey = std(0xb9bcc0, { roughness: 0.5, metalness: 0.3 });
-  const dark = std(0x24272b, { roughness: 0.6 });
-  const chrome = std(0xe8eaee, { roughness: 0.12, metalness: 1.0 });
-  const glass = std(0x1a3446, { roughness: 0.05, metalness: 0.6 });
+  // Painted metal: a clear lacquer over the colour coat, reflecting the sky.
+  const paint = (color, extra = {}) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, metalness: 0.05, clearcoat: 0.7, clearcoatRoughness: 0.12, envMapIntensity: 1.1, ...extra });
+  const white = paint(WHITE);
+  const red = paint(RED, { roughness: 0.4 });
+  const grey = std(0xb9bcc0, { roughness: 0.38, metalness: 0.65 });
+  const dark = std(0x24272b, { roughness: 0.55, metalness: 0.2 });
+  const chrome = std(0xf2f4f8, { roughness: 0.06, metalness: 1.0, envMapIntensity: 1.6 });
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0x0c1a24, roughness: 0.02, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 2.2 });
 
   // Hull
-  const hull = new THREE.Mesh(buildHullGeometry(), new THREE.MeshStandardMaterial({ map: buildLiveryTexture(), roughness: 0.38, metalness: 0.08 }));
+  const detail = buildHullDetailMaps();
+  const hull = new THREE.Mesh(buildHullGeometry(), new THREE.MeshPhysicalMaterial({
+    map: buildLiveryTexture(), normalMap: detail.normalMap, normalScale: new THREE.Vector2(0.6, 0.6),
+    roughnessMap: detail.roughnessMap, roughness: 0.85, metalness: 0.05, clearcoat: 0.75, clearcoatRoughness: 0.1, envMapIntensity: 1.1,
+  }));
   hull.castShadow = true;
   model.add(hull);
   parts.hull = hull;
@@ -254,7 +260,7 @@ export function buildFW218() {
   finGeo.rotateY(-Math.PI / 2);
   finGeo.translate(0.14, 0, 0);
   planarUV(finGeo, 'z', 'y', true);
-  const fin = new THREE.Mesh(finGeo, new THREE.MeshStandardMaterial({ map: buildFinTexture(), roughness: 0.4 }));
+  const fin = new THREE.Mesh(finGeo, new THREE.MeshPhysicalMaterial({ map: buildFinTexture(), roughness: 0.4, clearcoat: 0.7, clearcoatRoughness: 0.12 }));
   fin.position.set(0, 1.3, 5.7);
   fin.castShadow = true;
   model.add(fin);

@@ -2,6 +2,7 @@
 // the flame-and-pines emblem, 218, the red-white flag and the cockpit glazing.
 import * as THREE from 'three';
 import { makeCanvas } from '../core/canvas-textures.js';
+import { heightToNormalTexture, dataTexture } from '../textures/texture-utils.js';
 
 const W = 2048, H = 1024;
 // Canvas x = t (nose 0 -> tail 1). Canvas y = v around the hull: 0 top, 0.25 right, 0.5 keel, 0.75 left.
@@ -161,6 +162,13 @@ export function buildLiveryTexture() {
   onSide(g, 'left', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = 'bold 26px Arial'; gg.fillText('PK-FWE', 0, 0); });
   onSide(g, 'right', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = 'bold 26px Arial'; gg.fillText('PK-FWE', -120, 0); });
 
+  drawPanelLines(g, 0.16);
+  // Soft grime along the waterline and exhaust staining, so the paint looks used.
+  const grime = g.createLinearGradient(0, H * 0.4, 0, H * 0.5);
+  grime.addColorStop(0, 'rgba(60,40,30,0)');
+  grime.addColorStop(1, 'rgba(60,40,30,0.12)');
+  g.fillStyle = grime;
+  g.fillRect(0, H * 0.4, W, H * 0.2);
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = false;
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -180,4 +188,57 @@ export function buildFinTexture() {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+// Skin panel seams (stations along the hull and stringer lines around it) with rivet rows.
+function drawPanelLines(g, alpha) {
+  g.save();
+  g.strokeStyle = `rgba(30,30,35,${alpha})`;
+  g.fillStyle = `rgba(30,30,35,${alpha * 1.4})`;
+  g.lineWidth = 1.6;
+  const stations = [];
+  for (let t = 0.07; t < 0.98; t += 0.055 + (Math.sin(t * 40) * 0.01)) stations.push(t * W);
+  for (const x of stations) {
+    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+    for (let y = 4; y < H; y += 11) { g.beginPath(); g.arc(x + 5, y, 1.1, 0, Math.PI * 2); g.fill(); }
+  }
+  for (const f of [0.12, 0.25, 0.37, 0.63, 0.75, 0.88]) {
+    const y = f * H;
+    g.beginPath(); g.moveTo(W * 0.06, y); g.lineTo(W, y); g.stroke();
+    for (let x = W * 0.06; x < W; x += 12) { g.beginPath(); g.arc(x, y + 5, 1.0, 0, Math.PI * 2); g.fill(); }
+  }
+  g.restore();
+}
+
+// Matching normal map (seams pressed in, rivet heads raised) and a roughness map with wear.
+export function buildHullDetailMaps() {
+  const w = 1024, h = 512;
+  const c = makeCanvas(w, h);
+  const g = c.getContext('2d');
+  g.fillStyle = '#808080';
+  g.fillRect(0, 0, w, h);
+  g.scale(w / W, h / H);
+  g.lineWidth = 3;
+  g.strokeStyle = '#303030';
+  g.fillStyle = '#d0d0d0';
+  for (let t = 0.07; t < 0.98; t += 0.055 + (Math.sin(t * 40) * 0.01)) {
+    const x = t * W;
+    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+    for (let y = 4; y < H; y += 11) { g.beginPath(); g.arc(x + 5, y, 2.2, 0, Math.PI * 2); g.fill(); }
+  }
+  for (const f of [0.12, 0.25, 0.37, 0.63, 0.75, 0.88]) {
+    g.beginPath(); g.moveTo(W * 0.06, f * H); g.lineTo(W, f * H); g.stroke();
+  }
+  const img = g.getImageData(0, 0, w, h).data;
+  const height = new Float32Array(w * h);
+  const rough = new Uint8Array(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    height[i] = img[i * 4] / 255;
+    const x = i % w, y = Math.floor(i / w);
+    const n = Math.sin(x * 0.05) * Math.sin(y * 0.09 + x * 0.013) * 0.5 + 0.5;
+    const r = 120 + n * 40 + (Math.sin(x * 1.7 + y * 3.1) * 0.5 + 0.5) * 12;
+    rough[i * 4] = rough[i * 4 + 1] = rough[i * 4 + 2] = r;
+    rough[i * 4 + 3] = 255;
+  }
+  return { normalMap: heightToNormalTexture(height, w, h, 1.2), roughnessMap: dataTexture(rough, w, h, { srgb: false }) };
 }

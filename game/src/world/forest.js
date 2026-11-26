@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { rand, randRange } from '../core/rng.js';
 import { terrainHeight, PLACES, riverDistance } from './terrain.js';
-import { forestMask, TREE_HOTSPOTS } from './forest-layout.js';
+import { forestMask, treeHotspots } from './forest-layout.js';
 import { SPECIES } from './trees/tree-species.js';
 import { buildLeafAtlas, buildBarkTextures } from '../textures/foliage-textures.js';
 import { buildLeafMaterial, buildLeafDepthMaterial, buildBarkMaterial, treeUniforms } from './trees/tree-materials.js';
@@ -14,7 +14,7 @@ const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 function samplePosition(species) {
   const r0 = rand();
   let acc = 0;
-  for (const [hx, hz, hr, share] of TREE_HOTSPOTS) {
+  for (const [hx, hz, hr, share] of treeHotspots()) {
     acc += share;
     if (r0 < acc) {
       const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * hr;

@@ -18,7 +18,7 @@ export function forestMask(x, z, h = terrainHeight(x, z)) {
 }
 
 // Hotspots: [x, z, radius, share of all trees].
-export const TREE_HOTSPOTS = [
+export const treeHotspots = () => [
   [PLACES.fire.x, PLACES.fire.z, 1100, 0.3],
   [PLACES.lake.x, PLACES.lake.z, 1100, 0.12],
   [PLACES.runway.x, PLACES.runway.z, 1300, 0.12],

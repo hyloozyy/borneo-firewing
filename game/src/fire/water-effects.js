@@ -7,7 +7,7 @@ import { terrainHeight } from '../world/terrain.js';
 export class WaterEffects {
   constructor(scene, fire, quality) {
     this.fire = fire;
-    this.pool = new ParticlePool(quality.waterParticles, { additive: false, soft: 0.05 });
+    this.pool = new ParticlePool(quality.waterParticles, { look: 'water' });
     scene.add(this.pool.points);
     this.hits = 0;
     this.landed = 0;

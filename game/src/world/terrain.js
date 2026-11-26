@@ -1,6 +1,8 @@
 // Kalimantan terrain: rolling jungle hills, a winding river, a lake, the coast, the airstrip pad.
 import * as THREE from 'three';
 import { fbm, ridgeNoise, smoothstep, lerp } from '../core/noise.js';
+import { forestMask } from './forest-layout.js';
+import { buildTerrainMaterial } from './terrain-material.js';
 
 export const WORLD_SIZE = 10000;
 
@@ -71,29 +73,32 @@ export function riverDistance(x, z) {
   return distToRiver(x, z);
 }
 
-// Colour ramp: sand at the waterline, jungle floor greens, rocky highlands, scorched near the fire.
-function groundColor(x, z, h, slope, out) {
-  const n = fbm(x * 0.01, z * 0.01, 3);
-  const sand = new THREE.Color(0xc9b088), mud = new THREE.Color(0x6b5a3a);
-  const n2 = fbm(x * 0.06, z * 0.06, 2);
-  const jungle = new THREE.Color().setHSL(0.25 + n * 0.06, 0.5, 0.075 + n * 0.05 + n2 * 0.045);
-  const rock = new THREE.Color(0x6f6a5c);
-  if (h < 2.5) out.copy(sand).lerp(mud, smoothstep(-4, 1, h) * 0.6);
-  else out.copy(jungle);
-  if (h > 2.5 && h < 6) out.lerp(sand, 1 - smoothstep(2.5, 6, h));
-  out.lerp(rock, smoothstep(0.55, 0.85, slope) * 0.8 + smoothstep(260, 520, h) * 0.5);
-  const df = Math.hypot(x - PLACES.fire.x, z - PLACES.fire.z);
-  const scorch = (1 - smoothstep(120, 420, df)) * (0.6 + 0.4 * fbm(x * 0.02, z * 0.02, 2));
-  out.lerp(new THREE.Color(0x231a14), scorch * 0.85);
-  return out;
+// Splat weights per vertex: grass, canopy, soil, sand | rock, ash, wet, macro tint.
+function groundWeights(x, z, h, slope, a, b) {
+  const forest = forestMask(x, z, h);
+  const n = fbm(x * 0.012, z * 0.012, 3);
+  const sand = 1 - smoothstep(1.5, 5.5 + n * 3, h);
+  const rock = Math.min(1, smoothstep(0.5, 0.85, slope) + smoothstep(330, 560, h) * 0.8);
+  const open = Math.max(0, 1 - forest - sand);
+  const soil = open * smoothstep(0.55, 0.75, fbm(x * 0.02 + 5, z * 0.02, 3)) + smoothstep(0.3, 0.6, slope) * 0.5;
+  const r = PLACES.runway;
+  const apron = Math.abs(x - (r.x + 75)) < 60 && Math.abs(z - (r.z + 120)) < 70 ? 0.8 : 0;
+  a[0] = Math.max(0, open - soil * 0.6) * (1 - rock);
+  a[1] = forest * (1 - rock * 0.7);
+  a[2] = Math.min(1, soil + apron) * (1 - rock * 0.5);
+  a[3] = sand;
+  b[0] = rock;
+  b[1] = 0;
+  b[2] = 1 - smoothstep(-1, 2.2, h);
+  b[3] = n;
 }
 
-export function buildTerrain(segments) {
+export function buildTerrain(segments, burnMap, ground) {
   const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segments, segments);
   geo.rotateX(-Math.PI / 2);
   const p = geo.attributes.position;
-  const colors = new Float32Array(p.count * 3);
-  const c = new THREE.Color();
+  const sa = new Float32Array(p.count * 4), sb = new Float32Array(p.count * 4);
+  const a = [0, 0, 0, 0], b = [0, 0, 0, 0];
   const step = WORLD_SIZE / segments;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), z = p.getZ(i);
@@ -101,14 +106,16 @@ export function buildTerrain(segments) {
     p.setY(i, h);
     const sx = terrainHeight(x + step, z) - h, sz = terrainHeight(x, z + step) - h;
     const slope = Math.min(1, Math.hypot(sx, sz) / step);
-    groundColor(x, z, h, slope, c);
-    colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+    groundWeights(x, z, h, slope, a, b);
+    sa.set(a, i * 4); sb.set(b, i * 4);
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('splatA', new THREE.BufferAttribute(sa, 4));
+  geo.setAttribute('splatB', new THREE.BufferAttribute(sb, 4));
   geo.computeVertexNormals();
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  const mesh = new THREE.Mesh(geo, mat);
+  const { material, uniforms } = buildTerrainMaterial(ground, burnMap);
+  const mesh = new THREE.Mesh(geo, material);
   mesh.receiveShadow = true;
   mesh.name = 'terrain';
+  mesh.userData.uniforms = uniforms;
   return mesh;
 }

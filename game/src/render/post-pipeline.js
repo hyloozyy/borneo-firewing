@@ -125,7 +125,7 @@ export class PostPipeline {
       bloom1: { value: this.levels[1].a.texture },
       bloom2: { value: this.levels[2].a.texture },
       bloom3: { value: this.levels[3].a.texture },
-      exposure: { value: 0.62 },
+      exposure: { value: 0.8 },
       bloomStrength: { value: 0.16 },
       sunUv: { value: new THREE.Vector2() },
       sunVisible: { value: 0 },

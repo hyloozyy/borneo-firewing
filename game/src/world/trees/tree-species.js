@@ -64,10 +64,10 @@ function crown(wood, leaves, rnd, o, lod) {
         wood.tube(sp, taper(sp.length, o.limbR * 0.45, o.limbR * 0.15), { radial: 4, u0: o.bark[0], u1: o.bark[1], sway: () => [0.6, 0, 0], shade: () => 0.6 });
       }
       const r = o.clumpR * (k === 0 ? 1 : 0.75);
-      leafClump(leaves, c, r, hi ? o.cards : o.loCards, o.card * (hi ? 1 : 1.7), inset(o.cell), rnd, { flat: o.flat, crownCenter: crownC, aoBase: 0.55, sway: 0.7 });
+      leafClump(leaves, c, r, hi ? o.cards : o.loCards, o.card * (hi ? 1 : 1.55), inset(o.cell), rnd, { flat: o.flat, crownCenter: crownC, aoBase: 0.55, sway: 0.7 });
     }
   }
-  if (o.topClump) leafClump(leaves, V3(0, o.crownY + o.clumpR * 0.6, 0), o.clumpR * 1.1, hi ? o.cards : o.loCards, o.card * (hi ? 1 : 1.7), inset(o.cell), rnd, { flat: o.flat, crownCenter: crownC, aoBase: 0.62, sway: 0.8 });
+  if (o.topClump) leafClump(leaves, V3(0, o.crownY + o.clumpR * 0.6, 0), o.clumpR * 1.1, hi ? o.cards : o.loCards, o.card * (hi ? 1 : 1.55), inset(o.cell), rnd, { flat: o.flat, crownCenter: crownC, aoBase: 0.62, sway: 0.8 });
 }
 
 function trunk(wood, rnd, o, lod) {
@@ -164,25 +164,25 @@ export const SPECIES = [
     name: 'dipterocarp',
     share: 0.12,
     scale: [0.8, 1.2],
-    build: broadleafRecipe({ H: 46, trunkTop: 33, r0: 1.0, r1: 0.5, lean: 2, wobble: 0.3, buttress: 5, buttressAmp: 2.4, buttressH: 2.6, bark: PALE, limbs: 7, limbR: 0.42, spread: 9.5, crownY: 37, clumpR: 6.4, flat: 0.5, subClumps: 3, cards: 42, loCards: 8, card: 5.0, cell: LEAF_CELLS.canopy, topClump: true }),
+    build: broadleafRecipe({ H: 46, trunkTop: 33, r0: 1.0, r1: 0.5, lean: 2, wobble: 0.3, buttress: 5, buttressAmp: 2.4, buttressH: 2.6, bark: PALE, limbs: 7, limbR: 0.42, spread: 9.5, crownY: 37, clumpR: 6.4, flat: 0.5, subClumps: 3, cards: 42, loCards: 13, card: 5.0, cell: LEAF_CELLS.canopy, topClump: true }),
   },
   {
     name: 'canopy',
     share: 0.36,
     scale: [0.8, 1.3],
-    build: broadleafRecipe({ H: 28, trunkTop: 16, r0: 0.55, r1: 0.32, lean: 3, wobble: 0.25, buttress: 4, buttressAmp: 1.3, buttressH: 1.4, bark: DARK, limbs: 6, limbR: 0.26, spread: 6.5, crownY: 20, clumpR: 5.6, flat: 0.7, subClumps: 2, cards: 40, loCards: 7, card: 4.4, cell: LEAF_CELLS.canopy, topClump: true }),
+    build: broadleafRecipe({ H: 28, trunkTop: 16, r0: 0.55, r1: 0.32, lean: 3, wobble: 0.25, buttress: 4, buttressAmp: 1.3, buttressH: 1.4, bark: DARK, limbs: 6, limbR: 0.26, spread: 6.5, crownY: 20, clumpR: 5.6, flat: 0.7, subClumps: 2, cards: 40, loCards: 12, card: 4.4, cell: LEAF_CELLS.canopy, topClump: true }),
   },
   {
     name: 'broadleaf',
     share: 0.2,
     scale: [0.75, 1.2],
-    build: broadleafRecipe({ H: 22, trunkTop: 11, r0: 0.42, r1: 0.25, lean: 3, wobble: 0.3, buttress: 0, bark: PALE, limbs: 5, limbR: 0.2, spread: 4.8, crownY: 15, clumpR: 4.6, flat: 0.8, subClumps: 2, cards: 36, loCards: 7, card: 4.0, cell: LEAF_CELLS.broad, topClump: true }),
+    build: broadleafRecipe({ H: 22, trunkTop: 11, r0: 0.42, r1: 0.25, lean: 3, wobble: 0.3, buttress: 0, bark: PALE, limbs: 5, limbR: 0.2, spread: 4.8, crownY: 15, clumpR: 4.6, flat: 0.8, subClumps: 2, cards: 36, loCards: 11, card: 4.0, cell: LEAF_CELLS.broad, topClump: true }),
   },
   {
     name: 'pioneer',
     share: 0.1,
     scale: [0.8, 1.15],
-    build: broadleafRecipe({ H: 16, trunkTop: 10, r0: 0.28, r1: 0.16, lean: 2.5, wobble: 0.2, buttress: 0, bark: PALE, limbs: 5, limbR: 0.13, spread: 4.0, crownY: 12.5, clumpR: 3.4, flat: 0.5, subClumps: 2, cards: 26, loCards: 6, card: 3.4, cell: LEAF_CELLS.young, topClump: false }),
+    build: broadleafRecipe({ H: 16, trunkTop: 10, r0: 0.28, r1: 0.16, lean: 2.5, wobble: 0.2, buttress: 0, bark: PALE, limbs: 5, limbR: 0.13, spread: 4.0, crownY: 12.5, clumpR: 3.4, flat: 0.5, subClumps: 2, cards: 26, loCards: 9, card: 3.4, cell: LEAF_CELLS.young, topClump: false }),
   },
   { name: 'palm', share: 0.1, scale: [0.8, 1.2], build: palmRecipe, lowland: true },
   { name: 'shrub', share: 0.12, scale: [0.8, 1.6], build: shrubRecipe, edge: true },
