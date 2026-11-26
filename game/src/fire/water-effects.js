@@ -14,7 +14,7 @@ export class WaterEffects {
     this.heatRemoved = 0;
     this.pool.onLand = (x, y, z) => {
       this.landed++;
-      const removed = this.fire.douse(x, z, 70, 0.2);
+      const removed = this.fire.douse(x, z, 70, 0.4);
       this.heatRemoved += removed;
       if (removed > 0) this.hits++;
       // Steam burst where water meets fire, splash elsewhere.

@@ -92,7 +92,7 @@ export const STAGES = [
       d.drops = 0;
       placeDropRing(game, d.ring);
     },
-    update(game) {
+    update(game, dt) {
       const d = game.stageData;
       if (passedRing(d.ring, game.prevPos, game.flight.position)) {
         game.events.ring();
@@ -100,12 +100,13 @@ export const STAGES = [
         game.addScore(100, 'TARGET RING');
       }
       if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
+      trackFire(game, d, dt, () => game.fire.hottestSpot());
       // Knock-down: the share of the fire's heat that this crew's water has put out (patches that
       // burn out on their own do not count), so the goal tracks the drops, not the clock.
       const out = game.fire.doused - (d.dousedStart || 0);
       d.ratio = game.fire.totalHeat() / d.startHeat;
       d.out = out / Math.max(1e-6, out + game.fire.totalHeat());
-      return d.out >= 0.55 ? 'pass' : null;
+      return d.out >= 0.5 ? 'pass' : null;
     },
     objective(game) {
       const d = game.stageData;
@@ -119,7 +120,7 @@ export const STAGES = [
         [s.water > 600, `Water on board ${Math.round((100 * s.water) / s.waterMax)}%`],
         [game.dropWindow > 0, 'Through the target ring'],
         [d.drops > 0, `Drops (${keyName(game, 'drop')}) ${d.drops}`],
-        [out >= 55, `Main fire out ${Math.min(100, out)}% / 55%`],
+        [out >= 50, `Main fire out ${Math.min(100, out)}% / 50%`],
       ];
     },
     exit(game) { game.scene.remove(game.stageData.ring); },
@@ -141,13 +142,14 @@ export const STAGES = [
       d.ring = makeRing(55, 0xff3b30);
       game.scene.add(d.ring);
       d.drops = 0;
-      placeDropRing(game, d.ring);
+      placeDropRing(game, d.ring, villageFront(game));
     },
     update(game, dt) {
       const d = game.stageData;
       d.timer -= dt;
       if (passedRing(d.ring, game.prevPos, game.flight.position)) { game.events.ring(); game.dropWindow = 2.5; game.addScore(120, 'VILLAGE RING'); }
-      if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
+      if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring, villageFront(game)); }
+      trackFire(game, d, dt, () => villageFront(game));
       d.threat = villageThreat(game);
       if (d.threat.near === 0 && d.drops > 0) return 'pass';
       if (d.threat.closest < 70) return 'fail:The fire reached the village. The stilt houses are burning.';
@@ -210,6 +212,26 @@ export const STAGES = [
   },
 ];
 
+// While the aircraft is far away (refilling, turning back) the ring keeps following the live fire, so it
+// never marks a patch that has already burnt out; inside 900 m it stays put for the run-in.
+function trackFire(game, d, dt, spot) {
+  d.reaim = (d.reaim ?? 12) - dt;
+  if (d.reaim > 0) return;
+  d.reaim = 12;
+  if (game.flight.position.distanceTo(d.ring.position) > 900) placeDropRing(game, d.ring, spot());
+}
+
+// The burning patch closest to the village: where the wet line has to go.
+function villageFront(game) {
+  const v = PLACES.village;
+  let best = null, bd = Infinity;
+  for (const c of game.fire.activeCells()) {
+    const d = Math.hypot(c.x - v.x, c.z - v.z);
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best ? new THREE.Vector3(best.x, best.h, best.z) : game.fire.hottestSpot();
+}
+
 function villageThreat(game) {
   const v = PLACES.village;
   let near = 0, closest = 1e9;
@@ -221,9 +243,8 @@ function villageThreat(game) {
   return { near, closest };
 }
 
-// Hang the drop ring above the hottest part of the fire, facing the run-in from the aircraft.
-export function placeDropRing(game, ring) {
-  const spot = game.fire.hottestSpot();
+// Hang the drop ring above the hottest part of the fire (or a given spot), facing the run-in from the aircraft.
+export function placeDropRing(game, ring, spot = game.fire.hottestSpot()) {
   if (!spot) return;
   const p = game.flight.position;
   let dx = spot.x - p.x, dz = spot.z - p.z;

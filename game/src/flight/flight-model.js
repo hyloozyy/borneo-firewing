@@ -173,8 +173,12 @@ function contact(s, dt, input, env, fwd) {
       return;
     }
     s.onWater = true;
+    s.waterRun = true;
     s.position.y = Math.max(s.position.y, surf.h + GEAR_HEIGHT - 0.25);
-    s.velocity.y = Math.max(0, s.velocity.y) * 0.3;
+    // The hull clings to the water unless the pilot rotates at flying speed: then it unsticks.
+    const unstick = s.elevator > 0.25 && speed > 31;
+    s.velocity.y = Math.max(0, s.velocity.y) * (unstick ? 1 : 0.3);
+    if (unstick) s.position.y += 0.6 * dt;
     if (wasAir) s.lastTouchdown = { vs, speed, water: true, time: env.time, g: 1 + Math.abs(vs) * 0.3 };
     s.onGround = true;
     // Scoop when skimming between 30 and 60 m/s with the probes down.
@@ -185,7 +189,8 @@ function contact(s, dt, input, env, fwd) {
     // Water drag
     s.velocity.multiplyScalar(1 - dt * 0.035);
   } else {
-    if (!runway && speed > 8) { s.crashed = wasAir ? (vs < -6 ? 'Dived into the forest' : 'Flew into the forest canopy') : 'Ran off the runway into the trees'; return; }
+    if (!runway && speed > 8) { s.crashed = wasAir ? (vs < -6 ? 'Dived into the forest' : 'Flew into the forest canopy') : s.waterRun ? 'Ran out of lake: the hull hit the shore' : 'Ran off the runway into the trees'; return; }
+    s.waterRun = false;
     const limit = -4.5 * (0.5 + 0.5 * s.damage.gear);
     if (vs < limit || Math.abs(e.z) > 0.3 || e.x < -0.15) { s.crashed = vs < limit ? 'Touchdown far too hard: the landing gear collapsed' : 'A wingtip or the nose struck the runway'; return; }
     if (wasAir) {
