@@ -68,7 +68,7 @@ export function buildLiveryTexture() {
     const t = px / W;
     const sweep = Math.max(0, 1 - t / 0.22);
     const tailLift = Math.max(0, (t - 0.82) / 0.18);
-    const boundary = Math.PI * (0.47 - 0.13 * sweep * sweep + 0.05 * tailLift);
+    const boundary = Math.PI * (0.4 - 0.1 * sweep * sweep + 0.06 * tailLift);
     // right side: y from boundary to keel (PI); left side mirrored around keel
     const y0 = yOf(boundary), y1 = yOf(Math.PI * 2 - boundary);
     g.fillStyle = red;
@@ -106,16 +106,16 @@ export function buildLiveryTexture() {
     // Side cockpit windows
     onSide(g, side, 0.14, 0.24 * Math.PI, (gg) => { glass(gg, -60, 40); glass(gg, -128 + 0, 40); });
     // Cabin windows and observation bubble
-    for (const t of [0.29, 0.34, 0.47]) onSide(g, side, t, 0.3 * Math.PI, (gg) => { glass(gg, -24, 30); });
+    for (const t of [0.29, 0.34]) onSide(g, side, t, 0.3 * Math.PI, (gg) => { glass(gg, -24, 30); });
     // Door
     onSide(g, side, 0.4, 0.27 * Math.PI, (gg) => {
       gg.strokeStyle = '#7d8086'; gg.lineWidth = 4; gg.strokeRect(-70, 0, 60, 150);
       gg.fillStyle = '#9aa0a6'; gg.fillRect(-26, 70, 10, 4);
     });
     // FIRE FIGHTER titles with slash marks
-    onSide(g, side, 0.5, 0.35 * Math.PI, (gg) => {
+    onSide(g, side, side === 'right' ? 0.84 : 0.52, 0.3 * Math.PI, (gg) => {
       gg.fillStyle = '#121a2c';
-      gg.font = 'italic 900 64px Arial, sans-serif';
+      gg.font = 'italic 900 84px Arial, sans-serif';
       gg.textAlign = 'left';
       gg.textBaseline = 'middle';
       gg.fillStyle = red;
@@ -136,7 +136,7 @@ export function buildLiveryTexture() {
       }
     });
     // Nose number 218 in white on the red
-    onSide(g, side, 0.065, 0.37 * Math.PI, (gg) => {
+    onSide(g, side, 0.115, 0.43 * Math.PI, (gg) => {
       gg.fillStyle = '#ffffff';
       gg.font = '900 58px Arial, sans-serif';
       gg.textAlign = 'center';
@@ -144,7 +144,7 @@ export function buildLiveryTexture() {
       gg.fillText('218', 0, 0);
     });
     // Nose emblem on the red
-    onSide(g, side, 0.21, 0.6 * Math.PI, (gg) => drawEmblem(gg, 0, 0, 0.75, '#ffffff', null));
+    onSide(g, side, 0.22, 0.5 * Math.PI, (gg) => drawEmblem(gg, 0, 0, 0.8, '#ffffff', null));
     // Small red-white flag behind the cockpit
     onSide(g, side, 0.19, 0.25 * Math.PI, (gg) => {
       gg.fillStyle = red; gg.fillRect(0, 0, 46, 15);

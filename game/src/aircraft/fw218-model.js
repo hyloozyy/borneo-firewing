@@ -17,8 +17,8 @@ function hullSection(t) {
   const noseRound = Math.sqrt(Math.sin((nose * Math.PI) / 2));
   const tail = Math.max(0, (t - 0.6) / 0.4);
   const w = 1.4 * noseRound * (1 - 0.82 * tail * tail) + 0.03;
-  const top = -0.15 + 1.45 * Math.sqrt(Math.sin((Math.min(1, t / 0.16) * Math.PI) / 2)) + 0.12 * tail;
-  const keelNose = -1.55 + 0.9 * Math.pow(1 - nose, 2.2);
+  const top = -0.1 + 1.75 * Math.sqrt(Math.sin((Math.min(1, t / 0.16) * Math.PI) / 2)) + 0.12 * tail;
+  const keelNose = -1.75 + 1.0 * Math.pow(1 - nose, 2.2);
   const bot = t < 0.55 ? keelNose : keelNose + 1.9 * Math.pow((t - 0.55) / 0.45, 1.3);
   return { w, top, bot: Math.min(bot, top - 0.1) };
 }
@@ -120,16 +120,16 @@ export function buildFW218() {
   // Cockpit glazing bump and roof hatch
   const canopy = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), glass);
   canopy.scale.set(1.05, 0.32, 1.1);
-  canopy.position.set(0, 1.18, -7.75);
-  model.add(canopy);
+  canopy.position.set(0, 1.5, -7.6);
+  canopy.scale.set(0.9, 0.18, 0.9);
   parts.canopy = canopy;
   // Wing root fairing / pylon on top of the hull
   const pylon = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.7, 4.2), white);
-  pylon.position.set(0, 1.55, -1.6);
+  pylon.position.set(0, 1.85, -1.6);
   model.add(pylon);
 
   // Wing: centre + two outer panels, at the top of the pylon.
-  const wingY = 1.95, wingLE = -3.6, chord = 3.4, halfSpan = 14.2;
+  const wingY = 2.2, wingLE = -3.6, chord = 3.4, halfSpan = 14.2;
   const wingMain = new THREE.Mesh(wingPanel(chord * 0.78, 0.16, halfSpan * 2), white);
   wingMain.position.set(-halfSpan, wingY, wingLE);
   wingMain.castShadow = true;
@@ -185,12 +185,12 @@ export function buildFW218() {
   })();
   for (const side of [-1, 1]) {
     const nac = new THREE.Group();
-    nac.position.set(side * nacX, wingY + 0.35, 0);
+    nac.position.set(side * nacX, wingY + 0.12, 0);
     model.add(nac);
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.62, 5.2, 6, 14), red);
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.74, 4.4, 6, 16), red);
     body.rotation.x = Math.PI / 2;
     body.scale.set(1, 1, 1.15);
-    body.position.z = -2.2;
+    body.position.z = -1.9;
     body.castShadow = true;
     nac.add(body);
     const intake = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 1.2), dark);
@@ -249,21 +249,21 @@ export function buildFW218() {
 
   // Tail fin (extruded outline) with the emblem, rudder, stabiliser and elevators.
   const finShape = new THREE.Shape();
-  finShape.moveTo(0, 0); finShape.lineTo(3.4, 0); finShape.lineTo(3.0, 5.1); finShape.lineTo(1.6, 5.2); finShape.closePath();
+  finShape.moveTo(0, 0); finShape.lineTo(3.8, 0); finShape.lineTo(3.4, 5.9); finShape.lineTo(1.9, 6.0); finShape.closePath();
   const finGeo = new THREE.ExtrudeGeometry(finShape, { depth: 0.28, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 1 });
   finGeo.rotateY(-Math.PI / 2);
   finGeo.translate(0.14, 0, 0);
   planarUV(finGeo, 'z', 'y', true);
   const fin = new THREE.Mesh(finGeo, new THREE.MeshStandardMaterial({ map: buildFinTexture(), roughness: 0.4 }));
-  fin.position.set(0, 1.15, 6.0);
+  fin.position.set(0, 1.3, 5.7);
   fin.castShadow = true;
   model.add(fin);
   const rudderH = hinge(model, 0, 1.4, 9.35);
-  const rudder = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.7, 1.1), red);
-  rudder.position.set(0, 2.4, 0.55);
+  const rudder = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5.3, 1.0), red);
+  rudder.position.set(0, 2.75, 0.5);
   rudderH.add(rudder);
   parts.rudder = rudderH;
-  const stabY = 4.2;
+  const stabY = 4.6;
   const stab = new THREE.Mesh(wingPanel(2.0, 0.12, 10), white);
   stab.position.set(-5, stabY, 7.6);
   model.add(stab);
@@ -276,7 +276,7 @@ export function buildFW218() {
   // Belly water doors (open when dropping) and scoop probes.
   parts.doors = [];
   for (const side of [-1, 1]) {
-    const dh = hinge(model, side * 0.15, -1.5, -1.5);
+    const dh = hinge(model, side * 0.12, -1.66, -1.5);
     const door = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.06, 2.6), red);
     door.position.x = side * 0.38;
     dh.add(door);
@@ -284,7 +284,7 @@ export function buildFW218() {
     parts.doors.push(dh);
   }
   const probe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.5, 0.4), dark);
-  probe.position.set(0, -1.7, 1.6);
+  probe.position.set(0, -1.8, 1.6);
   model.add(probe);
 
   // Navigation lights, strobes and beacon.
@@ -295,9 +295,9 @@ export function buildFW218() {
   };
   const navL = lightGlow('rgba(255,40,40,1)', 1.6); navL.position.set(-halfSpan - 0.85, wingY, wingLE + 1.2);
   const navR = lightGlow('rgba(40,255,90,1)', 1.6); navR.position.set(halfSpan + 0.85, wingY, wingLE + 1.2);
-  const strobeTail = lightGlow('rgba(255,255,255,1)', 3); strobeTail.position.set(0, 6.4, 11.2);
-  const beacon = lightGlow('rgba(255,50,30,1)', 2.2); beacon.position.set(0, 1.45, 3.5);
-  const landing = lightGlow('rgba(255,250,220,1)', 2.4); landing.position.set(0, -0.3, -10.1);
+  const strobeTail = lightGlow('rgba(255,255,255,1)', 3); strobeTail.position.set(0, 7.3, 9.8);
+  const beacon = lightGlow('rgba(255,50,30,1)', 2.2); beacon.position.set(0, 1.85, 3.5);
+  const landing = lightGlow('rgba(255,250,220,1)', 1.0); landing.position.set(0, -0.6, -10.2);
   model.add(navL, navR, strobeTail, beacon, landing);
   parts.strobes = [strobeTail];
   parts.beacon = beacon;

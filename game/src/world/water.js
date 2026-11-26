@@ -5,13 +5,13 @@ import { WORLD_SIZE } from './terrain.js';
 
 export function buildWater() {
   const normals = waterNormalTexture();
-  normals.repeat.set(220, 220);
+  normals.repeat.set(520, 520);
   const mat = new THREE.MeshStandardMaterial({
-    color: 0x1f4a4f,
+    color: 0x123638,
     roughness: 0.08,
     metalness: 0.15,
     normalMap: normals,
-    normalScale: new THREE.Vector2(0.35, 0.35),
+    normalScale: new THREE.Vector2(0.22, 0.22),
     transparent: true,
     opacity: 0.93,
   });

@@ -7,7 +7,7 @@ import { PLACES } from './terrain.js';
 function runwayTexture(lengthM, widthM) {
   const c = makeCanvas(256, 2048);
   const g = c.getContext('2d');
-  g.fillStyle = '#3b3b3a';
+  g.fillStyle = '#6f6b63';
   g.fillRect(0, 0, 256, 2048);
   for (let i = 0; i < 4000; i++) {
     g.fillStyle = `rgba(${Math.random() < 0.5 ? 20 : 90},${Math.random() < 0.5 ? 20 : 85},${Math.random() < 0.5 ? 20 : 80},0.12)`;
@@ -30,7 +30,7 @@ function runwayTexture(lengthM, widthM) {
   g.save(); g.translate(128, 2048 - 110); g.fillText('36', 0, 0); g.restore();
   g.save(); g.translate(128, 110); g.rotate(Math.PI); g.fillText('18', 0, 0); g.restore();
   // Touchdown zone marks
-  for (const y of [260, 420, 2048 - 260, 2048 - 420]) { g.fillRect(60, y, 30, 40 * ppm * 8); g.fillRect(166, y, 30, 40 * ppm * 8); }
+  for (const y of [200, 300, 400, 2048 - 240, 2048 - 340, 2048 - 440]) { g.fillRect(60, y, 30, 22 * ppm); g.fillRect(166, y, 30, 22 * ppm); }
   // Tyre marks
   g.fillStyle = 'rgba(15,15,15,0.35)';
   for (let i = 0; i < 30; i++) g.fillRect(100 + Math.random() * 50, 1700 + Math.random() * 200 - (i % 2) * 1400, 4, 60);
@@ -43,21 +43,21 @@ function runwayTexture(lengthM, widthM) {
 export function buildAirstrip(scene) {
   const r = PLACES.runway;
   const group = new THREE.Group();
-  group.position.set(r.x, r.h + 0.15, r.z);
+  group.position.set(r.x, r.h + 0.5, r.z);
   const runway = new THREE.Mesh(
     new THREE.PlaneGeometry(r.width, r.length),
-    new THREE.MeshLambertMaterial({ map: runwayTexture(r.length, r.width) }),
+    new THREE.MeshLambertMaterial({ map: runwayTexture(r.length, r.width), polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
   );
   runway.rotation.x = -Math.PI / 2;
   runway.receiveShadow = true;
   group.add(runway);
   // Grass shoulders and apron.
-  const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(r.width + 50, r.length + 120), new THREE.MeshLambertMaterial({ color: 0x5d6b33 }));
+  const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(r.width + 50, r.length + 120), new THREE.MeshLambertMaterial({ color: 0x5d6b33, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
   shoulder.rotation.x = -Math.PI / 2;
-  shoulder.position.y = -0.08;
+  shoulder.position.y = -0.2;
   shoulder.receiveShadow = true;
   group.add(shoulder);
-  const apron = new THREE.Mesh(new THREE.PlaneGeometry(70, 90), new THREE.MeshLambertMaterial({ color: 0x55534c }));
+  const apron = new THREE.Mesh(new THREE.PlaneGeometry(70, 90), new THREE.MeshLambertMaterial({ color: 0x55534c, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
   apron.rotation.x = -Math.PI / 2;
   apron.position.set(62, -0.02, 300);
   group.add(apron);
@@ -98,8 +98,8 @@ export function buildAirstrip(scene) {
     return sp;
   };
   for (let z = -r.length / 2; z <= r.length / 2; z += 60) {
-    add(glow, -r.width / 2 - 2, 0.6, z, 3.2);
-    add(glow, r.width / 2 + 2, 0.6, z, 3.2);
+    add(glow, -r.width / 2 - 2, 0.6, z, 5);
+    add(glow, r.width / 2 + 2, 0.6, z, 5);
   }
   for (let x = -r.width / 2; x <= r.width / 2; x += 4) {
     add(greenGlow, x, 0.6, r.length / 2 + 3, 3);

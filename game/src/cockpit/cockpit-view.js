@@ -8,7 +8,7 @@ export const EYE = new THREE.Vector3(-0.55, 1.4, -7.3);
 export function buildCockpit() {
   const group = new THREE.Group();
   const dark = new THREE.MeshStandardMaterial({ color: 0x2a2e33, roughness: 0.8 });
-  const frame = new THREE.MeshStandardMaterial({ color: 0x3b4046, roughness: 0.6 });
+  const frame = new THREE.MeshStandardMaterial({ color: 0x6c7277, roughness: 0.55 });
   const panelCanvas = makeCanvas(1024, 384);
   const panelTex = new THREE.CanvasTexture(panelCanvas);
   panelTex.colorSpace = THREE.SRGBColorSpace;
@@ -23,14 +23,16 @@ export function buildCockpit() {
   lower.position.set(0, 0.05, -8.45);
   group.add(lower);
   // Windscreen posts and roof frame
-  for (const x of [-1.3, 0.05, 1.3]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.0, 0.05), frame);
-    post.position.set(x, 1.5, -8.55 + Math.abs(x) * 0.35);
-    post.rotation.x = -0.55;
+  // Windscreen posts lean back toward the crew, like the real glazing.
+  for (const x of [-1.32, 0.02, 1.32]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(x === 0.02 ? 0.05 : 0.07, 0.95, 0.05), frame);
+    post.position.set(x, 1.5, -8.4 + Math.abs(x) * 0.25);
+    post.rotation.x = 0.5;
+    post.rotation.z = -Math.sign(x) * 0.12;
     group.add(post);
   }
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.06, 1.6), frame);
-  roof.position.set(0, 2.02, -7.4);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.06, 1.6), frame);
+  roof.position.set(0, 2.12, -7.2);
   group.add(roof);
   const sill = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.05, 0.05), frame);
   sill.position.set(0, 1.08, -8.72);
@@ -39,9 +41,7 @@ export function buildCockpit() {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 2.6), dark);
     wall.position.set(side * 1.32, 0.6, -7.3);
     group.add(wall);
-    const sideFrame = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 2.4), frame);
-    sideFrame.position.set(side * 1.3, 1.6, -7.4);
-    group.add(sideFrame);
+
   }
   // Yokes
   const yokes = [];

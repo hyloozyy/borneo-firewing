@@ -57,20 +57,35 @@ function fernGeometry() {
   return mergeParts(parts);
 }
 
+// Canopy clump: a cluster of crowns without a visible trunk, to close the rainforest roof.
+function canopyGeometry() {
+  return mergeParts([
+    crownBlob(0, 9, 0, 6, 0x1f4517, 0.55),
+    crownBlob(5, 8, 2, 4.6, 0x2a5a1c, 0.6),
+    crownBlob(-4, 8.5, -3, 5, 0x18391a, 0.6),
+    crownBlob(1, 10.5, 4, 4, 0x34692a, 0.55),
+    paint(placed(new THREE.CylinderGeometry(0.4, 0.7, 8, 5), { y: 4 }), 0x4a3b2a),
+  ]);
+}
+
 function treeAllowed(x, z, h) {
   if (h < 3.5) return false;
   if (isOnRunway(x, z, 110)) return false;
   if (Math.hypot(x - PLACES.village.x, z - PLACES.village.z) < 170) return false;
   if (riverDistance(x, z) < 40) return false;
+  // Approach lanes off both runway ends are kept clear.
+  const r = PLACES.runway;
+  if (Math.abs(x - r.x) < 150 + Math.max(0, Math.abs(z - r.z) - r.length / 2) * 0.12 && Math.abs(z - r.z) < r.length / 2 + 1600) return false;
   return true;
 }
 
 export function buildForest(scene, quality) {
   const kinds = [
-    { geo: dipterocarpGeometry(), share: 0.18, scale: [0.75, 1.25] },
-    { geo: broadleafGeometry(), share: 0.48, scale: [0.8, 1.6] },
-    { geo: palmGeometry(), share: 0.14, scale: [0.8, 1.15] },
-    { geo: fernGeometry(), share: 0.2, scale: [0.9, 1.8] },
+    { geo: dipterocarpGeometry(), share: 0.12, scale: [0.8, 1.3] },
+    { geo: broadleafGeometry(), share: 0.26, scale: [1.0, 1.9] },
+    { geo: palmGeometry(), share: 0.1, scale: [0.8, 1.15] },
+    { geo: fernGeometry(), share: 0.1, scale: [0.9, 1.8] },
+    { geo: canopyGeometry(), share: 0.42, scale: [1.2, 2.4] },
   ];
   const total = quality.trees;
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
@@ -86,7 +101,7 @@ export function buildForest(scene, quality) {
     while (placedCount < count && tries < count * 6) {
       tries++;
       // Denser near the action, sparser far away.
-      const r = Math.pow(rand(), 0.75) * 4200;
+      const r = Math.pow(rand(), 0.62) * 4300;
       const a = rand() * Math.PI * 2;
       const x = 0 + Math.cos(a) * r, z = -300 + Math.sin(a) * r * 1.05;
       const h = terrainHeight(x, z);

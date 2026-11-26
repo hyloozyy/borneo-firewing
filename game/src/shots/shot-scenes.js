@@ -14,19 +14,20 @@ export const SHOTS = {
     game.stageData.startHeat = game.fire.totalHeat() * 1.25;
     const ring = game.stageData.ring;
     const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(ring.quaternion);
-    const start = ring.position.clone().addScaledVector(dir, -330);
+    const start = ring.position.clone().addScaledVector(dir, -440);
     start.y = ring.position.y + 14;
     const hdg = Math.atan2(dir.x, -dir.z);
     setFlying(game.flight, start, -hdg, 58, -2 * deg, -6 * deg);
     game.flight.water = game.flight.waterMax;
-    game.rig.yaw = 0.75; game.rig.pitch = 0.1; game.rig.dist = 22;
+    game.rig.yaw = 0.95; game.rig.pitch = 0.06; game.rig.dist = 21;
     return { warm: 3.2, dropFrom: 1.2, mode: 'chase' };
   },
   // Cockpit on final approach: runway, approach lights and the green gate ahead, panel lit.
   cockpit(game) {
     game.startMission(4, { quiet: true });
     const r = PLACES.runway;
-    setFlying(game.flight, new THREE.Vector3(r.x - 6, r.h + 175, r.z + r.length / 2 + 2600), 0, 62, -2.5 * deg, 3 * deg);
+    setFlying(game.flight, new THREE.Vector3(r.x - 2, r.h + 48, r.z + r.length / 2 + 560), 0, 56, -3 * deg, 1 * deg);
+    game.stageData.gate = true;
     game.flight.flaps = game.flight.flapTarget = 1;
     game.rig.yaw = 0; game.rig.pitch = 0.1;
     return { warm: 1.5, mode: 'cockpit' };
@@ -45,11 +46,11 @@ export const SHOTS = {
   landing(game) {
     game.startMission(4, { quiet: true });
     const r = PLACES.runway;
-    const z = r.z + r.length / 2 + 700;
-    setFlying(game.flight, new THREE.Vector3(r.x + 3, r.h + 58, z), 0, 55, 2 * deg, -2 * deg);
+    const z = r.z + r.length / 2 + 420;
+    setFlying(game.flight, new THREE.Vector3(r.x + 2, r.h + 44, z), 0, 54, -1 * deg, -2 * deg);
     game.flight.flaps = game.flight.flapTarget = 1;
     game.stageData.gate = true;
-    game.rig.yaw = 2.5; game.rig.pitch = 0.05; game.rig.dist = 32;
+    game.rig.yaw = 0.5; game.rig.pitch = 0.3; game.rig.dist = 30;
     return { warm: 1.0, mode: 'chase' };
   },
 };

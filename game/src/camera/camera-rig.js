@@ -41,7 +41,7 @@ export class CameraRig {
       this.first = false;
       return;
     }
-    cam.near = 0.5;
+    cam.near = 1.0;
     cam.updateProjectionMatrix();
     const speedPull = Math.min(1, s.airspeed / 90) * 8;
     _off.set(0, 0, this.dist + speedPull);

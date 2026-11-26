@@ -29,7 +29,7 @@ export class FireSystem {
     this.scorchMesh.count = 0;
     this.scorchMesh.frustumCulled = false;
     scene.add(this.scorchMesh);
-    this.glowMesh = new THREE.InstancedMesh(scorchGeo, new THREE.MeshBasicMaterial({ color: 0xff4a10, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }), 400);
+    this.glowMesh = new THREE.InstancedMesh(scorchGeo, new THREE.MeshBasicMaterial({ color: 0xff4a10, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }), 400);
     this.glowMesh.count = 0;
     this.glowMesh.frustumCulled = false;
     scene.add(this.glowMesh);
@@ -127,7 +127,7 @@ export class FireSystem {
         const a = rand() * Math.PI * 2;
         const nx = c.x + Math.cos(a) * CELL, nz = c.z + Math.sin(a) * CELL;
         let s = (Math.cos(a) * wind.x + Math.sin(a) * wind.z) / wl + rand() * 0.6;
-        if (this.target) s += 0.6 * (Math.cos(a) * (this.target.x - c.x) + Math.sin(a) * (this.target.z - c.z)) / (Math.hypot(this.target.x - c.x, this.target.z - c.z) || 1);
+        if (this.target && Math.hypot(this.target.x - c.x, this.target.z - c.z) < 800) s += 0.6 * (Math.cos(a) * (this.target.x - c.x) + Math.sin(a) * (this.target.z - c.z)) / (Math.hypot(this.target.x - c.x, this.target.z - c.z) || 1);
         if (s > bestS) { bestS = s; best = [nx, nz]; }
       }
       const k = this.key(best[0], best[1]);
@@ -152,16 +152,16 @@ export class FireSystem {
       for (let n = 0; n < rate * 2 + (rand() < (rate * 2) % 1 ? 1 : 0); n++) {
         const ox = randRange(-CELL * 0.5, CELL * 0.5), oz = randRange(-CELL * 0.5, CELL * 0.5);
         const hgt = randRange(0, 8);
-        this.flames.spawn(c.x + ox, c.h + hgt, c.z + oz, randRange(-1, 1), randRange(6, 14) * (0.6 + c.heat * 0.5), randRange(-1, 1),
-          randRange(0.6, 1.3), randRange(10, 18) * (0.6 + c.heat), 3,
+        this.flames.spawn(c.x + ox, c.h + hgt, c.z + oz, randRange(-1, 1), randRange(9, 18) * (0.6 + c.heat * 0.5), randRange(-1, 1),
+          randRange(0.9, 1.7), randRange(14, 26) * (0.6 + c.heat), 4,
           [1.0, 0.85, 0.45, 0.95], [0.9, 0.18, 0.02, 0.0], 0.3, 2);
       }
       // Smoke: dark at the base, lit brown-grey higher up, drifting downwind.
       if (rand() < rate * 0.55) {
         this.smoke.spawn(c.x + randRange(-20, 20), c.h + randRange(10, 25), c.z + randRange(-20, 20),
-          randRange(-2, 2), randRange(8, 14), randRange(-2, 2),
-          randRange(9, 15), randRange(30, 45), randRange(160, 260),
-          [0.16, 0.12, 0.1, 0.75], [0.55, 0.48, 0.42, 0.0], 0.12, 0.6);
+          randRange(-2, 2), randRange(12, 20), randRange(-2, 2),
+          randRange(12, 20), randRange(30, 50), randRange(220, 360),
+          [0.2, 0.15, 0.12, 0.5], [0.66, 0.58, 0.52, 0.0], 0.12, 0.6);
       }
       // Embers
       if (rand() < rate * 0.6) {

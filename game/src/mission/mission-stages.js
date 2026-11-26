@@ -129,7 +129,7 @@ export const STAGES = [
       const v = PLACES.village;
       game.wind.set(7, 0, 3.5);
       game.fire.target = v3(v.x, 0, v.z);
-      game.fire.spreadRate = 1.0;
+      game.fire.spreadRate = 0.45;
       // A new front breaks out toward the village.
       for (let i = 0; i < 9; i++) game.fire.ignite(v.x - 520 + i * 30, v.z - 240 + i * 25, 0.9);
       d.timer = 210;
@@ -145,7 +145,7 @@ export const STAGES = [
       if (game.lastDropDone) { game.lastDropDone = false; d.drops++; placeDropRing(game, d.ring); }
       d.threat = villageThreat(game);
       if (d.threat.near === 0 && d.drops > 0) return 'pass';
-      if (d.threat.closest < 90) return 'fail:Api mencapai desa. Desa terbakar.';
+      if (d.threat.closest < 70) return 'fail:Api mencapai desa. Desa terbakar.';
       if (d.timer <= 0) return 'fail:Waktu habis, api menelan desa.';
       return null;
     },
@@ -160,11 +160,11 @@ export const STAGES = [
       return [
         [false, `Waktu ${Math.max(0, Math.ceil(d.timer))} dtk`],
         [d.drops > 0, `Garis basah di depan desa · ${d.drops}x`],
-        [t.near === 0, `Titik api < 450 m dari desa: ${t.near}`],
+        [t.near === 0, `Titik api < 350 m dari desa: ${t.near}`],
         [t.closest > 200, `Jarak api terdekat ${Math.round(t.closest)} m`],
       ];
     },
-    exit(game) { game.scene.remove(game.stageData.ring); game.fire.target = null; game.fire.spreadRate = 0.6; },
+    exit(game) { game.scene.remove(game.stageData.ring); game.fire.target = null; game.fire.spreadRate = 0.45; },
   },
   {
     id: 'land',
@@ -210,7 +210,7 @@ function villageThreat(game) {
   let near = 0, closest = 1e9;
   for (const c of game.fire.activeCells()) {
     const d = Math.hypot(c.x - v.x, c.z - v.z);
-    if (d < 450) near++;
+    if (d < 350) near++;
     if (d < closest) closest = d;
   }
   return { near, closest };

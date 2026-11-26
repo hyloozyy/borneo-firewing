@@ -6,7 +6,7 @@ export const WORLD_SIZE = 10000;
 
 // Key places (metres; north is -Z, east is +X).
 export const PLACES = {
-  runway: { x: 0, z: 1800, length: 1100, width: 34, h: 16 },
+  runway: { x: 0, z: 1800, length: 1100, width: 42, h: 16 },
   lake: { x: -1550, z: -450, r: 560 },
   fire: { x: 750, z: -1750 },
   village: { x: 1500, z: -950, h: 12 },
@@ -75,7 +75,8 @@ export function riverDistance(x, z) {
 function groundColor(x, z, h, slope, out) {
   const n = fbm(x * 0.01, z * 0.01, 3);
   const sand = new THREE.Color(0xc9b088), mud = new THREE.Color(0x6b5a3a);
-  const jungle = new THREE.Color().setHSL(0.27 + n * 0.05, 0.55, 0.16 + n * 0.08);
+  const n2 = fbm(x * 0.06, z * 0.06, 2);
+  const jungle = new THREE.Color().setHSL(0.25 + n * 0.06, 0.5, 0.075 + n * 0.05 + n2 * 0.045);
   const rock = new THREE.Color(0x6f6a5c);
   if (h < 2.5) out.copy(sand).lerp(mud, smoothstep(-4, 1, h) * 0.6);
   else out.copy(jungle);

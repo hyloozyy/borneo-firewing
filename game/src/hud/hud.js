@@ -247,10 +247,11 @@ export class Hud {
     if (on) {
       g.strokeStyle = AMBER;
       g.lineWidth = 2;
-      const r = 14 * u + Math.sin(this.time * 5) * 2;
-      g.beginPath(); g.moveTo(sx, sy - r); g.lineTo(sx + r, sy); g.lineTo(sx, sy + r); g.lineTo(sx - r, sy); g.closePath(); g.stroke();
+      // A chevron hovering above the target, so the target itself stays visible.
+      const r = 9 * u, lift = 26 * u + Math.sin(this.time * 5) * 3 * u;
+      g.beginPath(); g.moveTo(sx - r, sy - lift - r); g.lineTo(sx, sy - lift); g.lineTo(sx + r, sy - lift - r); g.stroke();
       g.fillStyle = AMBER; g.textAlign = 'center';
-      g.fillText(`${obj.label} ${dist > 1000 ? (dist / 1000).toFixed(1) + ' KM' : Math.round(dist) + ' M'}`, sx, sy - r - 12 * u);
+      g.fillText(`${obj.label} ${dist > 1000 ? (dist / 1000).toFixed(1) + ' KM' : Math.round(dist) + ' M'}`, sx, sy - lift - r - 12 * u);
       g.lineWidth = 1.6;
     } else {
       // Edge arrow pointing toward the objective.
