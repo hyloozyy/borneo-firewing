@@ -19,6 +19,7 @@ export class CameraRig {
     this.idle = 0;
     this.recentreDelay = 0.6; // seconds after the last look input (longer on phones)
     this.fovZoom = 1;
+    this.lookAhead = 14; // metres ahead of the aircraft the chase camera aims at
   }
 
   orbit(dx, dy, dt = 1 / 60) {
@@ -92,7 +93,7 @@ export class CameraRig {
     this.smoothPos.lerp(_target, Math.min(1, dt * 6));
     cam.position.copy(this.smoothPos);
     if (this.shake > 0) cam.position.addScalar((Math.random() - 0.5) * this.shake);
-    _look.set(0, 2.5, -14).applyQuaternion(s.quaternion).add(s.position);
+    _look.set(0, 2.5, -this.lookAhead).applyQuaternion(s.quaternion).add(s.position);
     cam.up.set(0, 1, 0).applyQuaternion(this.smoothQuat);
     cam.lookAt(_look);
     this.first = false;

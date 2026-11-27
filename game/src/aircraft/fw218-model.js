@@ -395,8 +395,8 @@ export function buildFW218() {
   const landing = lightGlow('rgba(255,250,220,1)', 1.0); landing.position.set(0, -0.6, -10.2);
   const strobeL = lightGlow('rgba(255,255,255,1)', 2.6); strobeL.position.set(-halfSpan - 0.8, wingY, wingLE + 1.9);
   const strobeR = lightGlow('rgba(255,255,255,1)', 2.6); strobeR.position.set(halfSpan + 0.8, wingY, wingLE + 1.9);
-  const landL = lightGlow('rgba(255,246,220,1)', 2.4); landL.position.set(-2.9, wingY, wingLE - 0.1);
-  const landR = lightGlow('rgba(255,246,220,1)', 2.4); landR.position.set(2.9, wingY, wingLE - 0.1);
+  const landL = lightGlow('rgba(255,246,220,1)', 1.3); landL.position.set(-2.9, wingY, wingLE - 0.1);
+  const landR = lightGlow('rgba(255,246,220,1)', 1.3); landR.position.set(2.9, wingY, wingLE - 0.1);
   parts.landingLights.push(landL, landR);
   model.add(navL, navR, strobeTail, beacon, landing, strobeL, strobeR, landL, landR);
   parts.strobes = [strobeTail, strobeL, strobeR];

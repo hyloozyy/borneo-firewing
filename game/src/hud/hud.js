@@ -129,7 +129,8 @@ export class Hud {
     headingTape(g, W / 2, headY, s.heading, u, bug == null ? null : (bug + 360) % 360, game.wind);
 
     // Centre call-outs
-    const cy2 = cockpit ? cy + (tapeH / 2 - 14) * u : cy + 76 * u;
+    // Chase view: the call-outs sit under the caution panel, clear of the aircraft in the middle.
+    const cy2 = cockpit ? cy + (tapeH / 2 - 14) * u : touch ? cy + 76 * u : M + 120 * u;
     if (s.stall) flash(g, 'STALL · PUSH', W / 2, cy2, C.red, u, this.time);
     else if (s.scooping) flash(g, `SCOOPING · ${Math.round((100 * s.water) / s.waterMax)}%`, W / 2, cy2, C.blue, u, this.time, true);
     else if (game.dropWindow > 0 && s.water > 0) flash(g, `DROP NOW · ${keyName(game, 'drop')}`, W / 2, cy2, C.amber, u, this.time);

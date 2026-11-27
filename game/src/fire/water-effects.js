@@ -4,10 +4,13 @@ import { randRange } from '../core/rng.js';
 import { ParticlePool } from './particles.js';
 import { terrainHeight } from '../world/terrain.js';
 
+const _door = new THREE.Vector3(), _side = new THREE.Vector3(), _back = new THREE.Vector3();
+
 export class WaterEffects {
   constructor(scene, fire, quality) {
     this.fire = fire;
-    this.pool = new ParticlePool(quality.waterParticles, { look: 'water', lite: quality.lite });
+    this.pool = new ParticlePool(quality.waterParticles, { look: 'water', lite: quality.lite, fadeIn: 30 });
+    this.sheet = quality.lite ? 1 : 2; // dense sheet particles per mist particle
     scene.add(this.pool.points);
     this.hits = 0;
     this.landed = 0;
@@ -27,31 +30,53 @@ export class WaterEffects {
     return Math.max(0, terrainHeight(x, z)) + 6;
   }
 
-  // Release some of the load this frame from the belly doors.
+  // Release some of the load this frame from the belly doors: a dense white sheet that leaves the
+  // doors at the aircraft's speed (spread along this frame's path so it never breaks into puffs),
+  // plus the billowing mist it turns into as the air tears it apart on the way down.
   emitDrop(s, dt, kgPerSec) {
     const release = Math.min(s.water, kgPerSec * dt);
     s.water -= release;
     const n = Math.ceil(release / 12);
-    const p = s.position, v = s.velocity;
+    const v = s.velocity;
+    const door = _door.set(0, -2.0, -1.4).applyQuaternion(s.quaternion).add(s.position);
+    const side = _side.set(1, 0, 0).applyQuaternion(s.quaternion);
     for (let i = 0; i < n; i++) {
-      const sp = randRange(0, 1);
-      this.pool.spawn(p.x + randRange(-1.2, 1.2), p.y - 2.2 - sp * 2, p.z + randRange(-1.2, 1.2),
-        v.x * 0.9 + randRange(-3, 3), v.y - randRange(2, 6), v.z * 0.9 + randRange(-3, 3),
-        8, randRange(2.5, 4), randRange(11, 19), [0.9, 0.93, 0.96, 0.7], [0.85, 0.9, 0.95, 0.1], 0.55, -9.81, 1);
+      const back = randRange(0, dt), w = randRange(-0.7, 0.7);
+      this.pool.spawn(door.x - v.x * back + side.x * w, door.y - randRange(0, 1.5), door.z - v.z * back + side.z * w,
+        v.x * 0.9 + randRange(-2.5, 2.5), v.y - randRange(2, 6), v.z * 0.9 + randRange(-2.5, 2.5),
+        8, randRange(2.2, 3.5), randRange(12, 20), [0.92, 0.95, 0.98, 0.75], [0.85, 0.9, 0.95, 0.08], 0.55, -9.81, 1);
+    }
+    for (let i = 0; i < n * this.sheet; i++) {
+      const back = randRange(0, dt), w = randRange(-0.8, 0.8);
+      this.pool.spawn(door.x - v.x * back + side.x * w, door.y + randRange(-0.3, 0.2), door.z - v.z * back + side.z * w,
+        v.x * 0.95 + randRange(-1, 1), v.y - randRange(4, 9), v.z * 0.95 + randRange(-1, 1),
+        randRange(1.6, 2.6), randRange(1.1, 1.8), randRange(5, 9), [1, 1, 1, 0.98], [0.9, 0.94, 0.98, 0.25], 0.3, -9.81, 0);
     }
     return release;
   }
 
-  // Spray kicked up while skimming the lake.
+  // Spray kicked up while skimming the lake: bow-wave sheets thrown sideways off the chines, the
+  // white rooster tail the scoop probes throw up behind the step, and low churned water in the wake.
   emitScoopSpray(s) {
     const p = s.position, v = s.velocity;
-    const back = new THREE.Vector3(0, 0, 1).applyQuaternion(s.quaternion);
-    for (let i = 0; i < 12; i++) {
+    const back = _back.set(0, 0, 1).applyQuaternion(s.quaternion);
+    const r = _side.set(1, 0, 0).applyQuaternion(s.quaternion);
+    for (let i = 0; i < 10; i++) {
       const side = i % 2 ? 1 : -1;
-      const r = new THREE.Vector3(side, 0, 0).applyQuaternion(s.quaternion);
-      this.pool.spawn(p.x + back.x * 3 + r.x * 1.6, 0.4, p.z + back.z * 3 + r.z * 1.6,
-        v.x * 0.35 + r.x * randRange(4, 10), randRange(4, 10), v.z * 0.35 + r.z * randRange(4, 10),
-        randRange(0.9, 1.9), 3, randRange(12, 24), [1, 1, 1, 0.85], [0.9, 0.95, 1, 0], 0.8, -9.81, 0);
+      const f = randRange(-2, 4); // along the hull, from the step forward
+      this.pool.spawn(p.x + back.x * f + r.x * side * 1.5, 0.3, p.z + back.z * f + r.z * side * 1.5,
+        v.x * 0.45 + r.x * side * randRange(5, 11), randRange(3, 8), v.z * 0.45 + r.z * side * randRange(5, 11),
+        randRange(0.9, 1.6), randRange(1.4, 2.2), randRange(7, 13), [1, 1, 1, 0.95], [0.92, 0.96, 1, 0], 0.7, -9.81, 0);
+    }
+    for (let i = 0; i < 6; i++) {
+      const w = randRange(-1.2, 1.2);
+      this.pool.spawn(p.x + back.x * 4 + r.x * w, 0.5, p.z + back.z * 4 + r.z * w,
+        v.x * 0.55 + r.x * w * 2, randRange(7, 13), v.z * 0.55 + r.z * w * 2,
+        randRange(1.2, 2.0), randRange(1.2, 2), randRange(9, 16), [1, 1, 1, 0.9], [0.9, 0.95, 1, 0], 0.5, -9.81, 0);
+    }
+    for (let i = 0; i < 3; i++) {
+      this.pool.spawn(p.x + back.x * randRange(6, 10) + r.x * randRange(-2, 2), 0.4, p.z + back.z * randRange(6, 10) + r.z * randRange(-2, 2),
+        v.x * 0.2, randRange(0.5, 2), v.z * 0.2, randRange(1.6, 2.8), 3, randRange(14, 24), [0.95, 0.97, 1, 0.7], [0.85, 0.9, 0.95, 0], 0.9, -1, 0);
     }
   }
 

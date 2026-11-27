@@ -17,6 +17,7 @@ varying vec4 vTint;
 varying float vSeed;
 varying float vAge;
 varying float vSize;
+varying float vNear;
 uniform float scale;
 void main() {
   vTint = tint;
@@ -25,6 +26,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_PointSize = min(scale * size / -mv.z, MAX_POINT);
   vSize = gl_PointSize;
+  vNear = smoothstep(6.0, 34.0, -mv.z); // smoke thins out right in front of the lens
   gl_Position = projectionMatrix * mv;
 }`;
 
@@ -33,6 +35,7 @@ varying vec4 vTint;
 varying float vSeed;
 varying float vAge;
 varying float vSize;
+varying float vNear;
 uniform float soft;
 uniform float time;
 uniform vec3 sunView;
@@ -92,14 +95,14 @@ void main() {
     float fire = (1.0 - smoothstep(0.0, 0.12, vAge)) * max(0.0, 0.5 - p.y * 0.5); // only the youngest puffs, from below
     lit *= mix(0.62, 1.12, smoothstep(-0.9, 0.8, p.y + N.y * 0.4)); // shaded underside, sun-lit crown
     lit += vec3(2.2, 0.7, 0.15) * fire * 1.2;
-    float a = m * vTint.a * (0.55 + n * 0.6);
+    float a = m * vTint.a * (0.55 + n * 0.6) * vNear;
     gl_FragColor = vec4(lit, a);
     return;
   }
   // Water spray / mist.
   // Churning water: streaky, with shaded hollows between the bright lit lumps.
   float streak = vn(vec2(q.x * 6.0 + vSeed * 9.0, q.y * 1.5 - time * 2.0));
-  vec3 lit = vTint.rgb * (0.35 + 0.3 * N.y + 0.75 * sun) * (0.75 + 0.5 * n) * (0.85 + 0.3 * streak);
+  vec3 lit = vTint.rgb * (0.5 + 0.3 * N.y + 0.7 * sun) * (0.78 + 0.45 * n) * (0.85 + 0.3 * streak);
   float a = m * vTint.a * (0.35 + n * 0.6 + streak * 0.25);
   gl_FragColor = vec4(lit, a);
 }`;
@@ -107,8 +110,9 @@ void main() {
 const LOOKS = { flame: 1, smoke: 2, water: 3 };
 
 export class ParticlePool {
-  constructor(max, { additive = false, soft = 0.1, look = 'water', lite = false } = {}) {
+  constructor(max, { additive = false, soft = 0.1, look = 'water', lite = false, fadeIn = 5 } = {}) {
     this.max = max;
+    this.fadeRate = fadeIn; // how fast a new particle fades in (1/s)
     this.count = 0;
     this.p = new Float32Array(max * 3);
     this.v = new Float32Array(max * 3);
@@ -208,7 +212,7 @@ export class ParticlePool {
       S[i] = this.size0[i] + (this.size1[i] - this.size0[i]) * Math.sqrt(t);
       A[i] = t;
       D[i] = this.seedArr[i];
-      const fadeIn = Math.min(1, this.age[i] * 5);
+      const fadeIn = Math.min(1, this.age[i] * this.fadeRate);
       for (let c = 0; c < 4; c++) T[i * 4 + c] = this.c0[i * 4 + c] + (this.c1[i * 4 + c] - this.c0[i * 4 + c]) * t;
       T[i * 4 + 3] *= fadeIn;
     }

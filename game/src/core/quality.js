@@ -40,9 +40,9 @@ export function pickQuality() {
   if (q === 'high') set.mode = 'ultra';
   const full = set.mode === 'ultra' || (set.mode === 'sharp' && !phone);
   const out = full
-    ? { name: 'high', phone, treeSpacing: 16, shrubChance: 0.3, hiTreeRadius: 230, loTreeRadius: 600, shrubRadius: 170, impostorCell: 256, treeShadows: true, msaa: phone ? 0 : 4, grass: 40000, grassBlades: 13, reflections: true, groundTexture: 512, shadowSize: phone ? 2048 : 4096, shadowBox: 170, terrainSegments: 360, flameParticles: 4500, smokeParticles: 2200, waterParticles: 3000, shadows: true, clouds: 30, birds: 5, texDetail: 1 }
+    ? { name: 'high', phone, treeSpacing: 16, shrubChance: 0.3, hiTreeRadius: 230, loTreeRadius: 600, shrubRadius: 170, impostorCell: 256, treeShadows: true, msaa: phone ? 0 : 4, grass: 40000, grassBlades: 13, reflections: true, groundTexture: 512, shadowSize: phone ? 2048 : 4096, shadowBox: 170, terrainSegments: 360, flameParticles: 4500, smokeParticles: 2200, waterParticles: 5000, shadows: true, clouds: 30, birds: 5, texDetail: 1 }
     : { name: 'low', phone, // phones: no MSAA (FXAA instead), no shadows or reflections, fewer trees, particles and clouds
-      treeSpacing: 26, shrubChance: 0.2, hiTreeRadius: 105, loTreeRadius: 400, shrubRadius: 80, impostorCell: 128, treeShadows: false, msaa: 0, grass: 3500, grassBlades: 6, reflections: false, groundTexture: 256, shadowSize: 1024, shadowBox: 90, terrainSegments: 140, flameParticles: 900, smokeParticles: 450, waterParticles: 650, shadows: false, clouds: 10, birds: 1, texDetail: set.mode === 'performance' ? 0.5 : 1 };
+      treeSpacing: 26, shrubChance: 0.2, hiTreeRadius: 105, loTreeRadius: 400, shrubRadius: 80, impostorCell: 128, treeShadows: false, msaa: 0, grass: 3500, grassBlades: 6, reflections: false, groundTexture: 256, shadowSize: 1024, shadowBox: 90, terrainSegments: 140, flameParticles: 900, smokeParticles: 450, waterParticles: 1100, shadows: false, clouds: 10, birds: 1, texDetail: set.mode === 'performance' ? 0.5 : 1 };
   out.mode = set.mode;
   // Lite path (phones below ULTRA): sky baked once instead of ray-marched every frame, two bloom
   // levels instead of four, cheaper cloud and particle noise, 30 fps cap.

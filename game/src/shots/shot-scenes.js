@@ -46,7 +46,7 @@ export const SHOTS = {
     setFlying(game.flight, at, -80 * deg, 44, 2 * deg, 0);
     game.flight.water = game.flight.waterMax * 0.45;
     game.flight.flaps = game.flight.flapTarget = 0.5;
-    game.rig.yaw = -2.15; game.rig.pitch = 0.12; game.rig.dist = 34;
+    game.rig.yaw = num('yaw', -2.15); game.rig.pitch = num('pitch', 0.12); game.rig.dist = num('dist', 34);
     return { warm: 1.6, scoop: true, mode: 'chase' };
   },
   // Golden-hour short final, seen from the rear quarter: gear down, full flaps, the approach light bars
@@ -59,6 +59,7 @@ export const SHOTS = {
     game.flight.flaps = game.flight.flapTarget = 1;
     game.stageData.gate = true;
     game.flight.velocity.set(0, -3.4, -52); // 3.5° glide path, nose slightly up
+    game.flight.gearDown = true; game.plane.userData.parts.gearExt = 1; // wheels down and locked
     game.renderer.toneMappingExposure = num('exp', 1.3);
     game.rig.yaw = num('yaw', 0.72); game.rig.pitch = num('pitch', 0.2); game.rig.dist = num('dist', 26);
     return { warm: 1.0, mode: 'chase' };
@@ -135,6 +136,8 @@ export function runShot(game, name) {
   game.rig.first = true;
   // Framing: a longer lens (&fov=, vertical degrees) fills a wide 1280x480 frame with the aircraft
   // and compresses the fire, lake or runway behind it.
+  game.rig.lookAhead = num('ahead', setup.ahead ?? 14);
+  if (params.has('exp')) game.renderer.toneMappingExposure = num('exp', 1);
   const fov = num('fov', setup.fov ?? 0);
   if (fov > 0 && setup.mode === 'chase') { game.camera.fov = fov; game.camera.updateProjectionMatrix(); }
   const dt = 1 / 30;
