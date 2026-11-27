@@ -7,6 +7,7 @@ import { buildLiveryTexture, buildFinTexture, buildHullDetailMaps } from './live
 import { glowTexture } from '../core/canvas-textures.js';
 import { planarUV } from '../core/geometry-utils.js';
 import { latheZ, profileOf, bladeGeometry, strutGeometry, plateYZ } from './fw218-parts.js';
+import { mergeStaticMeshes } from './merge-static.js';
 
 const RED = 0xc8102e;
 const WHITE = 0xf2f2ee;
@@ -422,6 +423,7 @@ export function buildFW218() {
 
   root.userData.parts = parts;
   root.traverse((o) => { if (o.isMesh && o !== parts.discs[0] && o !== parts.discs[1]) o.castShadow = true; });
+  root.userData.merged = mergeStaticMeshes(model, parts);
   return root;
 }
 

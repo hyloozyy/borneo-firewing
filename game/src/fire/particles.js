@@ -23,7 +23,7 @@ void main() {
   vSeed = seed;
   vAge = age;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  gl_PointSize = min(scale * size / -mv.z, 640.0);
+  gl_PointSize = min(scale * size / -mv.z, MAX_POINT);
   vSize = gl_PointSize;
   gl_Position = projectionMatrix * mv;
 }`;
@@ -43,7 +43,7 @@ float vn(vec2 p) {
   vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(h(i), h(i + vec2(1, 0)), u.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), u.x), u.y);
 }
-float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { s += a * vn(p); p = p * 2.1 + 3.1; a *= 0.5; } return s; }
+float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < PART_OCT; i++) { s += a * vn(p); p = p * 2.1 + 3.1; a *= 0.5; } return s; }
 
 void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0;
@@ -98,7 +98,7 @@ void main() {
 const LOOKS = { flame: 1, smoke: 2, water: 3 };
 
 export class ParticlePool {
-  constructor(max, { additive = false, soft = 0.1, look = 'water' } = {}) {
+  constructor(max, { additive = false, soft = 0.1, look = 'water', lite = false } = {}) {
     this.max = max;
     this.count = 0;
     this.p = new Float32Array(max * 3);
@@ -130,6 +130,7 @@ export class ParticlePool {
       uniforms: { scale: { value: 600 }, soft: { value: soft }, look: { value: LOOKS[look] }, ...particleUniforms },
       vertexShader: vert,
       fragmentShader: frag,
+      defines: { PART_OCT: lite ? 2 : 4, MAX_POINT: lite ? '360.0' : '640.0' }, // lite: less noise, less overdraw
       transparent: true,
       depthWrite: false,
       blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,

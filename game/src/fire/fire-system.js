@@ -12,8 +12,8 @@ export class FireSystem {
     this.scene = scene;
     this.forest = forest;
     this.cells = new Map(); // key -> {x,z,h,heat,burnt}
-    this.flames = new ParticlePool(quality.flameParticles, { additive: true, look: 'flame' });
-    this.smoke = new ParticlePool(quality.smokeParticles, { look: 'smoke' });
+    this.flames = new ParticlePool(quality.flameParticles, { additive: true, look: 'flame', lite: quality.lite });
+    this.smoke = new ParticlePool(quality.smokeParticles, { look: 'smoke', lite: quality.lite });
     scene.add(this.smoke.points);
     scene.add(this.flames.points);
     this.light = new THREE.PointLight(0xff7a2a, 0, 900, 1.4);

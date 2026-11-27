@@ -75,12 +75,13 @@ class Game {
     await step('Lake, river and sea', 0.24, () => { this.water = null; this.waterSurface = buildWater(q); this.scene.add(this.waterSurface.mesh); });
     await step('Growing the rainforest', 0.32, () => { this.forest = buildForest(this.scene, q, renderer); });
     await step('Grass, village and airstrip', 0.7, () => {
-      this.grass = buildGrass(this.scene, q.grass);
-      this.village = buildVillage(this.scene, q);
-      this.airstrip = buildAirstrip(this.scene, q);
+      const lap = (label, fn) => { const t = performance.now(); const r = fn(); if (params.has('boottime')) console.info(`boot   ${label} ${Math.round(performance.now() - t)} ms`); return r; };
+      this.grass = lap('grass', () => buildGrass(this.scene, q.grass, q.grassBlades));
+      this.village = lap('village', () => buildVillage(this.scene, q));
+      this.airstrip = lap('airstrip', () => buildAirstrip(this.scene, q));
     });
     await step('Clouds and hornbills', 0.78, () => {
-      this.clouds = buildClouds(this.scene, q.clouds);
+      this.clouds = buildClouds(this.scene, q.clouds, q.lite);
       this.birds = buildBirds(this.scene, q.birds);
     });
     await step('Weather', 0.8, () => {
@@ -148,10 +149,13 @@ class Game {
   rebuildEnvironment() {
     if (!this.pmrem) this.pmrem = new THREE.PMREMGenerator(this.renderer);
     const envScene = new THREE.Scene();
-    envScene.add(this.sky.dome.clone());
+    const sky = this.sky.dome.clone();
+    sky.visible = true; // the lite path hides the live dome behind a baked background
+    envScene.add(sky);
     const old = this.scene.environment;
     this.scene.environment = this.pmrem.fromScene(envScene, 0.02).texture;
     if (old) old.dispose();
+    if (this.quality.lite) this.sky.bakeBackground(this.renderer, this.scene); // no per-pixel sky ray-march each frame
   }
 
   resize() {
@@ -409,7 +413,9 @@ if (shot && SHOTS[shot]) {
   if (params.get('play')) game.startMission(Number(params.get('stage') || 0));
   else showScreen('title');
   let last = performance.now();
+  const minGap = game.quality.fpsCap ? 1000 / game.quality.fpsCap - 3 : 0; // lite phones: steady 30 fps, half the GPU heat
   const loop = (now) => {
+    if (minGap && now - last < minGap) { requestAnimationFrame(loop); return; }
     const dt = Math.max(0, (now - last) / 1000); // rAF time can precede performance.now() on the first frame
     last = now;
     game.frame(dt);

@@ -55,7 +55,7 @@ float vn(vec2 p) {
   vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(h(i), h(i + vec2(1, 0)), u.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), u.x), u.y);
 }
-float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.07 + 1.3; a *= 0.5; } return s; }
+float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < CLOUD_OCT; i++) { s += a * vn(p); p = p * 2.07 + 1.3; a *= 0.5; } return s; }
 void main() {
   float r = length(vUv);
   if (r > 1.0) discard;
@@ -84,7 +84,7 @@ void main() {
   gl_FragColor = vec4(col, dens * 0.97 * step(vRank, coverage));
 }`;
 
-export function buildClouds(scene, count) {
+export function buildClouds(scene, count, lite = false) {
   const puffs = [];
   const total = Math.round(count * 1.8); // the extra ones only show in a storm (coverage rank)
   const own = painterRandom(7177); // storm clouds use their own stream so the world's stays as it was
@@ -129,7 +129,7 @@ export function buildClouds(scene, count) {
     darkness: { value: 0 },
     flash: { value: 0 },
   };
-  const mat = new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false });
+  const mat = new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, defines: { CLOUD_OCT: lite ? 3 : 5 } });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.frustumCulled = false;
   mesh.renderOrder = -5;

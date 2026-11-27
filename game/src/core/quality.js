@@ -7,7 +7,7 @@
 // below the screen's own resolution, so the picture stays crisp. ?quality=low|high still works.
 const KEY = 'fw-gfx';
 export const MODES = ['performance', 'balanced', 'sharp', 'ultra'];
-const RATIO = { performance: 1.25, balanced: 1.6, sharp: 2, ultra: 2 };
+const RATIO = { performance: 1.25, balanced: 1.5, sharp: 2, ultra: 2 };
 
 export function isPhone() {
   return matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
@@ -16,7 +16,7 @@ export function isPhone() {
 export function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { s = {}; }
-  const mode = MODES.includes(s.mode) ? s.mode : isPhone() ? 'sharp' : 'ultra';
+  const mode = MODES.includes(s.mode) ? s.mode : isPhone() ? 'balanced' : 'ultra';
   const scale = Math.max(0.6, Math.min(1, Number(s.scale) || 1));
   return { mode, scale };
 }
@@ -40,10 +40,14 @@ export function pickQuality() {
   if (q === 'high') set.mode = 'ultra';
   const full = set.mode === 'ultra' || (set.mode === 'sharp' && !phone);
   const out = full
-    ? { name: 'high', phone, treeSpacing: 16, shrubChance: 0.3, hiTreeRadius: 230, loTreeRadius: 600, shrubRadius: 170, impostorCell: 256, treeShadows: true, msaa: phone ? 0 : 4, grass: 40000, reflections: true, groundTexture: 512, shadowSize: phone ? 2048 : 4096, shadowBox: 170, terrainSegments: 360, flameParticles: 4500, smokeParticles: 2200, waterParticles: 3000, shadows: true, clouds: 30, birds: 5, texDetail: 1 }
+    ? { name: 'high', phone, treeSpacing: 16, shrubChance: 0.3, hiTreeRadius: 230, loTreeRadius: 600, shrubRadius: 170, impostorCell: 256, treeShadows: true, msaa: phone ? 0 : 4, grass: 40000, grassBlades: 13, reflections: true, groundTexture: 512, shadowSize: phone ? 2048 : 4096, shadowBox: 170, terrainSegments: 360, flameParticles: 4500, smokeParticles: 2200, waterParticles: 3000, shadows: true, clouds: 30, birds: 5, texDetail: 1 }
     : { name: 'low', phone, // phones: no MSAA (FXAA instead), no shadows or reflections, fewer trees, particles and clouds
-      treeSpacing: 26, shrubChance: 0.2, hiTreeRadius: 150, loTreeRadius: 520, shrubRadius: 110, impostorCell: 128, treeShadows: false, msaa: 0, grass: 8000, reflections: false, groundTexture: 256, shadowSize: 1024, shadowBox: 90, terrainSegments: 140, flameParticles: 1500, smokeParticles: 800, waterParticles: 1000, shadows: false, clouds: 14, birds: 3, texDetail: set.mode === 'performance' ? 0.5 : 1 };
+      treeSpacing: 26, shrubChance: 0.2, hiTreeRadius: 105, loTreeRadius: 400, shrubRadius: 80, impostorCell: 128, treeShadows: false, msaa: 0, grass: 3500, grassBlades: 6, reflections: false, groundTexture: 256, shadowSize: 1024, shadowBox: 90, terrainSegments: 140, flameParticles: 900, smokeParticles: 450, waterParticles: 650, shadows: false, clouds: 10, birds: 1, texDetail: set.mode === 'performance' ? 0.5 : 1 };
   out.mode = set.mode;
+  // Lite path (phones below ULTRA): sky baked once instead of ray-marched every frame, two bloom
+  // levels instead of four, cheaper cloud and particle noise, 30 fps cap.
+  out.lite = !full && (phone || params.has('lite'));
+  out.fpsCap = out.lite && set.mode !== 'sharp' ? 30 : 0;
   out.scale = set.scale;
   out.baseRatio = ratioFor(set.mode, 1);
   out.pixelRatio = ratioFor(set.mode, set.scale);

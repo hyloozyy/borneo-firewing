@@ -163,8 +163,22 @@ export function buildSky(scene, quality = { shadowSize: 2048, shadowBox: 160 }) 
   scene.add(sun.target);
 
   const snap = new THREE.Vector3();
+  let cubeRT = null;
   return {
     dome,
+    // Lite path: render the sky once into a cube map used as the scene background (redone when the
+    // weather changes) instead of ray-marching the atmosphere for every pixel of every frame.
+    bakeBackground(renderer, scene) {
+      if (!cubeRT) cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType });
+      const s = new THREE.Scene();
+      const d = dome.clone();
+      d.position.set(0, 0, 0);
+      d.visible = true;
+      s.add(d);
+      new THREE.CubeCamera(1, 60000, cubeRT).update(renderer, s);
+      scene.background = cubeRT.texture;
+      dome.visible = false;
+    },
     sun,
     hemi,
     uniforms,

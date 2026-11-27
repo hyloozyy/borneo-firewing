@@ -13,8 +13,9 @@ import { addRunwayFixtures } from './props/runway-fixtures.js';
 
 // Worn jungle runway: weathered asphalt aggregate, laterite dust blown in from the edges, cracks,
 // darker patch repairs, rubber in the touchdown zones and sun-faded paint.
-function runwayTexture(lengthM) {
-  const W = 384, H = 3072;
+// detail: 1 = full 384x3072 texels, 0.5 on the lite path (a quarter of the painting time).
+function runwayTexture(lengthM, detail = 1) {
+  let W = Math.round(384 * detail), H = Math.round(3072 * detail);
   const c = makeCanvas(W, H);
   const g = c.getContext('2d', { willReadFrequently: true });
   const img = g.createImageData(W, H);
@@ -35,6 +36,9 @@ function runwayTexture(lengthM) {
     }
   }
   g.putImageData(img, 0, 0);
+  // Markings are laid out on the full-size grid and scaled down to the texture.
+  g.scale(W / 384, H / 3072);
+  W = 384; H = 3072;
   const ppm = H / lengthM;
   g.globalAlpha = 0.82;
   g.fillStyle = '#e9e6dc';
@@ -119,7 +123,7 @@ export function buildAirstrip(scene, quality = {}) {
   group.position.set(r.x, r.h + 0.5, r.z);
   const runway = new THREE.Mesh(
     new THREE.PlaneGeometry(r.width, r.length),
-    new THREE.MeshStandardMaterial({ map: runwayTexture(r.length), roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
+    new THREE.MeshStandardMaterial({ map: runwayTexture(r.length, quality.lite ? 0.5 : 1), roughness: 0.88, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
   );
   runway.rotation.x = -Math.PI / 2;
   runway.receiveShadow = true;
@@ -132,7 +136,7 @@ export function buildAirstrip(scene, quality = {}) {
   group.add(shoulder);
   // Buildings, vehicles and light fixtures: detailed PBR props merged per material (props/).
   const groundAt = (x, z) => terrainHeight(r.x + x, r.z + z) - r.h;
-  const b = new PropBuilder(propPalette(quality.phone ? 256 : 512));
+  const b = new PropBuilder(propPalette(quality.lite ? 128 : quality.phone ? 256 : 512));
   addRunwayFixtures(b, groundAt);
   b.push(120, 0.3, 490, -Math.PI / 2); addHangar(b); b.pop();
   b.push(80, 0.3, 572, Math.PI); addControlTower(b); b.pop();

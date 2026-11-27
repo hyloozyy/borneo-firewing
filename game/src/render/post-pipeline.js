@@ -140,6 +140,7 @@ export class PostPipeline {
     this.renderer = renderer;
     this.enabled = true;
     this.bloomShift = quality.phone ? 2 : 1; // phones start the bloom pyramid at quarter resolution
+    this.bloomLevels = quality.lite ? 2 : 4; // lite: the two finest levels feed all four bloom inputs
     const type = THREE.HalfFloatType;
     this.sceneRT = new THREE.WebGLRenderTarget(1, 1, { type, samples: quality.msaa, depthBuffer: true });
     this.levels = [];
@@ -160,8 +161,8 @@ export class PostPipeline {
       scene: { value: this.sceneRT.texture },
       bloom0: { value: this.levels[0].a.texture },
       bloom1: { value: this.levels[1].a.texture },
-      bloom2: { value: this.levels[2].a.texture },
-      bloom3: { value: this.levels[3].a.texture },
+      bloom2: { value: this.levels[quality.lite ? 1 : 2].a.texture },
+      bloom3: { value: this.levels[quality.lite ? 1 : 3].a.texture },
       exposure: { value: 0.8 },
       bloomStrength: { value: 0.16 },
       sunUv: { value: new THREE.Vector2() },
@@ -202,6 +203,7 @@ export class PostPipeline {
     // Bloom pyramid: bright-pass into level 0, then downsample + blur each level.
     let src = this.sceneRT.texture;
     this.levels.forEach((l, i) => {
+      if (i >= this.bloomLevels) return;
       if (i === 0) { this.bright.uniforms.src.value = src; this.draw(this.bright, l.b); }
       else { this.blur.uniforms.src.value = this.levels[i - 1].a.texture; this.blur.uniforms.dir.value.set(0, 0); this.draw(this.blur, l.b); }
       this.blur.uniforms.src.value = l.b.texture; this.blur.uniforms.dir.value.set(1 / l.w, 0); this.draw(this.blur, l.a);

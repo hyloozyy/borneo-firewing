@@ -48,7 +48,7 @@ export function buildVillage(scene, quality = {}) {
   // fire scenario (and the staged screenshots) stay exactly where they were.
   for (let i = 0; i < 84; i++) rand();
   const rnd = painterRandom(2180);
-  const pal = propPalette(quality.phone ? 256 : 512);
+  const pal = propPalette(quality.lite ? 128 : quality.phone ? 256 : 512);
   const b = new PropBuilder(pal);
   const v = PLACES.village;
   const houses = [];

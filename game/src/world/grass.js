@@ -9,10 +9,10 @@ import { treeUniforms } from './trees/tree-materials.js';
 
 // One tuft: real blades, each a curved, tapering strip (three segments, pointed tip) leaning out
 // from the clump, dark and dense at the root, lighter and yellower toward the tips; a few dry blades.
-function tuftGeometry() {
+function tuftGeometry(BLADES = 13) {
   const rnd = painterRandom(77);
   const pos = [], col = [], bend = [], nor = [];
-  const BLADES = 13, SEG = 3;
+  const SEG = BLADES > 8 ? 3 : 2;
   const c0 = new THREE.Color(), c1 = new THREE.Color(), c = new THREE.Color();
   for (let i = 0; i < BLADES; i++) {
     const a = rnd() * Math.PI * 2, r0 = rnd() * 0.18;
@@ -52,7 +52,7 @@ function grassAllowed(x, z, h) {
   return forestMask(x, z, h) < 0.35;
 }
 
-export function buildGrass(scene, count) {
+export function buildGrass(scene, count, blades = 13) {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.8 });
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, treeUniforms);
@@ -64,7 +64,7 @@ transformed.x += sway;
 transformed.z += sway * 0.6;`);
   };
   mat.customProgramCacheKey = () => 'grass-blades-v2';
-  const mesh = new THREE.InstancedMesh(tuftGeometry(), mat, count);
+  const mesh = new THREE.InstancedMesh(tuftGeometry(blades), mat, count);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
   const zones = [
     [PLACES.runway.x, PLACES.runway.z, 260, PLACES.runway.length / 2 + 500, 0.55],
