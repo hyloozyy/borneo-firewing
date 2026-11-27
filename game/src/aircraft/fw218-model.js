@@ -466,3 +466,16 @@ export function animateFW218(root, s, dt, time) {
   p.hullDetail.visible = !s.cockpit;
   p.canopy.visible = !s.cockpit;
 }
+
+// World positions of the two exhaust stubs and the end of their hot plumes (for the heat shimmer).
+const _ex = [[-5.38, 2.44, -2.2, -5.7, 2.7, 3.2], [5.38, 2.44, -2.2, 5.7, 2.7, 3.2]];
+export function exhaustPlumes(root, rpm, out = []) {
+  root.updateMatrixWorld();
+  _ex.forEach((e, i) => {
+    out[i] = out[i] || { from: new THREE.Vector3(), to: new THREE.Vector3(), heat: 0 };
+    out[i].from.set(e[0], e[1], e[2]).applyMatrix4(root.matrixWorld);
+    out[i].to.set(e[3], e[4], e[5]).applyMatrix4(root.matrixWorld);
+    out[i].heat = Math.max(0, Math.min(1, (rpm[i] - 0.25) * 1.4));
+  });
+  return out;
+}

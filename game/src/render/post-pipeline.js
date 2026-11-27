@@ -47,6 +47,8 @@ uniform float aspect;
 uniform vec2 texel;
 uniform float fxaa;
 uniform float sharpen;
+uniform vec4 exhaust[2]; // screen uv of each engine exhaust (xy) and of the hot plume's end (zw)
+uniform float exhaustHeat;
 varying vec2 vUv;
 
 // Scene sample with edge antialiasing (FXAA-style blend along the edge, used when there is no MSAA)
@@ -93,6 +95,15 @@ void main() {
   // sampled a little below the pixel is the heat mask (hot air rises).
   vec3 heatSrc = texture2D(bloom3, vUv - vec2(0.0, 0.035)).rgb + texture2D(bloom2, vUv - vec2(0.0, 0.015)).rgb * 0.5;
   float heat = clamp((heatSrc.r - heatSrc.b * 1.4) * 0.6, 0.0, 1.0);
+  // Engine exhaust: a hot plume streaming back over the wing from each exhaust stub.
+  for (int i = 0; i < 2; i++) {
+    vec2 a = exhaust[i].xy, ab = exhaust[i].zw - a;
+    vec2 pa = (vUv - a) * vec2(aspect, 1.0), abA = ab * vec2(aspect, 1.0);
+    float t = clamp(dot(pa, abA) / max(dot(abA, abA), 1e-6), 0.0, 1.0);
+    float d = length(pa - abA * t);
+    float w = length(abA) * (0.05 + 0.16 * t);
+    heat += exhaustHeat * (1.0 - t) * smoothstep(w, 0.0, d) * 1.6;
+  }
   vec2 wob = vec2(sin(vUv.y * 160.0 - time * 9.0) + sin(vUv.y * 97.0 + vUv.x * 40.0 - time * 6.3) * 0.6,
                   cos(vUv.x * 130.0 + time * 7.0) * 0.5) * 0.0016 * heat;
   vec3 c = sceneSample(vUv + wob);
@@ -135,6 +146,8 @@ function pass(frag, uniforms) {
   return new THREE.ShaderMaterial({ vertexShader: fullVert, fragmentShader: frag, uniforms, depthTest: false, depthWrite: false });
 }
 
+const _pa = new THREE.Vector3(), _pb = new THREE.Vector3();
+
 export class PostPipeline {
   constructor(renderer, quality) {
     this.renderer = renderer;
@@ -172,7 +185,10 @@ export class PostPipeline {
       texel: { value: new THREE.Vector2(1, 1) },
       fxaa: { value: quality.msaa ? 0 : 1 },
       sharpen: { value: quality.phone ? 0.32 : 0.22 },
+      exhaust: { value: [new THREE.Vector4(), new THREE.Vector4()] },
+      exhaustHeat: { value: 0 },
     });
+    this.heatSources = []; // [{ from, to }] world points of hot exhaust plumes (set each frame)
     this.sunWorld = new THREE.Vector3();
   }
 
@@ -218,6 +234,17 @@ export class PostPipeline {
     const edge = Math.max(Math.abs(this.sunWorld.x), Math.abs(this.sunWorld.y));
     u.sunVisible.value = facing > 0 ? Math.max(0, 1 - Math.max(0, edge - 0.9) * 2.5) * Math.min(1, facing * 3) : 0;
     u.time.value = time % 100;
+    // Exhaust plumes on screen (only when in front of the camera).
+    let on = 0;
+    this.heatSources.forEach((h, i) => {
+      if (i > 1) return;
+      const a = _pa.copy(h.from).project(camera), b = _pb.copy(h.to).project(camera);
+      if (a.z > 1 || b.z > 1 || Math.abs(a.x) > 1.3 || Math.abs(a.y) > 1.3) return;
+      u.exhaust.value[i].set(a.x * 0.5 + 0.5, a.y * 0.5 + 0.5, b.x * 0.5 + 0.5, b.y * 0.5 + 0.5);
+      on = h.heat ?? 1;
+    });
+    if (!on) for (const v of u.exhaust.value) v.set(-9, -9, -9, -9);
+    u.exhaustHeat.value = on;
     this.draw(this.composite, null);
   }
 }

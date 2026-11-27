@@ -12,7 +12,7 @@ import { buildClouds } from './world/clouds.js';
 import { Weather } from './world/weather.js';
 import { buildBirds } from './world/birds.js';
 import { buildGrass } from './world/grass.js';
-import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
+import { buildFW218, animateFW218, exhaustPlumes } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
 import { createDamage, updateDamage, fireBottle } from './flight/damage-model.js';
 import { ScoopAutopilot, loadAutoScoop, PHASE_LABEL } from './flight/scoop-autopilot.js';
@@ -411,6 +411,7 @@ class Game {
     this.handleKeys();
     if (this.state !== 'paused') this.simulate(Math.min(dt, 0.05));
     this.waterSurface.renderReflection(this.renderer, this.scene, this.camera);
+    this.post.heatSources = this.cameraMode === 'cockpit' ? [] : exhaustPlumes(this.plane, this.flight.engRpm, this.post.heatSources);
     this.post.render(this.scene, this.camera, SUN_DIR, this.time);
     this.hud.draw(this, dt);
     this.controls.syncThrottle(this.flight.throttle, this.flight);
@@ -444,6 +445,7 @@ if (shot && SHOTS[shot]) {
     if (params.get('nohud')) game.showHud = false;
   }
   game.waterSurface.renderReflection(game.renderer, game.scene, game.camera);
+  game.post.heatSources = game.cameraMode === 'cockpit' ? [] : exhaustPlumes(game.plane, game.flight.engRpm, game.post.heatSources);
   game.post.render(game.scene, game.camera, SUN_DIR, game.time);
   game.hud.draw(game, 0);
   window.__shotReady = true;
