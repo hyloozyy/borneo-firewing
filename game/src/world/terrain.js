@@ -12,6 +12,8 @@ export const PLACES = {
   lake: { x: -1550, z: -450, r: 560 },
   fire: { x: 750, z: -1750 },
   village: { x: 1500, z: -950, h: 12 },
+  // Apron, hangar, tower and fuel farm east of the southern half of the runway (relative to its centre).
+  apron: { x0: 44, x1: 178, z0: 228, z1: 505 },
   coastX: 2900,
 };
 
@@ -53,6 +55,10 @@ export function terrainHeight(x, z) {
   const ax = Math.abs(x - r.x), az = Math.abs(z - r.z);
   const pad = (1 - smoothstep(70, 220, ax)) * (1 - smoothstep(r.length / 2 + 60, r.length / 2 + 300, az));
   h = lerp(h, r.h, pad);
+  // Flat apron for the hangar, tower and fuel farm.
+  const ap = PLACES.apron, rx = x - r.x, rz = z - r.z;
+  const apd = Math.max(ap.x0 - rx, rx - ap.x1, ap.z0 - rz, rz - ap.z1);
+  h = lerp(h, r.h, 1 - smoothstep(0, 60, apd));
   // Keep both approach corridors clear of hills (a valley below the 3.5 degree glide path).
   const corridor = 1 - smoothstep(160, 520, ax);
   const beyond = Math.max(0, az - r.length / 2);
@@ -67,6 +73,12 @@ export function terrainHeight(x, z) {
 export function isOnRunway(x, z, margin = 0) {
   const r = PLACES.runway;
   return Math.abs(x - r.x) < r.width / 2 + margin && Math.abs(z - r.z) < r.length / 2 + margin;
+}
+
+export function isOnApron(x, z, margin = 0) {
+  const r = PLACES.runway, ap = PLACES.apron;
+  const rx = x - r.x, rz = z - r.z;
+  return rx > ap.x0 - margin && rx < ap.x1 + margin && rz > ap.z0 - margin && rz < ap.z1 + margin;
 }
 
 export function riverDistance(x, z) {

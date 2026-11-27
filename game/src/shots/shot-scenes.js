@@ -70,6 +70,22 @@ export const SHOTS = {
     document.getElementById('title').classList.add('staged');
     return { warm: 2.0, mode: 'chase', kinematic: 'orbit' };
   },
+  // Asset inspection from a fixed camera: &at=x,y,z&look=x,y,z (metres, world), &fov=.
+  // Named spots: &spot=airfield|village|lake.
+  view(game) {
+    const r = PLACES.runway, v = PLACES.village, l = PLACES.lake;
+    const spots = {
+      airfield: [[r.x + 30, r.h + 14, r.z + 520], [r.x + 110, r.h + 6, r.z + 380]],
+      village: [[v.x - 160, v.h + 30, v.z + 120], [v.x, v.h + 4, v.z]],
+      lake: [[l.x + 420, 20, l.z + 300], [l.x + 560, 4, l.z + 40]],
+    };
+    const vec = (s) => new THREE.Vector3(...s.split(',').map(Number));
+    const [at, look] = spots[params.get('spot')] || spots.airfield;
+    game.startMission(1, { quiet: true });
+    setFlying(game.flight, new THREE.Vector3(-300, 400, -650), 100 * deg, 70);
+    game.showHud = false;
+    return { warm: 0.5, mode: 'chase', camera: { fov: num('fov', 55), pos: params.has('at') ? vec(params.get('at')) : new THREE.Vector3(...at), look: params.has('look') ? vec(params.get('look')) : new THREE.Vector3(...look) } };
+  },
   // Close look at the aircraft from behind and above, cruising over the hills (detail check).
   rear(game) {
     game.startMission(1, { quiet: true });

@@ -2,7 +2,7 @@
 // lake banks: instanced crossed cards with painted blades that bend in the wind.
 import * as THREE from 'three';
 import { rand, randRange } from '../core/rng.js';
-import { terrainHeight, isOnRunway, PLACES } from './terrain.js';
+import { terrainHeight, isOnRunway, isOnApron, PLACES } from './terrain.js';
 import { forestMask } from './forest-layout.js';
 import { makeCanvas, canvasToTexture, painterRandom } from '../textures/texture-utils.js';
 import { treeUniforms } from './trees/tree-materials.js';
@@ -54,7 +54,7 @@ function tuftGeometry() {
 }
 
 function grassAllowed(x, z, h) {
-  if (h < 1.8 || isOnRunway(x, z, 3)) return false;
+  if (h < 1.8 || isOnRunway(x, z, 3) || isOnApron(x, z, 2)) return false;
   return forestMask(x, z, h) < 0.35;
 }
 

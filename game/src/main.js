@@ -74,8 +74,8 @@ class Game {
     await step('Growing the rainforest', 0.32, () => { this.forest = buildForest(this.scene, q, renderer); });
     await step('Grass, village and airstrip', 0.7, () => {
       this.grass = buildGrass(this.scene, q.grass);
-      this.village = buildVillage(this.scene);
-      this.airstrip = buildAirstrip(this.scene);
+      this.village = buildVillage(this.scene, q);
+      this.airstrip = buildAirstrip(this.scene, q);
     });
     await step('Clouds and hornbills', 0.78, () => {
       this.clouds = buildClouds(this.scene, q.clouds);
@@ -341,7 +341,7 @@ class Game {
     const smoke = s.turbulence;
     this.scene.fog.near = 0.00016 * (1 + smoke * 10);
     this.waterSurface.update(this.time);
-    this.airstrip.update(this.time, s);
+    this.airstrip.update(this.time, s, this.wind);
     this.birds.update(this.time);
     this.clouds.update(this.time, this.camera);
     for (const key of ['rings']) for (const r of this.stageData[key] || []) pulseRing(r, this.time, true);

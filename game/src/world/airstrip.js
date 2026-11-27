@@ -2,8 +2,14 @@
 import * as THREE from 'three';
 import { makeCanvas, glowTexture } from '../core/canvas-textures.js';
 import { tileNoise, tileFbm, painterRandom } from '../textures/texture-utils.js';
-import { mergeParts, paint, placed } from '../core/geometry-utils.js';
-import { PLACES } from './terrain.js';
+import { PLACES, terrainHeight } from './terrain.js';
+import { PropBuilder } from './props/prop-builder.js';
+import { propPalette } from './props/prop-palette.js';
+import { addHangar } from './props/hangar.js';
+import { addControlTower, towerBeacon } from './props/control-tower.js';
+import { addFuelFarm, addFuelBowser, addCrewPickup } from './props/fuel-farm.js';
+import { buildWindsock } from './props/windsock.js';
+import { addRunwayFixtures } from './props/runway-fixtures.js';
 
 // Worn jungle runway: weathered asphalt aggregate, laterite dust blown in from the edges, cracks,
 // darker patch repairs, rubber in the touchdown zones and sun-faded paint.
@@ -89,7 +95,7 @@ function vergeTexture() {
   return t;
 }
 
-export function buildAirstrip(scene) {
+export function buildAirstrip(scene, quality = {}) {
   const r = PLACES.runway;
   const group = new THREE.Group();
   group.position.set(r.x, r.h + 0.5, r.z);
@@ -106,34 +112,24 @@ export function buildAirstrip(scene) {
   shoulder.position.y = -0.2;
   shoulder.receiveShadow = true;
   group.add(shoulder);
-  const apron = new THREE.Mesh(new THREE.PlaneGeometry(70, 90), new THREE.MeshLambertMaterial({ color: 0x55534c, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
-  apron.rotation.x = -Math.PI / 2;
-  apron.position.set(62, -0.02, 300);
-  group.add(apron);
-
-  // Hangar, tower, fuel tanks.
-  const lam = new THREE.MeshLambertMaterial({ vertexColors: true });
-  const hangarRoof = new THREE.CylinderGeometry(14, 14, 36, 16, 1, false, 0, Math.PI);
-  placed(hangarRoof, { rx: Math.PI / 2, rz: Math.PI / 2, y: 0 });
-  const buildings = mergeParts([
-    paint(placed(hangarRoof, { x: 80, y: 6, z: 330, sz: 1 }), 0x8f9698),
-    paint(placed(new THREE.BoxGeometry(28, 6, 36), { x: 80, y: 3, z: 330 }), 0xa7a9a2),
-    paint(placed(new THREE.BoxGeometry(5, 14, 5), { x: 75, y: 7, z: 270 }), 0xd8d2c4),
-    paint(placed(new THREE.BoxGeometry(7, 3, 7), { x: 75, y: 15.5, z: 270 }), 0x2b3b44),
-    paint(placed(new THREE.CylinderGeometry(3, 3, 5, 12), { x: 95, y: 2.5, z: 250 }), 0xc63a2a),
-    paint(placed(new THREE.CylinderGeometry(3, 3, 5, 12), { x: 103, y: 2.5, z: 250 }), 0xe6e6e0),
-    paint(placed(new THREE.BoxGeometry(14, 3.2, 6), { x: 50, y: 1.6, z: 360 }), 0xb6452e),
-  ]);
-  const bm = new THREE.Mesh(buildings, lam);
-  bm.castShadow = true;
-  group.add(bm);
-  // Windsock
-  const sock = new THREE.Mesh(new THREE.ConeGeometry(0.8, 4, 8, 1, true), new THREE.MeshLambertMaterial({ color: 0xff6a1a, side: THREE.DoubleSide }));
-  sock.rotation.z = Math.PI / 2;
-  sock.position.set(40, 8, -380);
-  group.add(sock);
-  group.add(placed(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 8, 4), new THREE.MeshLambertMaterial({ color: 0xdddddd })), {}));
-  group.children[group.children.length - 1].position.set(38, 4, -380);
+  // Buildings, vehicles and light fixtures: detailed PBR props merged per material (props/).
+  const groundAt = (x, z) => terrainHeight(r.x + x, r.z + z) - r.h;
+  const b = new PropBuilder(propPalette(quality.phone ? 256 : 512));
+  addRunwayFixtures(b, groundAt);
+  b.push(120, 0.3, 380, -Math.PI / 2); addHangar(b); b.pop();
+  b.push(80, 0.3, 462, Math.PI); addControlTower(b); b.pop();
+  b.push(128, 0.3, 282, Math.PI / 2); addFuelFarm(b); b.pop();
+  b.push(84, 0.32, 404, 0.15); addFuelBowser(b); b.pop();
+  b.push(70, 0.32, 352, -0.5); addCrewPickup(b); b.pop();
+  const props = b.build();
+  props.position.set(r.x, r.h, r.z);
+  scene.add(props);
+  const beacon = towerBeacon(propPalette());
+  beacon.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI).add(new THREE.Vector3(80, 0.3, 462));
+  props.add(beacon);
+  const sock = buildWindsock(propPalette());
+  sock.group.position.set(-42, groundAt(-42, 470), 470);
+  props.add(sock.group);
 
   // Edge, threshold and approach lights as glowing sprites.
   const glow = glowTexture('rgba(255,230,170,1)');
@@ -147,29 +143,33 @@ export function buildAirstrip(scene) {
     return sp;
   };
   for (let z = -r.length / 2; z <= r.length / 2; z += 60) {
-    add(glow, -r.width / 2 - 2, 0.6, z, 5);
-    add(glow, r.width / 2 + 2, 0.6, z, 5);
+    add(glow, -r.width / 2 - 2, groundAt(-r.width / 2 - 2, z) - 0.03, z, 2.6);
+    add(glow, r.width / 2 + 2, groundAt(r.width / 2 + 2, z) - 0.03, z, 2.6);
   }
   for (let x = -r.width / 2; x <= r.width / 2; x += 4) {
-    add(greenGlow, x, 0.6, r.length / 2 + 3, 3);
-    add(redGlow, x, 0.6, -r.length / 2 - 3, 3);
+    add(greenGlow, x, groundAt(x, r.length / 2 + 3) - 0.3, r.length / 2 + 3, 1.6);
+    add(redGlow, x, groundAt(x, -r.length / 2 - 3) - 0.3, -r.length / 2 - 3, 1.6);
   }
   // Approach light bars south of runway 36 (landing northbound), with sequenced flashers.
   const flashers = [];
   for (let i = 1; i <= 12; i++) {
     const z = r.length / 2 + i * 30;
-    for (let x = -8; x <= 8; x += 4) add(glow, x, 1.5, z, 3.5);
-    flashers.push(add(glow, 0, 2.2, z, 7));
+    const top = Math.max(groundAt(0, z) + 1.4, 1.2) - 0.5;
+    for (let x = -8; x <= 8; x += 4) add(glow, x, top + 0.22, z - 0.3, 1.7);
+    flashers.push(add(glow, 0, top + 0.9, z, 4));
   }
   // PAPI: 4 lights left of the touchdown zone.
   const papi = [];
-  for (let i = 0; i < 4; i++) papi.push(add(redGlow, -r.width / 2 - 14 - i * 5, 1, r.length / 2 - 200, 4));
+  for (let i = 0; i < 4; i++) papi.push(add(redGlow, -r.width / 2 - 14 - i * 5, groundAt(-r.width / 2 - 14 - i * 5, r.length / 2 - 200) + 0.3, r.length / 2 - 200 + 0.6, 4));
   scene.add(group);
 
   return {
     group,
     papi,
-    update(t, plane) {
+    props,
+    update(t, plane, wind) {
+      if (wind) sock.update(t, wind);
+      beacon.rotation.y = t * 2.6;
       const k = Math.floor((t * 2.5) % 1 * 12);
       flashers.forEach((f, i) => (f.visible = 11 - i === k));
       if (!plane) return;
