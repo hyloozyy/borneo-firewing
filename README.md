@@ -68,6 +68,12 @@ Graphics: the title and pause screens have a GRAPHICS setting (Performance, Bala
 slider. Speed is won back from scene detail, not resolution: phones render at up to 2x their screen with FXAA and a
 light sharpen, computers at up to 2x with 4x MSAA.
 
+Weather: the same screens have a WEATHER setting, applied live and remembered. **Clear** (the default) is a
+tropical late afternoon with scattered cumulus and a thin smoke haze from the fires; **Smoke Haze** is the
+karhutla haze, a brown-orange sky with a dim red sun and thick haze layers; **Storm** brings a dark low cloud
+deck, rain streaks, a wet glossy canopy and ground, lightning inside the clouds with thunder, and rain on the
+windscreen.
+
 ### On a phone
 
 Open the game in the phone browser and hold it sideways (a full-screen landscape button is offered in portrait).
@@ -96,10 +102,20 @@ variants (emergent dipterocarps, canopy and sub-canopy trees, light-green pionee
 Trees near the camera are full models, further out a lighter model of the same tree, and beyond that an
 impostor card baked at start-up from that tree in eight directions (colour and normals) and lit in the shader.
 
+The man-made world is modelled part by part with PBR materials painted procedurally at start-up (albedo,
+normal and roughness maps for corrugated zinc, painted sheet, weathered planks, ironwood shingles, nipah
+thatch, concrete, rock and painted steel; `game/src/world/props`): the arched hangar with its ribs, sign,
+half-open doors and lit interior, the control tower with its raked glass cab and rotating beacon, the fuel
+farm, a fuel bowser and crew pickup, the windsock, runway, approach and PAPI light units, the stilt houses
+and longhouse (stilts and bracing, plank walls, shuttered windows, verandas, shingle, zinc or thatch roofs,
+yard props), a lake landing with a jetty and boats, and shore rocks. Each area is merged into one mesh per
+material.
+
 ```
 game/src/aircraft   FW-218 model and livery
 game/src/flight     flight physics, damage model, annunciators
-game/src/world      terrain, water, sky, forest, village, airstrip, clouds and hornbills
+game/src/world      terrain, water, sky, weather, forest, village, airstrip, clouds and hornbills
+game/src/world/props  hangar, tower, fuel farm, vehicles, houses, boats, rocks and their PBR textures
 game/src/fire       fire spread, flames, smoke, water drop and scoop spray
 game/src/mission    the five stages, rings, mission director, crash and landing report
 game/src/hud        head-up display: tapes, radar, systems, instrument cluster, messages

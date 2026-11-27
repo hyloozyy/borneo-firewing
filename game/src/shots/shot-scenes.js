@@ -58,7 +58,7 @@ export const SHOTS = {
     game.stageData.gate = true;
     game.flight.velocity.set(0, -3.4, -52); // 3.5° glide path, nose slightly up
     game.renderer.toneMappingExposure = num('exp', 1.3);
-    game.rig.yaw = num('yaw', 0.5); game.rig.pitch = num('pitch', 0.2); game.rig.dist = num('dist', 30);
+    game.rig.yaw = num('yaw', 0.72); game.rig.pitch = num('pitch', 0.2); game.rig.dist = num('dist', 26);
     return { warm: 1.0, mode: 'chase' };
   },
   // Title screen over the orbiting fly-by of the fire.

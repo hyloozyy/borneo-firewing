@@ -250,3 +250,15 @@ body.touch .hint-key { display: none; }
 /* Weather setting (title and pause), above the graphics modes */
 .wx-slot { margin-bottom: 8px; }
 .wx-modes { grid-template-columns: repeat(3, 1fr); }
+/* Staged title screenshot (?shot=title): no entry animations, and a composed 1280x480 layout -
+   logo, features, start, stage select and the aircraft card; the settings rows stay in the game. */
+body.shot *, body.shot *::before, body.shot *::after { animation: none !important; transition: none !important; }
+body.shot #title.staged { align-items: center; padding: 18px 28px; }
+body.shot #title.staged .gfx-slot, body.shot #title.staged .hint-key { display: none; }
+body.shot #title.staged .badges { display: flex; margin-top: 10px; }
+body.shot #title.staged .logo { font-size: 46px; }
+body.shot #title.staged .sub { font-size: 14px; margin: 10px 0 14px; max-width: 520px; }
+body.shot #title.staged .label { margin: 12px 0 6px; }
+body.shot #title.staged .spec { display: block; }
+body.shot #title.staged .keys, body.shot #title.staged .keys-label { display: grid; }
+body.shot #title.staged .keys-label { display: block; }
