@@ -1,6 +1,6 @@
 // Where the rainforest grows: a 0..1 mask shared by tree placement and the terrain's canopy layer,
 // and the hotspots (fire zone, lake shore, airstrip, village) where trees are placed densest.
-import { terrainHeight, isOnRunway, isOnApron, PLACES, riverDistance, lakeLanding } from './terrain.js';
+import { terrainHeight, isOnRunway, isOnApron, PLACES, riverDistance, lakeLanding, lakeLane } from './terrain.js';
 import { smoothstep } from '../core/noise.js';
 
 export function forestMask(x, z, h = terrainHeight(x, z)) {
@@ -9,6 +9,7 @@ export function forestMask(x, z, h = terrainHeight(x, z)) {
   let m = smoothstep(3.2, 7, h) * (1 - smoothstep(760, 980, h));
   m *= smoothstep(150, 200, Math.hypot(x - PLACES.village.x, z - PLACES.village.z));
   m *= smoothstep(34, 60, riverDistance(x, z));
+  m *= 1 - lakeLane(x, z).w; // scooping lanes off the lake ends stay clear
   const ld = lakeLanding(); // clearing around the fishing landing
   if (ld) m *= smoothstep(55, 85, Math.hypot(x - ld.x - ld.dx * 20, z - ld.z - ld.dz * 20));
   // Approach lanes off both runway ends are kept clear.

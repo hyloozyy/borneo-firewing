@@ -15,7 +15,7 @@ import { buildGrass } from './world/grass.js';
 import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
 import { createDamage, updateDamage, fireBottle } from './flight/damage-model.js';
-import { ScoopAutopilot, loadAutoScoop } from './flight/scoop-autopilot.js';
+import { ScoopAutopilot, loadAutoScoop, PHASE_LABEL } from './flight/scoop-autopilot.js';
 import { buildFlightReport } from './mission/flight-report.js';
 import { EngineEffects } from './fire/engine-effects.js';
 import { FireSystem } from './fire/fire-system.js';
@@ -288,7 +288,7 @@ class Game {
     this.time += dt;
     this.prevPos.copy(s.position);
     let input = this.state === 'playing' ? this.controls.read() : { pitch: 0, roll: 0, yaw: 0, throttleDelta: 0, drop: false, brakes: false };
-    if (this.state === 'playing' && !this.kinematic) input = this.autopilot.control(s, input, dt);
+    if (this.state === 'playing' && !this.kinematic) input = this.autopilot.control(s, input);
     // Gear comes down by itself on final to the airstrip (full flaps, low, over land).
     if (!s.gearDown && !s.onGround && s.flapTarget >= 1 && s.agl < 150 && terrainHeight(s.position.x, s.position.z) > 0
       && Math.hypot(s.position.x - PLACES.runway.x, s.position.z - PLACES.runway.z) < 3200) { s.gearDown = true; this.hud.toast('GEAR DOWN', '#9dffb0'); }
@@ -314,8 +314,11 @@ class Game {
         s.agl = s.position.y - Math.max(0, terrainHeight(s.position.x, s.position.z));
       }
     } else if (this.state === 'playing') {
-      const steps = Math.ceil(dt / (1 / 120));
-      for (let i = 0; i < steps; i++) stepFlight(s, input, dt / steps, { wind: this.wind, time: this.time, fuelBurn: 1.6 });
+      if (this.autopilot.active) this.autopilot.fly(s, dt); // AUTO SCOOP flies its guided path
+      else {
+        const steps = Math.ceil(dt / (1 / 120));
+        for (let i = 0; i < steps; i++) stepFlight(s, input, dt / steps, { wind: this.wind, time: this.time, fuelBurn: 1.6 });
+      }
       if (!s.crashed) updateDamage(s, s.damage, { dt, time: this.time, heat: s.turbulence * 0.8, birds: this.birds.list });
       this.stats.flown += s.velocity.length() * dt;
       if (s.scooping && !this.wasScooping) this.stats.scoops++;
@@ -359,6 +362,14 @@ class Game {
     this.water.update(dt, this.wind);
     if (this.state === 'playing') this.mission.update(dt);
     if (this.mission.stage) this.objective = this.mission.stage.objective(this);
+    // AUTO SCOOP: the marker shows where the autopilot is heading next, and why.
+    const ap = this.autopilot;
+    if (ap.active && ap.target) {
+      this.apMark = this.apMark || { pos: new THREE.Vector3(), label: '' };
+      this.apMark.pos.set(ap.target.x, ap.target.y, ap.target.z);
+      this.apMark.label = `AUTO SCOOP · ${PHASE_LABEL[ap.phase] || ''}`;
+      this.objective = this.apMark;
+    }
     this.syncVisuals(dt);
   }
 

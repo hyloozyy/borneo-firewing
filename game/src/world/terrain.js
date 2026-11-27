@@ -47,6 +47,10 @@ export function terrainHeight(x, z) {
   // Lake basin.
   const dl = Math.hypot((x - PLACES.lake.x) * 0.85, z - PLACES.lake.z);
   h = lerp(h, -14, 1 - smoothstep(PLACES.lake.r * 0.8, PLACES.lake.r * 1.5, dl));
+  // Scooping lanes: off both ends of the lake's long axis the ground falls gently to the shore and
+  // stays clear of forest (see forest-layout), so a loaded water bomber can drop in and climb out.
+  const lane = lakeLane(x, z);
+  if (lane.w > 0) h = lerp(h, Math.min(h, 3 + lane.beyond * 0.035), lane.w);
   // River channel.
   const dr = distToRiver(x, z);
   h = lerp(h, -6, 1 - smoothstep(26, 120, dr));
@@ -68,6 +72,15 @@ export function terrainHeight(x, z) {
   const dv = Math.hypot(x - PLACES.village.x, z - PLACES.village.z);
   h = lerp(h, PLACES.village.h, 1 - smoothstep(120, 280, dv));
   return h;
+}
+
+// Weight (0..1) of the lake's scooping lanes at a point and how far beyond the water it is.
+export function lakeLane(x, z) {
+  const L = PLACES.lake, half = (L.r * 0.98) / 0.85;
+  const beyond = Math.abs(x - L.x) - half;
+  if (beyond < -half * 0.5 || beyond > 1800) return { w: 0, beyond: 0 };
+  const w = (1 - smoothstep(180, 420, Math.abs(z - L.z))) * (1 - smoothstep(1500, 1800, beyond));
+  return { w, beyond: Math.max(0, beyond) };
 }
 
 export function isOnRunway(x, z, margin = 0) {
