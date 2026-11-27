@@ -140,7 +140,7 @@ export class Weather {
       r.fall.value.set(g.wind.x * 1.5 - s.velocity.x * 0.35, -11, g.wind.z * 1.5 - s.velocity.z * 0.35);
       r.tint.value.setRGB(0.72, 0.77, 0.84).multiplyScalar(1 + this.flash * 2);
       const fire = g.fire && g.fire.nearLight;
-      if (fire && fire.intensity > 0) { r.firePos.value.copy(fire.position); r.fireGlow.value = Math.min(1.5, fire.intensity / 2500); } else r.fireGlow.value = 0;
+      if (fire && fire.intensity > 0) { r.firePos.value.copy(fire.position); r.fireGlow.value = Math.min(0.6, fire.intensity / 5000); } else r.fireGlow.value = 0;
     }
     // Lightning: a double flicker inside the clouds, thunder a few seconds later.
     let f = 0;
