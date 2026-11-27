@@ -140,6 +140,7 @@ export function runShot(game, name) {
     game.simulate(dt);
   }
   game.hud.bannerTime = 0;
+  game.hud.toasts.length = 0; // no warm-up call-outs (e.g. the automatic GEAR DOWN) in staged shots
   if (params.has('strike')) { game.weather.strike(game.time - num('strike', 0.02)); game.weather.update(0, game.time); }
   // Fixed camera (outside the chase rig) for scenic shots.
   if (setup.camera) {
