@@ -4,6 +4,37 @@
 [![rank](https://make.fun/badge/best-flight-game-20261126-0057/hyloozyy/borneo-firewing/rank.svg)](https://make.fun/competitions/best-flight-game-20261126-0057)
 [![reward](https://make.fun/badge/best-flight-game-20261126-0057/hyloozyy/borneo-firewing/reward.svg)](https://make.fun/competitions/best-flight-game-20261126-0057)
 
+## 🔥 THE MISSION
+
+> **The Kalimantan rainforest is burning.** A *karhutla* forest fire is tearing through the canopy, the sky has
+> turned orange with smoke, and a stilt village sits right in its path. One aircraft can still get there in time.
+>
+> You are the pilot of the **FW-218 "Enggang"**, callsign **Enggang 218**, a twin-turboprop amphibious water bomber.
+>
+> **Your goal: knock down the fire front, save the village and bring the aircraft home.**
+
+1. **Take-off & Patrol**: bring the engines to life, lift off the jungle strip and scout the fire along the river.
+2. **First Scoop**: touch down on the lake at speed and skim it until the tank is full.
+3. **Fire Attack**: dive through the drop ring over the hottest flames, open the doors, scoop again, repeat.
+4. **Save the Village**: the wind turns and a new front races toward the stilt houses: beat the clock.
+5. **Return & Land**: low on fuel, fly the approach gate, follow the PAPI lights and land on runway 36.
+
+**Why it is hard:** fuel burns down every minute; a full tank of water makes the aircraft slow and heavy; pushing the
+engines past the ITT redline can set one on fire and leave you flying home on the other; the wind spreads the fire
+and pushes you off your line; the hot smoke over the flames shakes the aircraft with turbulence; and in a storm
+you fly under a dark cloud deck through rain and lightning.
+
+**Features:** a fully modelled FW-218 with a lit cockpit · AUTO SCOOP (K) for the lake run · retractable landing gear (G) ·
+live weather: **CLEAR / SMOKE HAZE / STORM** · engine fires, bird strikes, damage and crash reports ·
+**playable on a phone** with touch stick, throttle, DROP button and swipe-to-look, as well as keyboard and mouse.
+
+| | |
+| --- | --- |
+| ![storm inferno](screenshots/1-storm-inferno.jpg) | ![clear scoop](screenshots/2-clear-scoop.jpg) |
+| **Storm inferno**: low over the burning forest in the rain, ENG 2 ITT caution and smoke turbulence | **Clear scoop**: skimming the lake to fill the tank, stilt houses and jetty behind |
+| ![smoke-haze landing](screenshots/3-haze-landing.jpg) | ![water drop](screenshots/4-best.jpg) |
+| **Smoke-haze landing**: short final to runway 36, gear down, flaps full | **Water drop**: doors open over the fire front, target ring ahead |
+
 An original firefighting flight game made for the make.fun bounty
 [Make the best flight game](https://make.fun/competitions/best-flight-game-20261126-0057).
 
@@ -11,8 +42,6 @@ You fly the **FW-218 "Enggang"**, a twin-turboprop amphibious water bomber, agai
 (*karhutla*) in the Kalimantan rainforest. Take off from a jungle airstrip, skim a lake to fill the tank,
 drop water through target rings over the fire front, save a stilt village when the wind turns, and land
 back on runway 36 before the fuel runs out.
-
-![cover](screenshots/1-cover-water-drop.jpg)
 
 ## The mission: five stages
 
