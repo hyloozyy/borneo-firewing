@@ -99,6 +99,15 @@ void main() {
     gl_FragColor = vec4(lit, a);
     return;
   }
+  if (look == 4) {
+    // Scoop spray: a cluster of bright droplets with a thin mist between them, not a cotton puff.
+    float d = 1.0 - r;
+    float dots = smoothstep(0.58, 0.82, vn(q * 7.0 + vSeed * 31.0)) + smoothstep(0.62, 0.86, vn(q * 15.0 - vSeed * 17.0)) * 0.8;
+    float a = (dots * smoothstep(0.0, 0.45, d) + smoothstep(0.0, 0.7, d) * 0.22) * vTint.a;
+    if (a < 0.01) discard;
+    gl_FragColor = vec4(vTint.rgb * (0.72 + 0.25 * N.y + 0.55 * sun), min(a, 1.0));
+    return;
+  }
   // Water spray / mist.
   // Churning water: streaky, with shaded hollows between the bright lit lumps.
   float streak = vn(vec2(q.x * 6.0 + vSeed * 9.0, q.y * 1.5 - time * 2.0));
@@ -107,7 +116,7 @@ void main() {
   gl_FragColor = vec4(lit, a);
 }`;
 
-const LOOKS = { flame: 1, smoke: 2, water: 3 };
+const LOOKS = { flame: 1, smoke: 2, water: 3, spray: 4 };
 
 export class ParticlePool {
   constructor(max, { additive = false, soft = 0.1, look = 'water', lite = false, fadeIn = 5 } = {}) {

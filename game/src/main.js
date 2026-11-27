@@ -172,7 +172,7 @@ class Game {
     this.camera.updateProjectionMatrix();
     this.hud.resize(w, h, Math.min(devicePixelRatio, 2));
     if (this.refreshGraphicsMenu) this.refreshGraphicsMenu();
-    for (const p of [this.fire.flames, this.fire.smoke, this.water.pool]) p.setViewportHeight(h * this.quality.pixelRatio);
+    for (const p of [this.fire.flames, this.fire.smoke, this.water.pool, this.water.sprayPool]) p.setViewportHeight(h * this.quality.pixelRatio);
   }
 
   menuFlyby() {

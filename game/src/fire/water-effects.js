@@ -13,6 +13,9 @@ export class WaterEffects {
     this.sheet = quality.lite ? 1 : 2; // dense sheet particles per mist particle
     this.spray = quality.lite ? 0.5 : 1; // scoop spray density
     scene.add(this.pool.points);
+    // Scoop spray has its own droplet look.
+    this.sprayPool = new ParticlePool(quality.lite ? 900 : 3200, { look: 'spray', lite: quality.lite, fadeIn: 30 });
+    scene.add(this.sprayPool.points);
     this.hits = 0;
     this.landed = 0;
     this.heatRemoved = 0;
@@ -65,18 +68,18 @@ export class WaterEffects {
     for (let i = 0; i < this.spray * 16; i++) {
       const side = i % 2 ? 1 : -1;
       const f = randRange(-2, 4); // along the hull, from the step forward
-      this.pool.spawn(p.x + back.x * f + r.x * side * 1.5, 0.3, p.z + back.z * f + r.z * side * 1.5,
+      this.sprayPool.spawn(p.x + back.x * f + r.x * side * 1.5, 0.3, p.z + back.z * f + r.z * side * 1.5,
         v.x * 0.45 + r.x * side * randRange(5, 11), randRange(3, 8), v.z * 0.45 + r.z * side * randRange(5, 11),
         randRange(0.8, 1.4), randRange(0.6, 1.1), randRange(2.5, 4.5), [1, 1, 1, 0.95], [0.92, 0.96, 1, 0], 0.6, -9.81, 0);
     }
     for (let i = 0; i < this.spray * 8; i++) {
       const w = randRange(-1.2, 1.2);
-      this.pool.spawn(p.x + back.x * 4 + r.x * w, 0.5, p.z + back.z * 4 + r.z * w,
+      this.sprayPool.spawn(p.x + back.x * 4 + r.x * w, 0.5, p.z + back.z * 4 + r.z * w,
         v.x * 0.55 + r.x * w * 2, randRange(7, 13), v.z * 0.55 + r.z * w * 2,
         randRange(1.1, 1.8), randRange(0.7, 1.2), randRange(3.5, 6.5), [1, 1, 1, 0.9], [0.9, 0.95, 1, 0], 0.45, -9.81, 0);
     }
     for (let i = 0; i < 2; i++) {
-      this.pool.spawn(p.x + back.x * randRange(6, 10) + r.x * randRange(-2, 2), 0.4, p.z + back.z * randRange(6, 10) + r.z * randRange(-2, 2),
+      this.sprayPool.spawn(p.x + back.x * randRange(6, 10) + r.x * randRange(-2, 2), 0.4, p.z + back.z * randRange(6, 10) + r.z * randRange(-2, 2),
         v.x * 0.2, randRange(0.5, 2), v.z * 0.2, randRange(1.4, 2.4), 2, randRange(6, 10), [0.95, 0.97, 1, 0.45], [0.85, 0.9, 0.95, 0], 0.9, -1, 0);
     }
   }
@@ -88,5 +91,6 @@ export class WaterEffects {
 
   update(dt, wind) {
     this.pool.update(dt, wind, (x, z) => this.ground(x, z));
+    this.sprayPool.update(dt, wind, null);
   }
 }
