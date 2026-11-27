@@ -81,6 +81,7 @@ void main() {
     vec3 base = vTint.rgb;
     vec3 lit = base * (0.35 + 0.15 * N.y) + base * vec3(1.0, 0.78, 0.55) * sun * 1.4 + vec3(0.9, 0.55, 0.3) * through * 0.25;
     float fire = (1.0 - smoothstep(0.0, 0.12, vAge)) * max(0.0, 0.5 - p.y * 0.5); // only the youngest puffs, from below
+    lit *= mix(0.62, 1.12, smoothstep(-0.9, 0.8, p.y + N.y * 0.4)); // shaded underside, sun-lit crown
     lit += vec3(2.2, 0.7, 0.15) * fire * 1.2;
     float a = m * vTint.a * (0.55 + n * 0.6);
     gl_FragColor = vec4(lit, a);

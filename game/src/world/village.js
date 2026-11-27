@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { rand } from '../core/rng.js';
 import { painterRandom } from '../textures/texture-utils.js';
-import { PLACES, terrainHeight } from './terrain.js';
+import { PLACES, terrainHeight, lakeLanding } from './terrain.js';
 import { PropBuilder } from './props/prop-builder.js';
 import { propPalette } from './props/prop-palette.js';
 import { addStiltHouse, addLonghouse, addCarvedPost } from './props/stilt-house.js';
@@ -43,18 +43,6 @@ function yardProps(b, rnd, w, d) {
   }
 }
 
-// Where the lake shore is in a direction from the lake centre (first dry point going out).
-function lakeShore(angle) {
-  const l = PLACES.lake;
-  for (let d = l.r * 0.7; d < l.r * 2; d += 2) {
-    const x = l.x + (Math.cos(angle) * d) / 0.85, z = l.z + Math.sin(angle) * d;
-    if (terrainHeight(x, z) > 0.6) return { x, z, dx: Math.cos(angle) / 0.85, dz: Math.sin(angle) };
-  }
-  return null;
-}
-
-export const LANDING_ANGLE = -0.15; // fishing landing on the lake's east shore
-
 export function buildVillage(scene, quality = {}) {
   // The world's random stream is shared with the fire; consume what the old village did so the
   // fire scenario (and the staged screenshots) stay exactly where they were.
@@ -88,7 +76,7 @@ export function buildVillage(scene, quality = {}) {
     });
   }
   // Fishing landing on the lake shore: jetty, boats and three houses.
-  const shore = lakeShore(LANDING_ANGLE);
+  const shore = lakeLanding();
   if (shore) {
     const out = Math.atan2(-shore.dz, -shore.dx); // jetty points into the lake
     const ry = -out;

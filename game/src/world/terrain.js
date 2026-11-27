@@ -75,6 +75,25 @@ export function isOnRunway(x, z, margin = 0) {
   return Math.abs(x - r.x) < r.width / 2 + margin && Math.abs(z - r.z) < r.length / 2 + margin;
 }
 
+// The fishing landing on the lake's south shore: the first dry point going out from the lake centre
+// at LANDING_ANGLE, and the outward direction (cached).
+export const LANDING_ANGLE = 1.25;
+let landing;
+export function lakeLanding() {
+  if (landing !== undefined) return landing;
+  const l = PLACES.lake;
+  landing = null;
+  for (let d = l.r * 0.7; d < l.r * 2; d += 2) {
+    const x = l.x + (Math.cos(LANDING_ANGLE) * d) / 0.85, z = l.z + Math.sin(LANDING_ANGLE) * d;
+    if (terrainHeight(x, z) > 0.6) {
+      const dx = Math.cos(LANDING_ANGLE) / 0.85, dz = Math.sin(LANDING_ANGLE), n = Math.hypot(dx, dz);
+      landing = { x, z, dx: dx / n, dz: dz / n };
+      break;
+    }
+  }
+  return landing;
+}
+
 export function isOnApron(x, z, margin = 0) {
   const r = PLACES.runway, ap = PLACES.apron;
   const rx = x - r.x, rz = z - r.z;
