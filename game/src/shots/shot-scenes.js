@@ -133,6 +133,10 @@ export function runShot(game, name) {
   game.rig.mode = setup.mode;
   game.cameraMode = setup.mode;
   game.rig.first = true;
+  // Framing: a longer lens (&fov=, vertical degrees) fills a wide 1280x480 frame with the aircraft
+  // and compresses the fire, lake or runway behind it.
+  const fov = num('fov', setup.fov ?? 0);
+  if (fov > 0 && setup.mode === 'chase') { game.camera.fov = fov; game.camera.updateProjectionMatrix(); }
   const dt = 1 / 30;
   for (let t = 0; t < setup.warm; t += dt) {
     if (setup.dropFrom !== undefined && t > setup.dropFrom) game.forceDrop = true;

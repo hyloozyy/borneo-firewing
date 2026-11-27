@@ -13,26 +13,28 @@ export function drawEmblem(g, cx, cy, s, flame = '#ffffff', bg = null) {
   g.scale(s, s);
   if (bg) { g.fillStyle = bg; g.fillRect(-60, -60, 120, 120); }
   g.fillStyle = flame;
-  // Three-tongued flame
+  // Flame with three licking tongues (tallest in the middle).
   g.beginPath();
-  g.moveTo(-46, 30);
-  g.bezierCurveTo(-58, 0, -36, -20, -30, -40);
-  g.bezierCurveTo(-20, -24, -14, -18, -12, -8);
-  g.bezierCurveTo(-10, -30, 0, -46, 6, -58);
-  g.bezierCurveTo(10, -36, 20, -24, 18, -10);
-  g.bezierCurveTo(26, -18, 30, -30, 34, -36);
-  g.bezierCurveTo(52, -10, 56, 10, 46, 30);
+  g.moveTo(-44, 28);
+  g.bezierCurveTo(-58, 8, -50, -14, -32, -38);
+  g.bezierCurveTo(-28, -24, -22, -17, -15, -15);
+  g.bezierCurveTo(-17, -34, -8, -50, 0, -64);
+  g.bezierCurveTo(7, -48, 13, -35, 14, -19);
+  g.bezierCurveTo(19, -26, 25, -33, 33, -42);
+  g.bezierCurveTo(52, -16, 56, 10, 44, 28);
   g.closePath();
   g.fill();
-  // Pine trees cut out of the flame
+  // Three small pines (two tiers each) cut out of the flame's base.
   g.fillStyle = bg || '#c8102e';
-  for (const [x, h] of [[-22, 34], [0, 46], [22, 34]]) {
-    g.beginPath();
-    g.moveTo(x, 30 - h);
-    g.lineTo(x - h * 0.36, 30);
-    g.lineTo(x + h * 0.36, 30);
-    g.closePath();
-    g.fill();
+  for (const [x, h] of [[-17, 24], [0, 34], [17, 24]]) {
+    for (const [top, base, half] of [[28 - h, 28 - h * 0.38, h * 0.26], [28 - h * 0.62, 28, h * 0.36]]) {
+      g.beginPath();
+      g.moveTo(x, top);
+      g.lineTo(x - half, base);
+      g.lineTo(x + half, base);
+      g.closePath();
+      g.fill();
+    }
   }
   g.fillStyle = flame;
   g.fillRect(-52, 32, 104, 5);
@@ -56,9 +58,11 @@ function onSide(g, side, t, phi, fn) {
   g.restore();
 }
 
-export function buildLiveryTexture() {
-  const c = makeCanvas(W, H);
+export function buildLiveryTexture(hi = true) {
+  const k = hi ? 2 : 1; // 4096 px on computers so the titles stay crisp in close-ups
+  const c = makeCanvas(W * k, H * k);
   const g = c.getContext('2d', { willReadFrequently: true });
+  g.scale(k, k);
   const red = '#c8102e';
   const yOf = (phi) => (phi / (Math.PI * 2)) * H;
   g.fillStyle = '#f4f4f1';
@@ -101,19 +105,8 @@ export function buildLiveryTexture() {
     gg.lineWidth = 5;
     gg.strokeRect(0, 0, w, h);
   };
+  // (Windscreen, windows and the door are real 3D parts: see fw218-details.js.)
   for (const side of ['right', 'left']) {
-    onSide(g, side, 0.078, 0.03 * Math.PI, (gg) => { glass(gg, -58, 62); });
-    onSide(g, side, 0.078, 0.15 * Math.PI, (gg) => { glass(gg, -58, 62); });
-    // Side cockpit windows: a big sliding pane and a smaller rear one.
-    onSide(g, side, 0.142, 0.2 * Math.PI, (gg) => { glass(gg, -78, 58); });
-    onSide(g, side, 0.168, 0.21 * Math.PI, (gg) => { glass(gg, -40, 50); });
-    // Cabin windows and observation bubble
-    for (const t of [0.29, 0.34]) onSide(g, side, t, 0.3 * Math.PI, (gg) => { glass(gg, -24, 30); });
-    // Door
-    onSide(g, side, 0.4, 0.27 * Math.PI, (gg) => {
-      gg.strokeStyle = '#7d8086'; gg.lineWidth = 4; gg.strokeRect(-70, 0, 60, 150);
-      gg.fillStyle = '#9aa0a6'; gg.fillRect(-26, 70, 10, 4);
-    });
     // FIRE FIGHTER titles with slash marks
     onSide(g, side, side === 'right' ? 0.84 : 0.52, 0.3 * Math.PI, (gg) => {
       gg.fillStyle = '#121a2c';
@@ -169,22 +162,44 @@ export function buildLiveryTexture() {
   grime.addColorStop(1, 'rgba(60,40,30,0.12)');
   g.fillStyle = grime;
   g.fillRect(0, H * 0.4, W, H * 0.2);
+  // Rain and wash streaks running aft and down from the wing root and the windows.
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 140; i++) {
+    const x = (0.18 + rnd() * 0.75) * W, y0 = rnd() < 0.5 ? H * (0.1 + rnd() * 0.12) : H * (0.78 - rnd() * 0.12);
+    const len = 40 + rnd() * 160, a = 0.02 + rnd() * 0.045;
+    const down = y0 < H / 2 ? 1 : -1;
+    const grd = g.createLinearGradient(x, y0, x + len * 0.6, y0 + down * len * 0.25);
+    grd.addColorStop(0, `rgba(70,60,50,${a})`); grd.addColorStop(1, 'rgba(70,60,50,0)');
+    g.strokeStyle = grd; g.lineWidth = 1 + rnd() * 3;
+    g.beginPath(); g.moveTo(x, y0); g.lineTo(x + len * 0.6, y0 + down * len * 0.25); g.stroke();
+  }
+  // Darker keel where the hull works in the water.
+  const keel = g.createLinearGradient(0, H * 0.43, 0, H * 0.5);
+  keel.addColorStop(0, 'rgba(40,10,10,0)'); keel.addColorStop(1, 'rgba(40,10,10,0.22)');
+  g.fillStyle = keel; g.fillRect(0, H * 0.43, W, H * 0.07);
+  g.save(); g.translate(0, H); g.scale(1, -1); g.fillStyle = keel; g.fillRect(0, H * 0.43, W, H * 0.07); g.restore();
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = false;
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   return tex;
 }
 
 // Tail fin artwork: red fin with a white band and the big emblem.
 export function buildFinTexture() {
-  const c = makeCanvas(512, 512);
+  const c = makeCanvas(1024, 1024);
   const g = c.getContext('2d', { willReadFrequently: true });
+  g.scale(2, 2);
   g.fillStyle = '#c8102e';
   g.fillRect(0, 0, 512, 512);
   g.fillStyle = '#f4f4f1';
   g.fillRect(0, 380, 512, 132);
   drawEmblem(g, 205, 215, 1.45, '#ffffff', null);
+  // Rib seams and rivet rows.
+  g.strokeStyle = 'rgba(40,0,8,0.28)'; g.lineWidth = 1.2; g.fillStyle = 'rgba(40,0,8,0.3)';
+  for (let y = 60; y < 512; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(512, y); g.stroke(); for (let x = 4; x < 512; x += 9) g.fillRect(x, y + 3, 1.3, 1.3); }
+  for (const x of [120, 300]) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 512); g.stroke(); }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;

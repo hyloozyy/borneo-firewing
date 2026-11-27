@@ -9,6 +9,8 @@ import { planarUV } from '../core/geometry-utils.js';
 import { latheZ, profileOf, bladeGeometry, strutGeometry, plateYZ } from './fw218-parts.js';
 import { mergeStaticMeshes } from './merge-static.js';
 import { buildGear, animateGear } from './fw218-gear.js';
+import { addHullDetail, buildWingSkin, wingUV, propBlurTexture } from './fw218-details.js';
+import { isPhone } from '../core/quality.js';
 
 const RED = 0xc8102e;
 const WHITE = 0xf2f2ee;
@@ -26,27 +28,34 @@ export function hullSection(t) {
   return { w, top, bot: Math.min(bot, top - 0.1) };
 }
 
+// A point on the hull skin at station t (0 nose .. 1 tail) and angle th around it (0 top,
+// PI/2 right side, PI keel, 3PI/2 left side): the same surface the hull mesh is built from, so
+// windows, doors and hatches can be laid onto it.
+export function hullPoint(t, th, out = new THREE.Vector3()) {
+  const { w, top, bot } = hullSection(t);
+  const waist = bot + (top - bot) * 0.48;
+  const s = Math.sin(th), c = Math.cos(th);
+  let x, y;
+  if (c >= 0) {
+    x = w * Math.sign(s) * Math.pow(Math.abs(s), 0.65);
+    y = waist + (top - waist) * Math.pow(c, 0.75);
+  } else {
+    // V-shaped planing hull below the waist with a chine.
+    x = w * Math.sign(s) * Math.pow(Math.abs(s), 0.45);
+    y = waist - (waist - bot) * Math.pow(-c, 1.25);
+  }
+  return out.set(x, y, NOSE_Z + (TAIL_Z - NOSE_Z) * t);
+}
+
 function buildHullGeometry() {
-  const rings = 64, around = 40;
+  const rings = 96, around = 56;
   const pos = [], uv = [], idx = [];
+  const p = new THREE.Vector3();
   for (let i = 0; i <= rings; i++) {
     const t = i / rings;
-    const z = NOSE_Z + (TAIL_Z - NOSE_Z) * t;
-    const { w, top, bot } = hullSection(t);
-    const waist = bot + (top - bot) * 0.48;
     for (let j = 0; j <= around; j++) {
-      const th = (j / around) * Math.PI * 2;
-      const s = Math.sin(th), c = Math.cos(th);
-      let x, y;
-      if (c >= 0) {
-        x = w * Math.sign(s) * Math.pow(Math.abs(s), 0.65);
-        y = waist + (top - waist) * Math.pow(c, 0.75);
-      } else {
-        // V-shaped planing hull below the waist with a chine.
-        x = w * Math.sign(s) * Math.pow(Math.abs(s), 0.45);
-        y = waist - (waist - bot) * Math.pow(-c, 1.25);
-      }
-      pos.push(i === 0 ? 0 : x, y, z); // the nose ring pinched to the centre line
+      hullPoint(t, (j / around) * Math.PI * 2, p);
+      pos.push(i === 0 ? 0 : p.x, p.y, p.z); // the nose ring pinched to the centre line
       uv.push(t, j / around);
     }
   }
@@ -138,10 +147,11 @@ export function buildFW218() {
 
   // Hull
   const detail = buildHullDetailMaps();
-  const hull = new THREE.Mesh(buildHullGeometry(), new THREE.MeshPhysicalMaterial({
-    map: buildLiveryTexture(), normalMap: detail.normalMap, normalScale: new THREE.Vector2(0.6, 0.6),
-    roughnessMap: detail.roughnessMap, roughness: 0.85, metalness: 0.05, clearcoat: 0.75, clearcoatRoughness: 0.1, envMapIntensity: 1.1,
-  }));
+  const hullMat = new THREE.MeshPhysicalMaterial({
+    map: buildLiveryTexture(!isPhone()), normalMap: detail.normalMap, normalScale: new THREE.Vector2(0.7, 0.7),
+    roughnessMap: detail.roughnessMap, roughness: 0.85, metalness: 0.05, clearcoat: 0.85, clearcoatRoughness: 0.08, envMapIntensity: 1.2,
+  });
+  const hull = new THREE.Mesh(buildHullGeometry(), hullMat);
   hull.castShadow = true;
   model.add(hull);
   parts.hull = hull;
@@ -170,7 +180,10 @@ export function buildFW218() {
 
   // Wing: centre + two outer panels, at the top of the pylon.
   const wingY = 2.2, wingLE = -3.6, chord = 3.4, halfSpan = 14.2;
-  const wingMain = new THREE.Mesh(wingPanel(chord * 0.78, 0.16, halfSpan * 2), white);
+  // Wing skin: panel seams, rivets, leading-edge strip, walkways and exhaust soot (also on the tailplane).
+  const skin = buildWingSkin(halfSpan, chord * 0.78, { exhaustX: [-4.6 - 0.8, 4.6 + 0.8], hi: !isPhone() });
+  const wingWhite = paint(WHITE, { map: skin.map, normalMap: skin.normalMap, normalScale: new THREE.Vector2(0.5, 0.5) });
+  const wingMain = new THREE.Mesh(wingUV(wingPanel(chord * 0.78, 0.16, halfSpan * 2), 0, halfSpan * 2, 0, chord * 0.78), wingWhite);
   wingMain.position.set(-halfSpan, wingY, wingLE);
   wingMain.castShadow = true;
   model.add(wingMain);
@@ -216,22 +229,7 @@ export function buildFW218() {
   parts.props = [];
   parts.discs = [];
   const nacX = 4.6;
-  const discTex = (() => {
-    const c = document.createElement('canvas');
-    c.width = c.height = 128;
-    const g = c.getContext('2d');
-    const grad = g.createRadialGradient(64, 64, 8, 64, 64, 64);
-    grad.addColorStop(0, 'rgba(30,30,30,0.0)');
-    grad.addColorStop(0.3, 'rgba(40,40,40,0.35)');
-    grad.addColorStop(0.92, 'rgba(70,70,70,0.4)');
-    grad.addColorStop(0.97, 'rgba(240,210,60,0.55)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, 128, 128);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  })();
+  const discTex = propBlurTexture();
   const bladeGeo = bladeGeometry(0.3, 2.2, { chord: 0.36 }), tipGeo = bladeGeometry(0.3, 2.2, { chord: 0.36, thick: 0.058, from: 0.9 });
   const bladeMat = std(0x2b2d30, { roughness: 0.5, metalness: 0.3 }), tipMat = std(0xf0c419, { roughness: 0.45 });
   for (const side of [-1, 1]) {
@@ -331,7 +329,7 @@ export function buildFW218() {
   model.add(tailLight);
   parts.rudder = rudderH;
   const stabY = 4.6;
-  const stab = new THREE.Mesh(wingPanel(2.0, 0.12, 10), white);
+  const stab = new THREE.Mesh(wingUV(wingPanel(2.0, 0.12, 10), -4.2, 14.2, 0, 2.0), wingWhite);
   stab.position.set(-5, stabY, 7.6);
   model.add(stab);
   for (const side of [-1, 1]) {
@@ -363,6 +361,27 @@ export function buildFW218() {
   // up into the hull sides (an amphibian lands on the runway on wheels, on water on its hull).
   buildGear(model, { grey, chrome, dark, rubber: std(0x1a1a1c, { roughness: 0.9 }), red }, parts);
 
+  // Framed glass, raised door/hatches and their seams, wipers: one group, merged per material,
+  // hidden in the cockpit view like the hull.
+  const hullDetail = new THREE.Group();
+  model.add(hullDetail);
+  addHullDetail(hullDetail, hullMat, { dark });
+  mergeStaticMeshes(hullDetail, {});
+  parts.hullDetail = hullDetail;
+  // Coloured lens domes for the wingtip nav lights, white tail light, landing lights in the wing roots.
+  for (const [x, col] of [[-halfSpan - 0.62, 0xff2a2a], [halfSpan + 0.62, 0x2aff6a]]) {
+    const lens = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 8), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 2.2, roughness: 0.1 }));
+    lens.position.set(x, wingY + 0.04, wingLE + 1.2);
+    model.add(lens);
+  }
+  parts.landingLights = [];
+  for (const side of [-1, 1]) {
+    const lamp = new THREE.Mesh(new THREE.CircleGeometry(0.16, 16), new THREE.MeshBasicMaterial({ color: 0xfff6dc }));
+    lamp.position.set(side * 2.9, wingY + 0.02, wingLE - 0.02);
+    lamp.rotation.y = Math.PI;
+    model.add(lamp);
+  }
+
   // Navigation lights, strobes and beacon.
   const lightGlow = (col, size) => {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(col), blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -374,8 +393,13 @@ export function buildFW218() {
   const strobeTail = lightGlow('rgba(255,255,255,1)', 3); strobeTail.position.set(0, 7.3, 9.8);
   const beacon = lightGlow('rgba(255,50,30,1)', 2.2); beacon.position.set(0, 1.85, 3.5);
   const landing = lightGlow('rgba(255,250,220,1)', 1.0); landing.position.set(0, -0.6, -10.2);
-  model.add(navL, navR, strobeTail, beacon, landing);
-  parts.strobes = [strobeTail];
+  const strobeL = lightGlow('rgba(255,255,255,1)', 2.6); strobeL.position.set(-halfSpan - 0.8, wingY, wingLE + 1.9);
+  const strobeR = lightGlow('rgba(255,255,255,1)', 2.6); strobeR.position.set(halfSpan + 0.8, wingY, wingLE + 1.9);
+  const landL = lightGlow('rgba(255,246,220,1)', 2.4); landL.position.set(-2.9, wingY, wingLE - 0.1);
+  const landR = lightGlow('rgba(255,246,220,1)', 2.4); landR.position.set(2.9, wingY, wingLE - 0.1);
+  parts.landingLights.push(landL, landR);
+  model.add(navL, navR, strobeTail, beacon, landing, strobeL, strobeR, landL, landR);
+  parts.strobes = [strobeTail, strobeL, strobeR];
   parts.beacon = beacon;
 
   // Pitot tubes, blade antennas, whip antenna and static wicks.
@@ -429,12 +453,14 @@ export function animateFW218(root, s, dt, time) {
     const d = p.discs[i];
     d.visible = rpm > 0.3;
     d.material.opacity = Math.min(1, (rpm - 0.3) * 2.5);
-    d.rotation.z += dt * 3;
+    d.rotation.z += dt * 9 * (i ? -1 : 1);
   });
   animateGear(p, s, dt);
   const flash = (time % 1.3) < 0.07;
   p.strobes.forEach((st) => (st.visible = flash));
   p.beacon.visible = (time % 1.0) < 0.5;
+  for (const l of p.landingLights) l.visible = s.flaps > 0.6 || s.gearDown;
   p.hull.visible = !s.cockpit;
+  p.hullDetail.visible = !s.cockpit;
   p.canopy.visible = !s.cockpit;
 }
