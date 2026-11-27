@@ -15,6 +15,7 @@ import { buildGrass } from './world/grass.js';
 import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
 import { createFlightState, stepFlight, placeOnRunway, setFlying } from './flight/flight-model.js';
 import { createDamage, updateDamage, fireBottle } from './flight/damage-model.js';
+import { ScoopAutopilot, loadAutoScoop } from './flight/scoop-autopilot.js';
 import { buildFlightReport } from './mission/flight-report.js';
 import { EngineEffects } from './fire/engine-effects.js';
 import { FireSystem } from './fire/fire-system.js';
@@ -38,6 +39,7 @@ import { buildGroundTextures } from './textures/ground-textures.js';
 import { setupPhone, syncBodyState } from './ui/phone.js';
 import { bindGraphicsMenu } from './ui/graphics-menu.js';
 import { bindWeatherMenu } from './ui/weather-menu.js';
+import { bindAutoScoopMenu } from './ui/autoscoop-menu.js';
 import { loadingProgress, hideLoading, watchContext } from './ui/loading.js';
 
 const params = new URLSearchParams(location.search);
@@ -110,6 +112,7 @@ class Game {
       this.controls = new Controls(renderer.domElement, this);
       if (this.controls.isTouch) this.rig.recentreDelay = 2.2;
       this.mission = new MissionDirector(this);
+      this.autopilot = new ScoopAutopilot(loadAutoScoop(this.controls.isTouch || q.phone));
     });
     this.events = { ring: () => { this.audio.ringChime(); this.hud.toast('RING!'); } };
     this.stageData = {};
@@ -134,6 +137,7 @@ class Game {
     bindScreens(this);
     bindGraphicsMenu(this);
     bindWeatherMenu(this);
+    bindAutoScoopMenu(this);
     setupPhone(this);
     this.menuFlyby();
     // Compile every shader now (in parallel where the GPU driver allows) instead of on the first frames.
@@ -186,6 +190,7 @@ class Game {
     hideScreens();
     const s = this.flight;
     const r = PLACES.runway;
+    this.autopilot.active = false; this.autopilot.phase = null;
     s.crashed = null; s.engines = true; s.fuel = s.fuelMax; s.water = 0; s.angular.set(0, 0, 0);
     s.damage = createDamage(); s.gLoad = 1; s.lastTouchdown = null;
     this.stats = { flown: 0, dropped: 0, scoops: 0, drops: 0 };
@@ -245,6 +250,7 @@ class Game {
 
   handleKeys() {
     const c = this.controls;
+    if (c.hit('KeyK') && this.state === 'playing') this.toggleAutoScoop();
     if (c.hit('KeyC')) { this.cameraMode = this.cameraMode === 'chase' ? 'cockpit' : 'chase'; this.rig.mode = this.cameraMode; this.rig.first = true; }
     if (c.hit('KeyP') || c.hit('Escape')) this.setPaused(this.state === 'playing');
     if (c.hit('KeyV')) this.flight.flapTarget = this.flight.flapTarget >= 1 ? 0 : this.flight.flapTarget + 0.5;
@@ -261,12 +267,24 @@ class Game {
     if (c.hit('Recentre')) this.rig.recentre();
   }
 
+  // K / the AUTO SCOOP button: engage near the lake, or hand control back.
+  toggleAutoScoop() {
+    const ap = this.autopilot, s = this.flight;
+    if (ap.active) ap.disengage('AUTOPILOT OFF · YOU HAVE CONTROL');
+    else if (!ap.enabled) this.hud.toast('AUTO SCOOP IS OFF · TURN IT ON IN THE MENU', '#ffc861');
+    else if (s.water >= s.waterMax * 0.9) this.hud.toast('TANK ALREADY FULL', '#ffc861');
+    else if (!ap.available(s)) this.hud.toast('AUTO SCOOP · FLY TO THE LAKE FIRST', '#ffc861');
+    else ap.engage(s);
+  }
+
   // Advance the world by dt (fixed sub-steps for the flight model).
   simulate(dt) {
     const s = this.flight;
     this.time += dt;
     this.prevPos.copy(s.position);
-    const input = this.state === 'playing' ? this.controls.read() : { pitch: 0, roll: 0, yaw: 0, throttleDelta: 0, drop: false, brakes: false };
+    let input = this.state === 'playing' ? this.controls.read() : { pitch: 0, roll: 0, yaw: 0, throttleDelta: 0, drop: false, brakes: false };
+    if (this.state === 'playing' && !this.kinematic) input = this.autopilot.control(s, input, dt);
+    if (this.autopilot.message) { this.hud.toast(this.autopilot.message.text, this.autopilot.message.color); this.audio.beep(this.autopilot.active ? 880 : 660, 0.12); this.autopilot.message = null; }
     if (input.throttleSet != null) s.throttle = input.throttleSet;
     s.turbulence = this.fire.smokeAt(s.position);
 
@@ -325,7 +343,7 @@ class Game {
     if (s.lastTouchdown && s.lastTouchdown !== this.seenTouchdown) {
       this.seenTouchdown = s.lastTouchdown;
       const td = s.lastTouchdown;
-      if (td.bounce) this.hud.toast('BOUNCE · TOO FAST OR STEEP', '#ff7a5a');
+      if (td.water && this.autopilot.active) { /* the autopilot's skim: no touchdown call-outs */ } else if (td.bounce) this.hud.toast('BOUNCE · TOO FAST OR STEEP', '#ff7a5a');
       else this.hud.toast(`TOUCHDOWN ${Math.round(td.vs * 196.85)} FPM · ${landingRating(td)}`, td.vs > -2.5 ? '#9dffb0' : '#ffc861');
     }
 

@@ -189,6 +189,10 @@ body.touch[data-state="playing"] #touch { display: block; }
 #touch .topbar button { padding: 7px 11px; min-width: 44px; font: 700 11px/1 var(--display); letter-spacing: 1.2px; border-radius: 6px;
   background: rgba(14, 9, 6, 0.55); border: 1px solid rgba(255, 210, 160, 0.35); }
 #touch .topbar .on { background: rgba(60, 170, 90, 0.8); border-color: #9dffb0; }
+#touch .topbar .b-scoop { background: rgba(30, 110, 200, 0.75); border-color: rgba(170, 220, 255, 0.85); }
+#touch .topbar .b-scoop.ready { animation: scoopReady 1s ease-in-out infinite alternate; }
+#touch .topbar .b-scoop[hidden] { display: none; }
+@keyframes scoopReady { to { box-shadow: 0 0 16px rgba(120, 200, 255, 0.9); } }
 #touch .look-hint { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); font: 700 10px/1 var(--label); letter-spacing: 2.5px; color: rgba(255, 240, 220, 0.75);
   padding: 7px 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.35); animation: hintFade 7s 1.5s both; pointer-events: none; }
 @keyframes hintFade { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -262,3 +266,5 @@ body.shot #title.staged .label { margin: 12px 0 6px; }
 body.shot #title.staged .spec { display: block; }
 body.shot #title.staged .keys, body.shot #title.staged .keys-label { display: grid; }
 body.shot #title.staged .keys-label { display: block; }
+.ap-modes { grid-template-columns: repeat(2, 1fr); }
+.ap-hint { margin-left: 8px; letter-spacing: 0.6px; text-transform: none; color: var(--muted); font-weight: 400; }

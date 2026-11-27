@@ -1,5 +1,6 @@
 // Head-up display on a 2D canvas: lays out the flight symbology (hud-flight), radar (hud-radar),
 // systems panels (hud-systems) and messages (hud-messages) on one margin grid, desktop and phone.
+import { touchObstacles, freeBand, bottomGap } from './touch-layout.js';
 import { C, font, glow } from './hud-style.js';
 import { tape, headingTape, bankScale, pitchLadder, pathMarker } from './hud-flight.js';
 import { radar } from './hud-radar.js';
@@ -8,6 +9,7 @@ import { radioBox, bannerDraw, toastsDraw, alertsDraw, dropResultDraw, objective
 import { activeLights } from '../flight/annunciators.js';
 import { InstrumentCluster } from './hud-cluster.js';
 import { keyName } from '../input/key-names.js';
+import { PHASE_LABEL } from '../flight/scoop-autopilot.js';
 
 const KT = 1.944, FT = 3.281;
 
@@ -69,6 +71,12 @@ export class Hud {
       if (this.prevKt != null) this.spdRate += ((kt - this.prevKt) / dt - this.spdRate) * Math.min(1, dt * 2);
       this.prevKt = kt;
     }
+    // Phones in landscape (any size): a layout built around the touch controls, nothing under a thumb.
+    this.rects = null;
+    if (game.controls.isTouch && W >= H && game.state === 'playing') {
+      const obstacles = touchObstacles(this, this.time);
+      if (obstacles) { this.drawTouch(game, dt, s, W, H, u, kt, ft, obstacles); g.globalAlpha = 1; return; }
+    }
     // In the cockpit the symbology is projected into the windscreen above the glareshield;
     // the panel itself carries the engine, fuel and map displays.
     const cockpit = game.cameraMode === 'cockpit';
@@ -125,6 +133,7 @@ export class Hud {
     else if (s.scooping) flash(g, `SCOOPING · ${Math.round((100 * s.water) / s.waterMax)}%`, W / 2, cy2, C.blue, u, this.time, true);
     else if (game.dropWindow > 0 && s.water > 0) flash(g, `DROP NOW · ${keyName(game, 'drop')}`, W / 2, cy2, C.amber, u, this.time);
     if (s.turbulence > 0.2) flash(g, 'SMOKE · TURBULENCE', W / 2, cy2 + 26 * u, C.amber, u, this.time, true);
+    autopilotCallout(g, game, W / 2, cy2 + 52 * u, u, this.time);
 
     const lights = activeLights(s, game.plane.userData.parts);
     alertsDraw(g, this, lights, W / 2, portrait ? cy - (tapeH / 2 + 40) * u : headY + 62 * u, u);
@@ -161,6 +170,113 @@ export class Hud {
     bannerDraw(g, this, W, H, u, dt);
     g.globalAlpha = 1;
   }
+}
+
+// Phone landscape HUD: every panel placed in the space the touch controls leave (see touch-layout.js).
+Hud.prototype.drawTouch = function drawTouch(game, dt, s, W, H, u, kt, ft, obstacles) {
+  const g = this.g;
+  const gap = 8;
+  const rects = [];
+  const rec = (name, x, y, w, h) => { rects.push({ name, x, y, w, h }); };
+  const thr = obstacles.find((o) => o.name === '.throttle');
+  const label = obstacles.find((o) => o.name === '.zone-label');
+  const M = 12 * u;
+  const xL = Math.max(M, label ? label.x : M);
+  const xR = W - Math.max(M, thr ? W - (thr.x + thr.w) : M);
+  const top = M;
+  const cockpit = game.cameraMode === 'cockpit';
+  // Top row: status (left), checklist (right), heading tape centred in the gap between them.
+  const status = statusStrip(g, game, xL, top, u);
+  rec('status', xL, top, 240 * u, 52 * u);
+  const mw = Math.min(290 * u, W * 0.34);
+  const mh = missionPanel(g, game, this, xR - mw, top, mw, u);
+  if (mh) rec('mission', xR - mw, top, mw, mh);
+  this.touchBarTop = top + mh + 6 * u; // CAM / TILT / HUD / pause bar right under the checklist
+  const hl = xL + 240 * u + gap, hr = xR - mw - gap;
+  const uH = Math.min(u, (hr - hl) / 416);
+  const hcx = hl + (hr - hl - 416 * uH) / 2 + 180 * uH;
+  const bug = game.objective ? (Math.atan2(game.objective.pos.x - s.position.x, -(game.objective.pos.z - s.position.z)) * 180) / Math.PI : null;
+  headingTape(g, hcx, top + 2 * uH, s.heading, uH, bug == null ? null : (bug + 360) % 360, game.wind);
+  rec('heading', hcx - 180 * uH, top, 416 * uH, 54 * uH);
+  const placed = () => obstacles.concat(rects);
+  // Left column under the status strip, stopping above the stick: radar, then the systems panel.
+  let colRight = xL;
+  if (!cockpit) {
+    const sw0 = 212;
+    const colTop = status.bottom + gap;
+    const colBottom = freeBand(placed(), xL, xL + sw0 * u, H, colTop).bottom - gap;
+    const u2 = Math.min(u, (colBottom - colTop) / 228);
+    if (u2 >= 0.42) {
+      const r = 40 * u2, d = r * 2 + 12 * u2;
+      radar(g, game, xL + 6 * u2 + r, colTop + 6 * u2 + r, r, u2, this.time);
+      rec('radar', xL, colTop, d, d);
+      const sy = colTop + d + 8 * u2;
+      systemsPanel(g, game, xL, sy, sw0 * u2, u2);
+      rec('systems', xL, sy, sw0 * u2, 128 * u2);
+      colRight = xL + sw0 * u2;
+    } else {
+      const r = Math.max(18, (colBottom - colTop - 12 * u) / 2);
+      radar(g, game, xL + 6 * u + r, colTop + 6 * u + r, r, u, this.time);
+      rec('radar', xL, colTop, r * 2 + 12 * u, r * 2 + 12 * u);
+      colRight = xL + r * 2 + 12 * u;
+    }
+  }
+  // Speed and altitude tapes: symmetric, in the band both columns leave free.
+  const half = 56 * u;
+  let tx = Math.min(W * 0.2, 300 * u);
+  tx = Math.min(tx, W / 2 - (colRight + gap + half));
+  const xl = W / 2 - tx, xr = W / 2 + tx;
+  const bl = freeBand(placed(), xl - half, xl + half, H), br = freeBand(placed(), xr - half, xr + half, H);
+  const bandTop = Math.max(bl.top, br.top) + gap, bandBottom = Math.min(bl.bottom, br.bottom) - gap;
+  const h = Math.max(40 * u, Math.min(150 * u, bandBottom - bandTop - 22 * u));
+  const cy = bandTop + 18 * u + h / 2;
+  if (cockpit) { pitchLadder(g, s, W / 2, cy, u, h / u / 2); bankScale(g, s, W / 2, cy, 92 * u, u); } else pathMarker(g, game, W, H, u);
+  const mass = 12500 + s.fuel + s.water;
+  const clmax = 0.32 + s.flaps * 0.55 + 4.6 * (0.28 - s.flaps * 0.03);
+  const vs = Math.sqrt((2 * mass * 9.81) / (1.2 * 128 * clmax)) * KT;
+  tape(g, xl, cy, kt, u, { left: true, h: h / u, label: 'SPD', unit: 'KT', step: 10, color: s.stall ? C.red : C.green, trend: this.spdRate * 6,
+    bands: [{ from: 0, to: vs, color: C.red, hatch: true }, { from: 60, to: 115, color: 'rgba(92,200,255,0.75)' }] });
+  const groundFt = (s.position.y - s.agl - 1.75) * FT;
+  tape(g, xr, cy, ft, u, { left: false, h: h / u, label: 'ALT', unit: 'FT', step: 100, color: s.agl < 30 && !s.onGround ? C.amber : C.green, trend: s.vs * FT * 6,
+    bands: [{ from: -2000, to: groundFt, color: 'rgba(190,120,60,0.85)', hatch: true }] });
+  rec('speed tape', xl - half, cy - h / 2 - 18 * u, half * 2, h + 22 * u);
+  rec('altitude tape', xr - half, cy - h / 2 - 18 * u, half * 2, h + 22 * u);
+  // Call-outs between the tapes; caution lights under the heading tape.
+  const cy2 = cy + h / 2 - 12 * u;
+  if (s.stall) flash(g, 'STALL · PUSH', W / 2, cy2, C.red, u, this.time);
+  else if (s.scooping) flash(g, `SCOOPING · ${Math.round((100 * s.water) / s.waterMax)}%`, W / 2, cy2, C.blue, u, this.time, true);
+  else if (game.dropWindow > 0 && s.water > 0) flash(g, `DROP NOW · ${keyName(game, 'drop')}`, W / 2, cy2, C.amber, u, this.time);
+  if (s.turbulence > 0.2) flash(g, 'SMOKE · TURBULENCE', W / 2, cy2 - 26 * u, C.amber, u, this.time, true);
+  autopilotCallout(g, game, W / 2, cy2 - 52 * u, u, this.time);
+  alertsDraw(g, this, activeLights(s, game.plane.userData.parts), W / 2, top + 66 * uH, u);
+  // Radio: in the free gap along the bottom between the stick and the buttons.
+  const gp = bottomGap(placed(), W, H, H - 100 * u); // only what reaches into the bottom strip
+  const rw = Math.min(gp.right - gp.left - gap * 2, 440 * u);
+  if (rw > 150) {
+    const rx = (gp.left + gp.right) / 2 - rw / 2, rb = H - Math.max(M, H - (thr ? thr.y + thr.h : H - M));
+    const rh = radioBox(g, this, rx, rb, rw, u, dt);
+    if (rh) rec('radio', rx, rb - rh, rw, rh);
+  } else {
+    const rw2 = Math.min(xr - xl - half * 2 - gap * 2, 420 * u);
+    const rh = radioBox(g, this, W / 2 - rw2 / 2, cy + h / 2 - 30 * u, rw2, u, dt);
+    if (rh) rec('radio', W / 2 - rw2 / 2, cy + h / 2 - 30 * u - rh, rw2, rh);
+  }
+  // Target label last, so it can step around everything placed above.
+  const avoid = placed();
+  objectiveMarker(g, game, W, H, u, this.time, avoid);
+  if (avoid.length > rects.length + obstacles.length) rects.push(avoid[avoid.length - 1]);
+  dropResultDraw(g, this, W / 2, H * 0.4, u, dt);
+  toastsDraw(g, this, W, H, u, dt);
+  bannerDraw(g, this, W, H, u, dt);
+  this.rects = rects;
+};
+
+// AUTO SCOOP status: the phase while it flies, a prompt when it could take the scoop.
+function autopilotCallout(g, game, x, y, u, time) {
+  const ap = game.autopilot;
+  if (!ap) return;
+  if (ap.active) flash(g, `AUTOPILOT · SCOOP · ${PHASE_LABEL[ap.phase] || ''}`, x, y, C.blue, u, time, true);
+  else if (game.state === 'playing' && ap.available(game.flight)) flash(g, game.controls.isTouch ? 'AUTO SCOOP READY · TAP AUTO SCOOP' : 'AUTO SCOOP READY · PRESS K', x, y, C.blue, u, time);
 }
 
 function flash(g, text, x, y, color, u, time, steady = false) {

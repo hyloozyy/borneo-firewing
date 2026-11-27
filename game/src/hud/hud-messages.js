@@ -51,6 +51,7 @@ export function radioBox(g, hud, x, y, w, u, dt) {
     }
   });
   g.restore();
+  return h;
 }
 
 // Stage banner: slides in, a scan line wipes across, then fades.
@@ -188,7 +189,9 @@ export function dropResultDraw(g, hud, cx, cy, u, dt) {
 }
 
 // Objective marker on screen, or an edge arrow when it is off screen.
-export function objectiveMarker(g, game, W, H, u, time) {
+// avoid (phones): rectangles the distance label must not cover; it moves to the nearest free spot
+// (or is left out), and its own rectangle is appended so the layout test sees it too.
+export function objectiveMarker(g, game, W, H, u, time, avoid = null) {
   const obj = game.objective;
   if (!obj) return;
   _p.copy(obj.pos).project(game.camera);
@@ -223,6 +226,18 @@ export function objectiveMarker(g, game, W, H, u, time) {
   g.restore();
   font(g, 700, 11 * u);
   const tw = g.measureText(txt).width + 16 * u;
+  if (avoid) {
+    const free = (x, y) => x - tw / 2 >= 4 && x + tw / 2 <= W - 4 && y - 10 * u >= 4 && y + 10 * u <= H - 4
+      && !avoid.some((o) => x - tw / 2 < o.x + o.w + 4 && o.x - 4 < x + tw / 2 && y - 10 * u < o.y + o.h + 4 && o.y - 4 < y + 10 * u);
+    let spot = null;
+    for (let k = 0; k <= 16 && !spot; k++) {
+      const dy = Math.ceil(k / 2) * 22 * u * (k % 2 ? 1 : -1);
+      for (const dx of [0, 60 * u, -60 * u, 120 * u, -120 * u]) if (!spot && free(lx + dx, ly + dy)) spot = [lx + dx, ly + dy];
+    }
+    if (!spot) return;
+    [lx, ly] = spot;
+    avoid.push({ name: 'objective label', x: lx - tw / 2, y: ly - 10 * u, w: tw, h: 20 * u });
+  }
   panel(g, lx - tw / 2, ly - 10 * u, tw, 20 * u, u, { bracket: C.amber });
   g.textAlign = 'center';
   glow(g, txt, lx, ly + 1, C.amber, 4);
