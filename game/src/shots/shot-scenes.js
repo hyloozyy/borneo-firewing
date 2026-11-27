@@ -19,7 +19,7 @@ export const SHOTS = {
     game.stageData.startHeat = game.fire.totalHeat() * 1.25;
     const ring = game.stageData.ring;
     const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(ring.quaternion);
-    const start = ring.position.clone().addScaledVector(dir, -440);
+    const start = ring.position.clone().addScaledVector(dir, -num('back', 440));
     start.y = ring.position.y + 14;
     const hdg = Math.atan2(dir.x, -dir.z);
     setFlying(game.flight, start, -hdg, 58, -2 * deg, -6 * deg);

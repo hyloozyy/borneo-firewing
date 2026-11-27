@@ -220,3 +220,63 @@ export function propBlurTexture() {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+// Engine cowling skin for the lathe-turned nacelles (u around the nacelle, 0 = underside, 0.25 =
+// right side, 0.5 = top; v from the intake lip to the tail cone): red paint, cowl seams and
+// latches, cooling louvres, rivet rows and the soot the exhaust leaves along the outboard flank.
+export function buildNacelleSkin(hi = true) {
+  const w = hi ? 1024 : 512, h = hi ? 1024 : 512, k = w / 512;
+  const c = makeCanvas(w, h), g = c.getContext('2d', { willReadFrequently: true });
+  const hc = makeCanvas(w, h), hg = hc.getContext('2d', { willReadFrequently: true });
+  g.scale(k, k); hg.scale(k, k);
+  const Y = (v) => (1 - v) * 512; // canvas top is the tail end (flipY)
+  const zv = (z) => (z + 5.15) / 7.75;
+  g.fillStyle = '#c8102e'; g.fillRect(0, 0, 512, 512);
+  hg.fillStyle = '#808080'; hg.fillRect(0, 0, 512, 512);
+  const line = (x0, y0, x1, y1) => {
+    g.strokeStyle = 'rgba(40,0,6,0.45)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    hg.strokeStyle = '#303030'; hg.lineWidth = 1.6; hg.beginPath(); hg.moveTo(x0, y0); hg.lineTo(x1, y1); hg.stroke();
+  };
+  // Cowl stations and the hinge lines of the side cowls.
+  for (const z of [-4.6, -3.4, -1.0, 0.6, 1.6]) line(0, Y(zv(z)), 512, Y(zv(z)));
+  for (const u of [0.07, 0.43, 0.57, 0.93]) line(u * 512, Y(zv(-4.6)), u * 512, Y(zv(0.6)));
+  // Rivet rows along the stations.
+  for (const z of [-4.6, -3.4, -1.0, 0.6]) {
+    for (let x = 2; x < 512; x += 6) {
+      g.fillStyle = 'rgba(60,0,10,0.35)'; g.fillRect(x, Y(zv(z)) + 3, 1.1, 1.1);
+      hg.fillStyle = '#c0c0c0'; hg.fillRect(x, Y(zv(z)) + 3, 1.4, 1.4);
+    }
+  }
+  // Latches on the side cowls.
+  for (const u of [0.2, 0.3, 0.7, 0.8]) {
+    g.fillStyle = 'rgba(30,30,34,0.85)'; g.fillRect(u * 512 - 5, Y(zv(-2.0)), 10, 3);
+    hg.fillStyle = '#d0d0d0'; hg.fillRect(u * 512 - 5, Y(zv(-2.0)), 10, 3);
+  }
+  // Cooling louvres on the upper flanks.
+  for (const u0 of [0.36, 0.6]) {
+    for (let i = 0; i < 7; i++) {
+      const y = Y(zv(-3.2 + i * 0.22));
+      g.fillStyle = 'rgba(20,4,6,0.75)'; g.fillRect(u0 * 512, y, 22, 2.2);
+      hg.fillStyle = '#202020'; hg.fillRect(u0 * 512, y, 22, 2.2);
+      hg.fillStyle = '#c8c8c8'; hg.fillRect(u0 * 512, y - 2, 22, 1.4);
+    }
+  }
+  // Exhaust soot on both flanks (one of them is outboard on each engine).
+  for (const u of [0.25, 0.75]) {
+    for (let i = 0; i < 30; i++) {
+      const x = u * 512 + (Math.random() - 0.5) * 46;
+      const grd = g.createLinearGradient(0, Y(zv(-2.0)), 0, Y(zv(1.4)));
+      const a = 0.06 + Math.random() * 0.1;
+      grd.addColorStop(0, `rgba(25,18,16,${a})`); grd.addColorStop(1, 'rgba(25,18,16,0)');
+      g.fillStyle = grd; g.fillRect(x, Y(zv(1.4)), 2 + Math.random() * 4, Y(zv(-2.0)) - Y(zv(1.4)));
+    }
+  }
+  // A white engine number placard on each flank.
+  g.fillStyle = '#f2f2ee'; g.fillRect(0.25 * 512 - 9, Y(zv(-3.9)) - 6, 18, 12); g.fillRect(0.75 * 512 - 9, Y(zv(-3.9)) - 6, 18, 12);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const img = hg.getImageData(0, 0, w, h).data, height = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) height[i] = img[i * 4] / 255;
+  return { map: tex, normalMap: heightToNormalTexture(height, w, h, 1.2) };
+}

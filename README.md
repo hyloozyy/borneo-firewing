@@ -126,6 +126,10 @@ lower resolution), a loading bar while the forest grows, and a light-mode reload
 Plain static files in `game/` with no build step and no network requests. Three.js is vendored as
 `game/vendor/three.module.min.js`. Everything else was written for this game: the aircraft is modelled in code
 (`game/src/aircraft`), its livery is painted on canvases, and every sound is synthesised with Web Audio.
+Up close the FW-218 carries framed, sky-reflecting glass laid onto the real hull surface, a raised door,
+hatches and access panels painted in the livery, normal-mapped panel seams and rivets on the hull, wing,
+tailplane and cowlings, exhaust soot and wash streaks, nav lights, strobes and landing lights, a
+motion-blurred propeller disc and working gear, flaps, ailerons, elevator, rudder and belly water doors.
 
 The rainforest covers the whole island, hills included: every tree grows from a branching skeleton
 (trunk, buttress roots, scaffold limbs that fork two or three times, a leaf clump on every twig) in ten
@@ -143,7 +147,7 @@ yard props), a lake landing with a jetty and boats, and shore rocks. Each area i
 material.
 
 ```
-game/src/aircraft   FW-218 model and livery
+game/src/aircraft   FW-218 model, livery, close-up details (glass, panels, skins), landing gear
 game/src/flight     flight physics, damage model, annunciators
 game/src/world      terrain, water, sky, weather, forest, village, airstrip, clouds and hornbills
 game/src/world/props  hangar, tower, fuel farm, vehicles, houses, boats, rocks and their PBR textures

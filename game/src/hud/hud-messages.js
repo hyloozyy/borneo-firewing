@@ -1,6 +1,7 @@
 // Messages on the HUD: radio panel with speaker label, typing effect and voice meter; stage banners;
 // score pop-ups; master warning/caution with the active annunciators; drop hit/miss feedback;
 // objective marker; the stage checklist.
+import { STAGES } from '../mission/mission-stages.js';
 import * as THREE from 'three';
 import { C, font, glow, panel, wrapLines } from './hud-style.js';
 import { LEVEL_COLOR } from '../flight/annunciators.js';
@@ -254,6 +255,12 @@ export function missionPanel(g, game, hud, x, y, w, u) {
   g.textAlign = 'left';
   font(g, 700, 15 * u, 'display');
   glow(g, m.stage.title, x + 13 * u, y + 15 * u, C.gold, 6);
+  // Where this stage sits in the mission (e.g. 3/5).
+  g.textAlign = 'right';
+  font(g, 600, 10.5 * u, 'mono');
+  g.fillStyle = C.greenDim;
+  g.fillText(`${m.index + 1}/${STAGES.length}`, x + w - 13 * u, y + 15 * u);
+  g.textAlign = 'left';
   g.fillStyle = C.edge;
   g.fillRect(x + 13 * u, y + 28 * u, w - 26 * u, 1);
   hud.checks = hud.checks || {};

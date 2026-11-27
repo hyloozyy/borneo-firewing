@@ -155,7 +155,7 @@ export function buildLiveryTexture(hi = true) {
   onSide(g, 'left', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = '700 26px "JetBrains Mono", monospace'; gg.fillText('PK-FWE', 0, 0); });
   onSide(g, 'right', 0.86, 0.33 * Math.PI, (gg) => { gg.fillStyle = '#333'; gg.font = '700 26px "JetBrains Mono", monospace'; gg.fillText('PK-FWE', -120, 0); });
 
-  drawPanelLines(g, 0.16);
+  drawPanelLines(g, 0.22);
   // Soft grime along the waterline and exhaust staining, so the paint looks used.
   const grime = g.createLinearGradient(0, H * 0.4, 0, H * 0.5);
   grime.addColorStop(0, 'rgba(60,40,30,0)');

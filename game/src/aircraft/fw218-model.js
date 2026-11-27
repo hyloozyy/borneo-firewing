@@ -9,7 +9,7 @@ import { planarUV } from '../core/geometry-utils.js';
 import { latheZ, profileOf, bladeGeometry, strutGeometry, plateYZ } from './fw218-parts.js';
 import { mergeStaticMeshes } from './merge-static.js';
 import { buildGear, animateGear } from './fw218-gear.js';
-import { addHullDetail, buildWingSkin, wingUV, propBlurTexture } from './fw218-details.js';
+import { addHullDetail, buildWingSkin, wingUV, propBlurTexture, buildNacelleSkin } from './fw218-details.js';
 import { isPhone } from '../core/quality.js';
 
 const RED = 0xc8102e;
@@ -230,6 +230,8 @@ export function buildFW218() {
   parts.discs = [];
   const nacX = 4.6;
   const discTex = propBlurTexture();
+  const nacSkin = buildNacelleSkin(!isPhone());
+  const nacelleRed = paint(0xffffff, { map: nacSkin.map, normalMap: nacSkin.normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.4 });
   const bladeGeo = bladeGeometry(0.3, 2.2, { chord: 0.36 }), tipGeo = bladeGeometry(0.3, 2.2, { chord: 0.36, thick: 0.058, from: 0.9 });
   const bladeMat = std(0x2b2d30, { roughness: 0.5, metalness: 0.3 }), tipMat = std(0xf0c419, { roughness: 0.45 });
   for (const side of [-1, 1]) {
@@ -238,7 +240,7 @@ export function buildFW218() {
     model.add(nac);
     // Cowling: intake lip behind the spinner, full cowl, long tail cone past the trailing edge.
     const cowl = (t) => t < 0.1 ? 0.45 + 0.37 * Math.sin((t / 0.1) * Math.PI / 2) : t < 0.55 ? 0.82 + 0.05 * Math.sin(((t - 0.1) / 0.45) * Math.PI) : Math.max(0.12, 0.82 * Math.pow(Math.cos(((t - 0.55) / 0.45) * Math.PI / 2), 0.8));
-    const body = new THREE.Mesh(latheZ(profileOf(-5.15, 2.6, 30, cowl), { segments: 28, sy: 1.14 }), red);
+    const body = new THREE.Mesh(latheZ(profileOf(-5.15, 2.6, 40, cowl), { segments: 40, sy: 1.14 }), nacelleRed);
     body.castShadow = true;
     nac.add(body);
     // Cowl panel seams and the dark chin intake under the spinner.
@@ -388,13 +390,13 @@ export function buildFW218() {
     sp.scale.setScalar(size);
     return sp;
   };
-  const navL = lightGlow('rgba(255,40,40,1)', 1.6); navL.position.set(-halfSpan - 0.85, wingY, wingLE + 1.2);
-  const navR = lightGlow('rgba(40,255,90,1)', 1.6); navR.position.set(halfSpan + 0.85, wingY, wingLE + 1.2);
-  const strobeTail = lightGlow('rgba(255,255,255,1)', 3); strobeTail.position.set(0, 7.3, 9.8);
+  const navL = lightGlow('rgba(255,40,40,1)', 1.0); navL.position.set(-halfSpan - 0.85, wingY, wingLE + 1.2);
+  const navR = lightGlow('rgba(40,255,90,1)', 1.0); navR.position.set(halfSpan + 0.85, wingY, wingLE + 1.2);
+  const strobeTail = lightGlow('rgba(255,255,255,1)', 1.7); strobeTail.position.set(0, 7.3, 9.8);
   const beacon = lightGlow('rgba(255,50,30,1)', 2.2); beacon.position.set(0, 1.85, 3.5);
   const landing = lightGlow('rgba(255,250,220,1)', 1.0); landing.position.set(0, -0.6, -10.2);
-  const strobeL = lightGlow('rgba(255,255,255,1)', 2.6); strobeL.position.set(-halfSpan - 0.8, wingY, wingLE + 1.9);
-  const strobeR = lightGlow('rgba(255,255,255,1)', 2.6); strobeR.position.set(halfSpan + 0.8, wingY, wingLE + 1.9);
+  const strobeL = lightGlow('rgba(255,255,255,1)', 1.5); strobeL.position.set(-halfSpan - 0.8, wingY, wingLE + 1.9);
+  const strobeR = lightGlow('rgba(255,255,255,1)', 1.5); strobeR.position.set(halfSpan + 0.8, wingY, wingLE + 1.9);
   const landL = lightGlow('rgba(255,246,220,1)', 1.3); landL.position.set(-2.9, wingY, wingLE - 0.1);
   const landR = lightGlow('rgba(255,246,220,1)', 1.3); landR.position.set(2.9, wingY, wingLE - 0.1);
   parts.landingLights.push(landL, landR);
