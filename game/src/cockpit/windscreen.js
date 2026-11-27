@@ -61,6 +61,7 @@ export class Windscreen {
     const d = s.damage;
     this.soot = Math.min(0.55, Math.max(0, this.soot + (s.turbulence * 0.04 - (s.scooping ? 0.08 : 0.004)) * dt));
     if (s.scooping) this.splash(Math.ceil(dt * 60));
+    if (s.rain && Math.random() < dt * 40 * s.rain) this.splash(1); // rain hitting the glass
     if (d.windscreen > 0.05 && !this.crack) this.crack = makeCrack();
     // Slipstream: drops run up and outward from the centre line, faster with airspeed.
     const v = Math.min(1, s.airspeed / 50);

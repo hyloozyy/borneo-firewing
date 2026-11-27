@@ -162,12 +162,19 @@ export class FireSystem {
           randRange(0.9, 1.7), randRange(14, 26) * (0.6 + c.heat), 4,
           [1.0, 0.85, 0.45, 0.95], [0.9, 0.18, 0.02, 0.0], 0.3, 2);
       }
+      // Crown fire: tall tongues licking out of the burning canopy, visible from the air.
+      for (let n = 0; c.heat > 0.35 && n < rate * 1.2 + (rand() < (rate * 1.2) % 1 ? 1 : 0); n++) {
+        const ox = randRange(-CELL * 0.45, CELL * 0.45), oz = randRange(-CELL * 0.45, CELL * 0.45);
+        this.flames.spawn(c.x + ox, c.h + randRange(20, 40), c.z + oz, randRange(-1.5, 1.5), randRange(10, 16) * (0.7 + c.heat * 0.4), randRange(-1.5, 1.5),
+          randRange(1.0, 1.7), randRange(26, 44) * (0.6 + c.heat * 0.6), 8,
+          [1.0, 0.8, 0.4, 0.9], [0.85, 0.15, 0.02, 0.0], 0.35, 2);
+      }
       // Smoke: dark at the base, lit brown-grey higher up, drifting downwind.
       if (rand() < rate * 0.55) {
-        this.smoke.spawn(c.x + randRange(-20, 20), c.h + randRange(10, 25), c.z + randRange(-20, 20),
-          randRange(-2, 2), randRange(12, 20), randRange(-2, 2),
-          randRange(12, 20), randRange(30, 50), randRange(220, 360),
-          [0.2, 0.15, 0.12, 0.5], [0.66, 0.58, 0.52, 0.0], 0.12, 0.6);
+        this.smoke.spawn(c.x + randRange(-20, 20), c.h + randRange(25, 40), c.z + randRange(-20, 20),
+          randRange(-2, 2), randRange(16, 26), randRange(-2, 2),
+          randRange(12, 20), randRange(18, 30), randRange(150, 260),
+          [0.14, 0.11, 0.09, 0.62], [0.62, 0.55, 0.5, 0.0], 0.1, 0.8);
       }
       // Embers
       if (rand() < rate * 0.6) {

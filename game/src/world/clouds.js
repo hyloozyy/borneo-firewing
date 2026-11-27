@@ -1,14 +1,23 @@
 // Volumetric-looking tropical cumulus: each cloud is a flat-based heap of many camera-facing puffs
-// whose two-octave noise density (crisp cauliflower edges), sphere-like normals, sun lighting, silver
-// lining, self-shadowed lower halves and blue-grey undersides are computed per pixel. Puffs are re-sorted back to front as the camera moves.
+// with two-octave noise density (crisp cauliflower edges). Lighting is computed for the cloud as a
+// whole (the puff's place in its cloud gives the normal, the puff's own bulge only adds relief), so
+// the sun side glows, the far side and the flat base sit in blue-grey shade and the thin edges
+// light up against the sun, instead of every puff shading like its own ball. Weather sets the
+// coverage (extra clouds fade in for a storm), darkness and lightning flashes inside the clouds.
+// Puffs are re-sorted back to front as the camera moves.
 import * as THREE from 'three';
-import { rand, randRange } from '../core/rng.js';
+import { rand } from '../core/rng.js';
+import { painterRandom } from '../textures/texture-utils.js';
 import { SUN_DIR } from './sky.js';
 
 const vert = `
 attribute vec4 puff;      // xyz centre, w radius
 attribute vec2 info;      // x seed, y height within the cloud (0 base .. 1 top)
+attribute vec4 shape;     // xyz offset of the puff from its cloud's centre / cloud size, w coverage rank
+uniform float coverage;
 varying vec2 vUv;
+varying vec3 vCloudN;
+varying float vRank;
 varying float vSeed;
 varying float vH;
 varying vec3 vFogRel;
@@ -16,7 +25,10 @@ void main() {
   vUv = position.xy;
   vSeed = info.x;
   vH = info.y;
+  vRank = shape.w;
+  vCloudN = normalize(mat3(viewMatrix) * normalize(shape.xyz + vec3(0.0, 0.25, 0.0)));
   vec4 mv = viewMatrix * vec4(puff.xyz, 1.0);
+  if (shape.w > coverage) mv.xy += 1e5; // clouds beyond the weather's coverage stay hidden
   mv.xy += position.xy * puff.w;
   vFogRel = transpose(mat3(viewMatrix)) * mv.xyz;
   gl_Position = projectionMatrix * mv;
@@ -29,6 +41,11 @@ uniform vec3 skyTop;
 uniform vec3 skyBottom;
 uniform float time;
 uniform vec3 fogColor;
+uniform float darkness;
+uniform float coverage;
+uniform float flash;
+varying vec3 vCloudN;
+varying float vRank;
 varying vec2 vUv;
 varying float vSeed;
 varying float vH;
@@ -49,32 +66,43 @@ void main() {
   // Flat bases: puffs fade out below their own centre near the cloud base.
   dens *= mix(smoothstep(-0.65, 0.05, vUv.y), 1.0, smoothstep(0.0, 0.35, vH));
   if (dens < 0.01) discard;
-  vec3 N = normalize(vec3(vUv + (vec2(vn(q * 2.0), vn(q * 2.0 + 7.0)) - 0.5) * 0.9, sqrt(max(0.0, 1.0 - r * r))));
+  vec3 Nl = normalize(vec3(vUv + (vec2(vn(q * 2.0), vn(q * 2.0 + 7.0)) - 0.5) * 0.9, sqrt(max(0.0, 1.0 - r * r))));
+  vec3 N = normalize(vCloudN * 1.3 + Nl * 0.55);
   float lam = max(dot(N, sunView), 0.0);
   float wrap = max(dot(N, sunView) * 0.5 + 0.5, 0.0);
   // Forward scattering: thin edges glow when the sun is behind the cloud.
-  float silver = pow(max(-sunView.z, 0.0), 3.0) * pow(1.0 - dens, 2.0) * 3.0;
-  // Self-shadowing: the base and the lower half of every puff sit in the cloud's own shade.
-  float self = mix(0.36, 1.0, vH) * (0.55 + 0.45 * n) * mix(0.62, 1.0, smoothstep(-0.9, 0.55, vUv.y + N.y * 0.3));
-  vec3 amb = mix(skyBottom, skyTop, N.y * 0.5 + 0.5) * self;
-  vec3 col = amb + sunColor * (lam * 0.75 + wrap * 0.35) * self + sunColor * silver;
+  float silver = pow(max(-sunView.z, 0.0), 3.0) * pow(1.0 - dens, 2.0) * 2.2;
+  // Depth in the cloud: lower and sun-averted puffs are in the cloud's own shade; the base is flat grey.
+  float self = mix(0.42, 1.0, smoothstep(0.0, 0.8, vH)) * (0.7 + 0.3 * n) * mix(0.75, 1.0, smoothstep(-0.9, 0.5, vUv.y + Nl.y * 0.3));
+  float shade = mix(0.35, 1.0, smoothstep(-0.35, 0.6, dot(vCloudN, sunView)));
+  vec3 amb = mix(skyBottom * 0.9, skyTop, N.y * 0.5 + 0.5) * self;
+  vec3 col = amb + sunColor * (lam * 0.85 + wrap * 0.2) * self * shade + sunColor * silver * (1.0 - darkness);
+  col *= 1.0 - darkness * 0.72;
+  col += vec3(0.75, 0.8, 1.0) * flash * (0.6 + 0.8 * n) * (1.0 - vH * 0.5);
   float dist = length(vFogRel);
   col = mix(col, fogColor * 1.4, 1.0 - exp(-dist * 0.00009));
-  gl_FragColor = vec4(col, dens * 0.97);
+  gl_FragColor = vec4(col, dens * 0.97 * step(vRank, coverage));
 }`;
 
 export function buildClouds(scene, count) {
   const puffs = [];
-  for (let i = 0; i < count; i++) {
-    const cx = randRange(-9000, 9000), cz = randRange(-10000, 7000), base = randRange(850, 1300);
-    const w = randRange(500, 1100), tall = randRange(300, 800);
-    const n = 18 + Math.floor(rand() * 16); // many smaller puffs: towers with detail, not blobs
+  const total = Math.round(count * 1.8); // the extra ones only show in a storm (coverage rank)
+  const own = painterRandom(7177); // storm clouds use their own stream so the world's stays as it was
+  for (let i = 0; i < total; i++) {
+    const R = i < count ? rand : own;
+    const RR = (a, b) => a + (b - a) * R();
+    const rank = (i + 0.5) / total;
+    const storm = i >= count;
+    const cx = RR(-9000, 9000), cz = RR(-10000, 7000), base = storm ? RR(700, 950) : RR(850, 1300);
+    const w = RR(500, 1100) * (storm ? 1.4 : 1), tall = RR(300, 800) * (storm ? 1.5 : 1);
+    const n = 18 + Math.floor(R() * 16); // many smaller puffs: towers with detail, not blobs
     for (let j = 0; j < n; j++) {
-      const t = rand();
+      const t = R();
       const hgt = Math.pow(t, 0.8);
       const spread = w * (1 - hgt * 0.6);
-      const rad = randRange(170, 330) * (1 - hgt * 0.35) * (w / 800);
-      puffs.push({ x: cx + randRange(-spread, spread), y: base + hgt * tall + rad * 0.35, z: cz + randRange(-spread, spread) * 0.7, r: rad, seed: rand(), h: hgt });
+      const rad = RR(170, 330) * (1 - hgt * 0.35) * (w / 800);
+      const px = cx + RR(-spread, spread), py = base + hgt * tall + rad * 0.35, pz = cz + RR(-spread, spread) * 0.7;
+      puffs.push({ x: px, y: py, z: pz, r: rad, seed: R(), h: hgt, sx: (px - cx) / w, sy: (py - base - tall * 0.4) / tall, sz: (pz - cz) / (w * 0.7), rank });
     }
   }
   const quad = new THREE.PlaneGeometry(2, 2);
@@ -84,6 +112,9 @@ export function buildClouds(scene, count) {
   const puffArr = new Float32Array(puffs.length * 4), infoArr = new Float32Array(puffs.length * 2);
   const puffAttr = new THREE.InstancedBufferAttribute(puffArr, 4);
   const infoAttr = new THREE.InstancedBufferAttribute(infoArr, 2);
+  const shapeArr = new Float32Array(puffs.length * 4);
+  const shapeAttr = new THREE.InstancedBufferAttribute(shapeArr, 4);
+  geo.setAttribute('shape', shapeAttr);
   geo.setAttribute('puff', puffAttr);
   geo.setAttribute('info', infoAttr);
   geo.instanceCount = puffs.length;
@@ -94,6 +125,9 @@ export function buildClouds(scene, count) {
     skyBottom: { value: new THREE.Color(0.32, 0.25, 0.26) },
     time: { value: 0 },
     fogColor: { value: new THREE.Color(0.95, 0.72, 0.55) },
+    coverage: { value: count / total },
+    darkness: { value: 0 },
+    flash: { value: 0 },
   };
   const mat = new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false });
   const mesh = new THREE.Mesh(geo, mat);
@@ -109,12 +143,16 @@ export function buildClouds(scene, count) {
       const p = puffs[idx];
       puffArr[k * 4] = p.x; puffArr[k * 4 + 1] = p.y; puffArr[k * 4 + 2] = p.z; puffArr[k * 4 + 3] = p.r;
       infoArr[k * 2] = p.seed; infoArr[k * 2 + 1] = p.h;
+      shapeArr[k * 4] = p.sx; shapeArr[k * 4 + 1] = p.sy; shapeArr[k * 4 + 2] = p.sz; shapeArr[k * 4 + 3] = p.rank;
     });
+    shapeAttr.needsUpdate = true;
     puffAttr.needsUpdate = true;
     infoAttr.needsUpdate = true;
   }
   return {
     mesh,
+    uniforms,
+    baseCoverage: count / total,
     update(t, camera) {
       uniforms.time.value = t;
       uniforms.sunView.value.copy(SUN_DIR).transformDirection(camera.matrixWorldInverse);

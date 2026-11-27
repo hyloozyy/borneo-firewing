@@ -52,13 +52,13 @@ export const SHOTS = {
   landing(game) {
     game.startMission(4, { quiet: true });
     const r = PLACES.runway;
-    const z = r.z + r.length / 2 + num('pz', 330);
-    setFlying(game.flight, new THREE.Vector3(r.x + 1, r.h + num('py', 26), z), 0, 52, 3 * deg, num('bank', -4) * deg);
+    const z = r.z + r.length / 2 + num('pz', 170);
+    setFlying(game.flight, new THREE.Vector3(r.x + num('px', 1), r.h + num('py', 17), z), 0, 52, 3 * deg, num('bank', -4) * deg);
     game.flight.flaps = game.flight.flapTarget = 1;
     game.stageData.gate = true;
     game.flight.velocity.set(0, -3.4, -52); // 3.5° glide path, nose slightly up
     game.renderer.toneMappingExposure = num('exp', 1.3);
-    game.rig.yaw = num('yaw', 0.75); game.rig.pitch = num('pitch', 0.1); game.rig.dist = num('dist', 22);
+    game.rig.yaw = num('yaw', 0.5); game.rig.pitch = num('pitch', 0.2); game.rig.dist = num('dist', 30);
     return { warm: 1.0, mode: 'chase' };
   },
   // Title screen over the orbiting fly-by of the fire.
@@ -75,7 +75,7 @@ export const SHOTS = {
   view(game) {
     const r = PLACES.runway, v = PLACES.village, l = PLACES.lake;
     const spots = {
-      airfield: [[r.x + 30, r.h + 14, r.z + 520], [r.x + 110, r.h + 6, r.z + 380]],
+      airfield: [[r.x + 30, r.h + 14, r.z + 630], [r.x + 110, r.h + 6, r.z + 490]],
       village: [[v.x - 160, v.h + 30, v.z + 120], [v.x, v.h + 4, v.z]],
       lake: [[l.x + 420, 20, l.z + 300], [l.x + 560, 4, l.z + 40]],
     };
@@ -111,6 +111,7 @@ export function runShot(game, name) {
     game.simulate(dt);
   }
   game.hud.bannerTime = 0;
+  if (params.has('strike')) { game.weather.strike(game.time - num('strike', 0.02)); game.weather.update(0, game.time); }
   // Fixed camera (outside the chase rig) for scenic shots.
   if (setup.camera) {
     const cam = game.camera;

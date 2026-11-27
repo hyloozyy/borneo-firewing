@@ -113,6 +113,7 @@ export function buildForest(scene, quality, renderer) {
     data: f,
     groups,
     impostors,
+    materials: { leaf: leafMat, bark: barkMat },
     // Call once a frame after the camera moved: LOD swap, wind time, sun direction for leaves.
     update(camera, time, sunDir) {
       treeUniforms.uTime.value = time;

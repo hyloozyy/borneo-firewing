@@ -13,7 +13,7 @@ export const PLACES = {
   fire: { x: 750, z: -1750 },
   village: { x: 1500, z: -950, h: 12 },
   // Apron, hangar, tower and fuel farm east of the southern half of the runway (relative to its centre).
-  apron: { x0: 44, x1: 178, z0: 228, z1: 505 },
+  apron: { x0: 44, x1: 178, z0: 338, z1: 615 },
   coastX: 2900,
 };
 

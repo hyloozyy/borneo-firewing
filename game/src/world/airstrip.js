@@ -1,6 +1,6 @@
 // Jungle airstrip: asphalt runway with markings, edge lights, approach lights, PAPI, hangar and windsock.
 import * as THREE from 'three';
-import { makeCanvas, glowTexture } from '../core/canvas-textures.js';
+import { makeCanvas } from '../core/canvas-textures.js';
 import { tileNoise, tileFbm, painterRandom } from '../textures/texture-utils.js';
 import { PLACES, terrainHeight } from './terrain.js';
 import { PropBuilder } from './props/prop-builder.js';
@@ -95,6 +95,24 @@ function vergeTexture() {
   return t;
 }
 
+// A lamp seen from afar: a tiny white-hot core, a coloured halo that falls off fast (not a soft ball).
+function lampTexture(rgb) {
+  const c = makeCanvas(64, 64);
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.07, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.14, `rgba(${rgb},0.85)`);
+  grad.addColorStop(0.3, `rgba(${rgb},0.22)`);
+  grad.addColorStop(0.6, `rgba(${rgb},0.05)`);
+  grad.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export function buildAirstrip(scene, quality = {}) {
   const r = PLACES.runway;
   const group = new THREE.Group();
@@ -116,25 +134,25 @@ export function buildAirstrip(scene, quality = {}) {
   const groundAt = (x, z) => terrainHeight(r.x + x, r.z + z) - r.h;
   const b = new PropBuilder(propPalette(quality.phone ? 256 : 512));
   addRunwayFixtures(b, groundAt);
-  b.push(120, 0.3, 380, -Math.PI / 2); addHangar(b); b.pop();
-  b.push(80, 0.3, 462, Math.PI); addControlTower(b); b.pop();
-  b.push(128, 0.3, 282, Math.PI / 2); addFuelFarm(b); b.pop();
-  b.push(84, 0.32, 404, 0.15); addFuelBowser(b); b.pop();
-  b.push(70, 0.32, 352, -0.5); addCrewPickup(b); b.pop();
+  b.push(120, 0.3, 490, -Math.PI / 2); addHangar(b); b.pop();
+  b.push(80, 0.3, 572, Math.PI); addControlTower(b); b.pop();
+  b.push(128, 0.3, 392, Math.PI / 2); addFuelFarm(b); b.pop();
+  b.push(84, 0.32, 514, 0.15); addFuelBowser(b); b.pop();
+  b.push(70, 0.32, 462, -0.5); addCrewPickup(b); b.pop();
   const props = b.build();
   props.position.set(r.x, r.h, r.z);
   scene.add(props);
   const beacon = towerBeacon(propPalette());
-  beacon.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI).add(new THREE.Vector3(80, 0.3, 462));
+  beacon.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI).add(new THREE.Vector3(80, 0.3, 572));
   props.add(beacon);
   const sock = buildWindsock(propPalette());
   sock.group.position.set(-42, groundAt(-42, 470), 470);
   props.add(sock.group);
 
   // Edge, threshold and approach lights as glowing sprites.
-  const glow = glowTexture('rgba(255,230,170,1)');
-  const greenGlow = glowTexture('rgba(120,255,140,1)');
-  const redGlow = glowTexture('rgba(255,80,60,1)');
+  const glow = lampTexture('255,214,150');
+  const greenGlow = lampTexture('110,255,140');
+  const redGlow = lampTexture('255,70,50');
   const add = (tex, x, y, z, s) => {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
     sp.position.set(x, y, z);
@@ -143,20 +161,20 @@ export function buildAirstrip(scene, quality = {}) {
     return sp;
   };
   for (let z = -r.length / 2; z <= r.length / 2; z += 60) {
-    add(glow, -r.width / 2 - 2, groundAt(-r.width / 2 - 2, z) - 0.03, z, 2.6);
-    add(glow, r.width / 2 + 2, groundAt(r.width / 2 + 2, z) - 0.03, z, 2.6);
+    add(glow, -r.width / 2 - 2, groundAt(-r.width / 2 - 2, z) - 0.03, z, 3.2);
+    add(glow, r.width / 2 + 2, groundAt(r.width / 2 + 2, z) - 0.03, z, 3.2);
   }
   for (let x = -r.width / 2; x <= r.width / 2; x += 4) {
-    add(greenGlow, x, groundAt(x, r.length / 2 + 3) - 0.3, r.length / 2 + 3, 1.6);
-    add(redGlow, x, groundAt(x, -r.length / 2 - 3) - 0.3, -r.length / 2 - 3, 1.6);
+    add(greenGlow, x, groundAt(x, r.length / 2 + 3) - 0.3, r.length / 2 + 3, 2.6);
+    add(redGlow, x, groundAt(x, -r.length / 2 - 3) - 0.3, -r.length / 2 - 3, 2.6);
   }
   // Approach light bars south of runway 36 (landing northbound), with sequenced flashers.
   const flashers = [];
   for (let i = 1; i <= 12; i++) {
     const z = r.length / 2 + i * 30;
     const top = Math.max(groundAt(0, z) + 1.4, 1.2) - 0.5;
-    for (let x = -8; x <= 8; x += 4) add(glow, x, top + 0.22, z - 0.3, 1.7);
-    flashers.push(add(glow, 0, top + 0.9, z, 4));
+    for (let x = -8; x <= 8; x += 4) add(glow, x, top + 0.22, z - 0.3, 3);
+    flashers.push(add(glow, 0, top + 0.9, z, 7));
   }
   // PAPI: 4 lights left of the touchdown zone.
   const papi = [];

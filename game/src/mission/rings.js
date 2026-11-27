@@ -3,9 +3,11 @@ import * as THREE from 'three';
 
 export function makeRing(radius, color) {
   const g = new THREE.Group();
+  // A shaded glowing tube (lit and specular like a real object, not a flat outline), a soft halo
+  // around it and bevelled chevrons pointing in.
   const torus = new THREE.Mesh(
-    new THREE.TorusGeometry(radius, radius * 0.06, 8, 48),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, fog: false }),
+    new THREE.TorusGeometry(radius, radius * 0.055, 16, 120),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.5, metalness: 0.35, roughness: 0.28, transparent: true, opacity: 0.9, fog: false }),
   );
   const halo = new THREE.Mesh(
     new THREE.TorusGeometry(radius, radius * 0.16, 6, 48),
@@ -14,10 +16,10 @@ export function makeRing(radius, color) {
   g.add(torus, halo);
   // Chevron ticks around the ring
   for (let i = 0; i < 8; i++) {
-    const t = new THREE.Mesh(new THREE.BoxGeometry(radius * 0.08, radius * 0.22, radius * 0.04), torus.material);
+    const t = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.07, radius * 0.2, 4, 1), torus.material);
     const a = (i / 8) * Math.PI * 2;
     t.position.set(Math.cos(a) * radius * 0.86, Math.sin(a) * radius * 0.86, 0);
-    t.rotation.z = a + Math.PI / 2;
+    t.rotation.z = a + Math.PI / 2; // tip points to the centre
     g.add(t);
   }
   g.userData = { radius, torus, halo };

@@ -65,6 +65,25 @@ export class SoundEngine {
     this.scoop = this.loopNoise('lowpass', 1200, 0.5);
     this.drop = this.loopNoise('bandpass', 500, 0.4);
     this.fire = this.loopNoise('highpass', 2500, 0.7);
+    this.rain = this.loopNoise('highpass', 1800, 0.4);
+  }
+
+  // Thunder: a low rumbling noise burst that rolls on for a few seconds.
+  thunder(vol = 1) {
+    if (!this.ctx || this.muted) return;
+    const c = this.ctx, t = c.currentTime;
+    const src = c.createBufferSource();
+    src.buffer = this.noise;
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.setValueAtTime(420, t); f.frequency.exponentialRampToValueAtTime(70, t + 4);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.9 * Math.max(0.3, vol), t + 0.08);
+    g.gain.setTargetAtTime(0.35 * vol, t + 0.4, 0.3);
+    g.gain.setTargetAtTime(0, t + 1.6, 1.1);
+    src.connect(f).connect(g).connect(this.master);
+    src.start(t);
+    src.stop(t + 6);
   }
 
   update(s, fireNear, time) {
@@ -89,6 +108,7 @@ export class SoundEngine {
     this.drop.g.gain.setTargetAtTime(s.doors > 0.3 && s.water > 0 ? 0.8 : 0, t, 0.1);
     const crackle = fireNear * (Math.random() < 0.3 ? 1 : 0.2);
     this.fire.g.gain.setTargetAtTime(crackle * 0.5, t, 0.02);
+    this.rain.g.gain.setTargetAtTime((s.rain || 0) * 0.22, t, 0.5);
   }
 
   beep(freq, dur, when = 0, type = 'square', vol = 0.08) {
@@ -140,7 +160,7 @@ export class SoundEngine {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     for (const e of this.engine) e.g.gain.setTargetAtTime(0, t, 0.1);
-    for (const n of [this.wind, this.scoop, this.drop, this.fire]) n.g.gain.setTargetAtTime(0, t, 0.1);
+    for (const n of [this.wind, this.scoop, this.drop, this.fire, this.rain]) n.g.gain.setTargetAtTime(0, t, 0.1);
     this.whineGain.gain.setTargetAtTime(0, t, 0.1);
   }
 }

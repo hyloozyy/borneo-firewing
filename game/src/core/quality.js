@@ -40,7 +40,7 @@ export function pickQuality() {
   if (q === 'high') set.mode = 'ultra';
   const full = set.mode === 'ultra' || (set.mode === 'sharp' && !phone);
   const out = full
-    ? { name: 'high', phone, treeSpacing: 16, shrubChance: 0.3, hiTreeRadius: 230, loTreeRadius: 600, shrubRadius: 170, impostorCell: 256, treeShadows: true, msaa: phone ? 0 : 4, grass: 60000, reflections: true, groundTexture: 512, shadowSize: phone ? 2048 : 4096, shadowBox: 170, terrainSegments: 360, flameParticles: 4500, smokeParticles: 2200, waterParticles: 3000, shadows: true, clouds: 30, birds: 5, texDetail: 1 }
+    ? { name: 'high', phone, treeSpacing: 16, shrubChance: 0.3, hiTreeRadius: 230, loTreeRadius: 600, shrubRadius: 170, impostorCell: 256, treeShadows: true, msaa: phone ? 0 : 4, grass: 40000, reflections: true, groundTexture: 512, shadowSize: phone ? 2048 : 4096, shadowBox: 170, terrainSegments: 360, flameParticles: 4500, smokeParticles: 2200, waterParticles: 3000, shadows: true, clouds: 30, birds: 5, texDetail: 1 }
     : { name: 'low', phone, // phones: no MSAA (FXAA instead), no shadows or reflections, fewer trees, particles and clouds
       treeSpacing: 26, shrubChance: 0.2, hiTreeRadius: 150, loTreeRadius: 520, shrubRadius: 110, impostorCell: 128, treeShadows: false, msaa: 0, grass: 12000, reflections: false, groundTexture: 256, shadowSize: 1024, shadowBox: 90, terrainSegments: 140, flameParticles: 1500, smokeParticles: 800, waterParticles: 1000, shadows: false, clouds: 14, birds: 3, texDetail: set.mode === 'performance' ? 0.5 : 1 };
   out.mode = set.mode;

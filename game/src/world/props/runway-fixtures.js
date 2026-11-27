@@ -50,13 +50,13 @@ export function addRunwayFixtures(b, groundAt) {
   const ap = PLACES.apron;
   const ax0 = ap.x0, ax1 = ap.x1 - 26, az0 = ap.z0 + 32, az1 = ap.z1 - 12;
   b.box('concrete', ax1 - ax0, 0.4, az1 - az0, { x: (ax0 + ax1) / 2, y: 0.12, z: (az0 + az1) / 2, tile: 7.5 });
-  b.box('concrete', ax0 - W / 2 + 2, 0.36, 24, { x: (W / 2 + ax0) / 2, y: 0.1, z: 380, tile: 7.5 });
-  b.box('paintYellow', ax0 - W / 2 + 30, 0.02, 0.35, { x: (W / 2 + ax0) / 2 + 14, y: 0.33, z: 380 });
+  b.box('concrete', ax0 - W / 2 + 2, 0.36, 24, { x: (W / 2 + ax0) / 2, y: 0.1, z: 490, tile: 7.5 });
+  b.box('paintYellow', ax0 - W / 2 + 30, 0.02, 0.35, { x: (W / 2 + ax0) / 2 + 14, y: 0.33, z: 490 });
   b.box('paintYellow', 0.35, 0.02, az1 - az0 - 30, { x: ax0 + 26, y: 0.33, z: (az0 + az1) / 2 });
-  for (const z of [300, 440]) b.box('paintYellow', 12, 0.02, 0.35, { x: ax0 + 32, y: 0.33, z });
+  for (const z of [410, 550]) b.box('paintYellow', 12, 0.02, 0.35, { x: ax0 + 32, y: 0.33, z });
   b.box('paintWhite', 0.25, 0.02, az1 - az0 - 4, { x: ax0 + 2, y: 0.33, z: (az0 + az1) / 2 });
   // Taxi sign at the runway exit.
-  b.push(W / 2 + 12, 0, 364);
+  b.push(W / 2 + 12, 0, 474);
   b.box('signTaxi', 2.6, 0.8, 0.12, { y: 0.9, ry: -Math.PI / 2, uvScale: [1, 1] });
   b.box('steel', 2.8, 1.0, 0.1, { y: 0.9, x: 0.08, ry: Math.PI / 2, tile: 1 });
   for (const z of [-1.1, 1.1]) b.beam('steel', [0.1, 0, z], [0.1, 0.5, z], 0.08, { round: true });

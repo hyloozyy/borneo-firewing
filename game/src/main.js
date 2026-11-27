@@ -9,6 +9,7 @@ import { buildForest } from './world/forest.js';
 import { buildVillage } from './world/village.js';
 import { buildAirstrip } from './world/airstrip.js';
 import { buildClouds } from './world/clouds.js';
+import { Weather } from './world/weather.js';
 import { buildBirds } from './world/birds.js';
 import { buildGrass } from './world/grass.js';
 import { buildFW218, animateFW218 } from './aircraft/fw218-model.js';
@@ -36,6 +37,7 @@ import { loadFonts } from './ui/fonts.js';
 import { buildGroundTextures } from './textures/ground-textures.js';
 import { setupPhone, syncBodyState } from './ui/phone.js';
 import { bindGraphicsMenu } from './ui/graphics-menu.js';
+import { bindWeatherMenu } from './ui/weather-menu.js';
 import { loadingProgress, hideLoading, watchContext } from './ui/loading.js';
 
 const params = new URLSearchParams(location.search);
@@ -80,11 +82,11 @@ class Game {
     await step('Clouds and hornbills', 0.78, () => {
       this.clouds = buildClouds(this.scene, q.clouds);
       this.birds = buildBirds(this.scene, q.birds);
-      // Sky reflections for the chrome spinners and the water.
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      const envScene = new THREE.Scene();
-      envScene.add(this.sky.dome.clone());
-      this.scene.environment = pmrem.fromScene(envScene, 0.02).texture;
+    });
+    await step('Weather', 0.8, () => {
+      this.wind = new THREE.Vector3(-2, 0, -3);
+      this.weather = new Weather(this);
+      this.rebuildEnvironment();
     });
     await step('FW-218 Enggang', 0.84, () => {
       this.plane = buildFW218();
@@ -94,7 +96,6 @@ class Game {
       this.flight = createFlightState();
     });
     await step('Lighting the fire', 0.92, () => {
-      this.wind = new THREE.Vector3(-2, 0, -3);
       this.fire = new FireSystem(this.scene, this.forest, q, this.burnMap);
       this.fire.seedScenario();
       this.water = new WaterEffects(this.scene, this.fire, q);
@@ -131,6 +132,7 @@ class Game {
     document.addEventListener('visibilitychange', () => { if (!document.hidden && this.audio.ctx) this.audio.unlock(); else if (this.state === 'playing') this.setPaused(true); });
     bindScreens(this);
     bindGraphicsMenu(this);
+    bindWeatherMenu(this);
     setupPhone(this);
     this.menuFlyby();
     // Compile every shader now (in parallel where the GPU driver allows) instead of on the first frames.
@@ -140,6 +142,16 @@ class Game {
     try { await renderer.compileAsync(this.scene, this.camera); } catch (e) { console.warn('compile', e.message); }
     if (params.has('boottime')) console.info(`boot shaders ${Math.round(performance.now() - t)} ms`);
     await progress('Ready', 1);
+  }
+
+  // Sky reflections for the chrome spinners, glass and water (rebuilt when the weather changes).
+  rebuildEnvironment() {
+    if (!this.pmrem) this.pmrem = new THREE.PMREMGenerator(this.renderer);
+    const envScene = new THREE.Scene();
+    envScene.add(this.sky.dome.clone());
+    const old = this.scene.environment;
+    this.scene.environment = this.pmrem.fromScene(envScene, 0.02).texture;
+    if (old) old.dispose();
   }
 
   resize() {
@@ -339,7 +351,8 @@ class Game {
     particleUniforms.sunView.value.copy(SUN_DIR).transformDirection(this.camera.matrixWorldInverse);
     // Smoke thickens the haze around the fire.
     const smoke = s.turbulence;
-    this.scene.fog.near = 0.00016 * (1 + smoke * 10);
+    this.scene.fog.near = this.weather.fogDensity * (1 + smoke * 10);
+    this.weather.update(dt, this.time);
     this.waterSurface.update(this.time);
     this.airstrip.update(this.time, s, this.wind);
     this.birds.update(this.time);

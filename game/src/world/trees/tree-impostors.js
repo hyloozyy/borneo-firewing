@@ -136,7 +136,13 @@ void main() {
   float f1 = mod(f0 + 1.0, ${FRAMES}.0);
   vBlend = f - f0;
   vec2 c = position.xy;
-  vec3 world = iPos + right * c.x * S + vec3(0.0, (box.y - box.x * 0.5) * iData.x + c.y * S, 0.0);
+  // Seen from above (from the aircraft) an upright card would squash flat: tilt it back toward the
+  // camera about the crown's centre, so the crown keeps its full size and depth from any elevation.
+  float el = atan(toCam.y, length(toCam.xz));
+  float tilt = clamp(el, 0.0, 1.1) * 0.8;
+  vec3 up = vec3(-h.x * sin(tilt), cos(tilt), -h.y * sin(tilt));
+  float base = (box.y - box.x * 0.5) * iData.x;
+  vec3 world = iPos + right * c.x * S + vec3(0.0, base + 0.55 * S, 0.0) + up * ((c.y - 0.55) * S);
   float sw = c.y * c.y * (sin(uTime * 0.9 + iPos.x * 0.031 + iPos.z * 0.017) * 0.6 + sin(uTime * 1.73 + iPos.z * 0.05) * 0.25);
   world.x += sw * 0.3 * iData.x;
   world.z += sw * 0.2 * iData.x;

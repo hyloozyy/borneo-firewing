@@ -1,55 +1,49 @@
 // Grass tufts and wild ginger clumps on the open ground around the airstrip, the village and the
-// lake banks: instanced crossed cards with painted blades that bend in the wind.
+// lake banks: instanced clumps of modelled blades that bend in the wind.
 import * as THREE from 'three';
 import { rand, randRange } from '../core/rng.js';
 import { terrainHeight, isOnRunway, isOnApron, PLACES } from './terrain.js';
 import { forestMask } from './forest-layout.js';
-import { makeCanvas, canvasToTexture, painterRandom } from '../textures/texture-utils.js';
+import { painterRandom } from '../textures/texture-utils.js';
 import { treeUniforms } from './trees/tree-materials.js';
 
-function grassTexture() {
-  const c = makeCanvas(256, 256);
-  const g = c.getContext('2d', { willReadFrequently: true });
-  const rnd = painterRandom(77);
-  for (let i = 0; i < 110; i++) {
-    const x = 20 + rnd() * 216, h = 120 + rnd() * 130, lean = (rnd() - 0.5) * 90, w = 2 + rnd() * 4;
-    const dry = rnd() < 0.22;
-    const hue = dry ? 48 + rnd() * 10 : 78 + rnd() * 25, lit = dry ? 52 + rnd() * 12 : 26 + rnd() * 18;
-    const grad = g.createLinearGradient(0, 256, 0, 256 - h);
-    grad.addColorStop(0, `hsl(${hue},45%,${lit * 0.45}%)`);
-    grad.addColorStop(1, `hsl(${hue - 6},${dry ? 40 : 55}%,${lit + 10}%)`);
-    g.fillStyle = grad;
-    g.beginPath();
-    g.moveTo(x - w, 256);
-    g.quadraticCurveTo(x + lean * 0.3, 256 - h * 0.6, x + lean, 256 - h);
-    g.quadraticCurveTo(x + lean * 0.3 + w * 0.5, 256 - h * 0.6, x + w, 256);
-    g.fill();
-  }
-  return canvasToTexture(c, { bleed: true });
-}
-
+// One tuft: real blades, each a curved, tapering strip (three segments, pointed tip) leaning out
+// from the clump, dark and dense at the root, lighter and yellower toward the tips; a few dry blades.
 function tuftGeometry() {
-  const parts = [];
-  for (let k = 0; k < 3; k++) {
-    const q = new THREE.PlaneGeometry(1.4, 0.9, 1, 2);
-    q.translate(0, 0.45, 0);
-    q.rotateY((k / 3) * Math.PI);
-    parts.push(q);
-  }
-  const pos = [], uv = [], idx = [];
-  let base = 0;
-  for (const q of parts) {
-    pos.push(...q.attributes.position.array);
-    uv.push(...q.attributes.uv.array);
-    for (const i of q.index.array) idx.push(i + base);
-    base += q.attributes.position.count;
+  const rnd = painterRandom(77);
+  const pos = [], col = [], bend = [], nor = [];
+  const BLADES = 13, SEG = 3;
+  const c0 = new THREE.Color(), c1 = new THREE.Color(), c = new THREE.Color();
+  for (let i = 0; i < BLADES; i++) {
+    const a = rnd() * Math.PI * 2, r0 = rnd() * 0.18;
+    const bx = Math.cos(a) * r0, bz = Math.sin(a) * r0;
+    const dir = a + (rnd() - 0.5) * 0.8, lean = 0.15 + rnd() * 0.45, h = 0.38 + rnd() * 0.55, w = 0.022 + rnd() * 0.02;
+    const dx = Math.cos(dir), dz = Math.sin(dir), px = -dz, pz = dx; // lean direction and blade width axis
+    const dry = rnd() < 0.18;
+    c0.setHSL(dry ? 0.12 : 0.24 + rnd() * 0.04, 0.5, dry ? 0.2 : 0.07 + rnd() * 0.03);
+    c1.setHSL(dry ? 0.11 : 0.2 + rnd() * 0.05, dry ? 0.45 : 0.55, dry ? 0.5 : 0.26 + rnd() * 0.1);
+    const at = (t) => [bx + dx * lean * t * t, h * t - lean * 0.25 * t * t * t, bz + dz * lean * t * t];
+    const ring = [];
+    for (let k = 0; k <= SEG; k++) {
+      const t = k / SEG, [x, y, z] = at(t), ww = w * (1 - t * 0.85);
+      c.copy(c0).lerp(c1, Math.pow(t, 0.7));
+      ring.push({ l: [x - px * ww, y, z - pz * ww], r: [x + px * ww, y, z + pz * ww], t, col: [c.r, c.g, c.b] });
+    }
+    const tip = at(1.08);
+    const push = (p, t, cc) => { pos.push(...p); bend.push(t); col.push(...cc); nor.push(dx * 0.25, 0.95, dz * 0.25); };
+    for (let k = 0; k < SEG; k++) {
+      const A = ring[k], B = ring[k + 1];
+      if (k === SEG - 1) { push(A.l, A.t, A.col); push(A.r, A.t, A.col); push(tip, 1, B.col); continue; }
+      push(A.l, A.t, A.col); push(A.r, A.t, A.col); push(B.r, B.t, B.col);
+      push(A.l, A.t, A.col); push(B.r, B.t, B.col); push(B.l, B.t, B.col);
+    }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  // Normals point up so tufts light like the ground they stand on.
-  g.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length / 3).fill([0, 1, 0]).flat(), 3));
-  g.setIndex(idx);
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('bend', new THREE.Float32BufferAttribute(bend, 1));
+  // Normals lean up so blades light like the ground they stand on, with a hint of their own lean.
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   return g;
 }
 
@@ -59,17 +53,17 @@ function grassAllowed(x, z, h) {
 }
 
 export function buildGrass(scene, count) {
-  const mat = new THREE.MeshStandardMaterial({ map: grassTexture(), alphaTest: 0.45, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 0.85 });
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.8 });
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, treeUniforms);
-    shader.vertexShader = 'uniform float uTime;\nuniform float uWind;\n' + shader.vertexShader.replace('#include <begin_vertex>', `
+    shader.vertexShader = 'uniform float uTime;\nuniform float uWind;\nattribute float bend;\n' + shader.vertexShader.replace('#include <begin_vertex>', `
 #include <begin_vertex>
 vec2 gp = vec2(instanceMatrix[3][0], instanceMatrix[3][2]);
-float bend = uv.y * uv.y * (0.18 + 0.12 * sin(uTime * 2.1 + gp.x * 0.13 + gp.y * 0.07)) * uWind;
-transformed.x += bend;
-transformed.z += bend * 0.6;`);
+float sway = bend * bend * (0.18 + 0.12 * sin(uTime * 2.1 + gp.x * 0.13 + gp.y * 0.07)) * uWind;
+transformed.x += sway;
+transformed.z += sway * 0.6;`);
   };
-  mat.customProgramCacheKey = () => 'grass-v1';
+  mat.customProgramCacheKey = () => 'grass-blades-v2';
   const mesh = new THREE.InstancedMesh(tuftGeometry(), mat, count);
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
   const zones = [

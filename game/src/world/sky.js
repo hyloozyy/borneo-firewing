@@ -19,6 +19,9 @@ uniform float sunPower;
 uniform float smoke;
 uniform vec3 smokeDir;
 uniform float time;
+uniform float overcast; // storm deck: grey sky, no sun disc
+uniform float haze;     // karhutla smoke haze: brown-orange sky, dim red sun
+uniform float flash;    // lightning
 varying vec3 vDir;
 
 const float RE = 6360.0;   // km
@@ -91,6 +94,8 @@ void main() {
   float mu = dot(d, sunDir);
   // Sun disc with limb darkening, seen through the atmosphere (reddened near the horizon).
   vec3 sunTint = exp(-(BR * 22.0 + BM * 26.0) * (1.0 / max(sunDir.y + 0.08, 0.05)) * 0.35);
+  sunTint *= mix(vec3(1.0), vec3(1.0, 0.42, 0.16) * 0.55, haze); // seen through smoke: a dim red disc
+  sunTint *= 1.0 - overcast;
   float disc = smoothstep(0.99985, 0.99992, mu);
   float limb = sqrt(max(0.0, 1.0 - (1.0 - mu) / (1.0 - 0.99985)));
   col += disc * sunTint * 260.0 * (0.6 + 0.4 * limb);
@@ -107,6 +112,14 @@ void main() {
   float toward = max(dot(normalize(vec3(d.x, 0.0, d.z)), smokeDir), 0.0);
   float band = exp(-max(d.y, 0.0) * 7.0);
   col = mix(col, vec3(0.42, 0.27, 0.16) * (0.7 + 1.6 * pow(max(mu, 0.0), 4.0)) * sunPower * 0.05, band * smoke * (0.25 + 0.55 * toward));
+  // Heavy smoke haze: the whole sky goes brown-orange, brightest around the sun, thickest low down.
+  vec3 hazeCol = vec3(0.6, 0.4, 0.24) * sunPower * 0.04 * (0.75 + 1.2 * pow(max(mu, 0.0), 3.0));
+  col = mix(col, hazeCol, haze * (0.55 + 0.4 * exp(-max(d.y, 0.0) * 3.5)));
+  // Storm: a low grey deck, a little lighter toward the horizon; lightning lights it up.
+  vec3 deck = vec3(0.26, 0.29, 0.33) * sunPower * 0.028 * (0.75 + 0.35 * exp(-max(d.y, 0.0) * 4.0));
+  float deckN = fbm(d.xz / (abs(d.y) + 0.15) * 1.2 + vec2(time * 0.01, 0.0));
+  col = mix(col, deck * (0.75 + 0.5 * deckN), overcast);
+  col += vec3(0.55, 0.6, 0.75) * flash * sunPower * 0.06 * (0.6 + 0.6 * deckN);
   // Below the horizon: the far haze over the land.
   if (d.y < 0.0) col = mix(col, col * vec3(0.55, 0.5, 0.45), smoothstep(0.0, -0.2, d.y));
   gl_FragColor = vec4(col, 1.0);
@@ -119,6 +132,9 @@ export function buildSky(scene, quality = { shadowSize: 2048, shadowBox: 160 }) 
     smoke: { value: 0.55 },
     smokeDir: { value: new THREE.Vector3(0.3, 0, -1).normalize() },
     time: { value: 0 },
+    overcast: { value: 0 },
+    haze: { value: 0 },
+    flash: { value: 0 },
   };
   const dome = new THREE.Mesh(
     new THREE.SphereGeometry(1, 48, 24),
