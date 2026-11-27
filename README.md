@@ -58,6 +58,8 @@ vertical speed, twin-needle engine RPM and a row of STALL / LOW FUEL / ITT / SMO
 | V | flaps (UP, 1, FULL) |
 | SPACE (hold) | open the belly doors and drop water |
 | B | wheel brakes |
+| G | landing gear up / down (it also comes down by itself on final) |
+| K | AUTO SCOOP: near the lake the autopilot flies the scoop and hands back with a full tank |
 | X | fire bottle: put out a burning engine (it stays shut down) |
 | C | chase / cockpit camera |
 | Mouse drag / wheel | look around / zoom |
