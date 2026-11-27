@@ -46,10 +46,9 @@ function corrugated(u, v) {
 function corrugatedPainted(u, v) {
   const wave = 0.5 + 0.5 * Math.sin(u * Math.PI * 2 * 16);
   const lap = Math.min(fract(u * 2), 1 - fract(u * 2)) < 0.012 ? 1 : 0;
-  const runs = tileNoise(u * 48, 0.5, 48, 13) * smooth(0.2, 1, v) * 0.5;
-  const n = tileFbm(u, v, 8, 4, 17);
-  const l = 214 + (n - 0.5) * 22 + wave * 14 - lap * 40 - runs * 34;
-  return [l, l * 0.99, l * 0.97, wave * 0.8 - lap * 0.3, 0.5 + n * 0.15, 0.1];
+  const n = tileFbm(u, v, 4, 3, 17); // only a broad, faint variation in the paint
+  const l = 222 + (n - 0.5) * 8 + wave * 12 - lap * 34;
+  return [l, l * 0.99, l * 0.975, wave * 0.8 - lap * 0.3, 0.42 + n * 0.06, 0.1];
 }
 
 // Horizontal boards 20 cm wide: silvered grain, butt joints, nail heads, gaps and stains.

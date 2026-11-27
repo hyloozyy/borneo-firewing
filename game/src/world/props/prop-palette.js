@@ -61,7 +61,7 @@ export function propPalette(size = 512) {
     tankPlastic: std(0x2c62b8, { roughness: 0.45 }),
     tankOrange: std(0xe07a1c, { roughness: 0.45 }),
     rope: std(0x8a7656, { roughness: 1 }),
-    signBase: new THREE.MeshStandardMaterial({ map: signTexture([{ text: 'POSKO DAMKAR', size: 104 }, { text: 'BORNEO AIR FIRE BASE  ·  FW-218', size: 52 }], { w: 1536, h: 320 }), roughness: 0.6 }),
+    signBase: new THREE.MeshStandardMaterial({ map: signTexture([{ text: 'BORNEO FIRE BASE', size: 100 }, { text: 'AERIAL FIREFIGHTING  ·  FW-218 ENGGANG', size: 50 }], { w: 1536, h: 320 }), roughness: 0.6 }),
     signFuel: new THREE.MeshStandardMaterial({ map: signTexture([{ text: 'AVTUR  ·  NO SMOKING', size: 70 }], { w: 1024, h: 160, bg: '#c62c1f', fg: '#ffffff' }), roughness: 0.6 }),
     signTaxi: new THREE.MeshStandardMaterial({ map: signTexture([{ text: 'A  ←  18-36', size: 110 }], { w: 512, h: 160, bg: '#121212', fg: '#f2c02a', font: 'JetBrains Mono', weight: 700 }), roughness: 0.6, emissive: 0x332200, emissiveIntensity: 0.4 }),
   };
