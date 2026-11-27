@@ -8,7 +8,7 @@ import { createDamage, engineOutput, landingDamage } from './damage-model.js';
 
 const RHO = 1.2, WING_AREA = 128, G = 9.81;
 const EMPTY_MASS = 12500, FUEL_MAX = 3200, WATER_MAX = 6000;
-const MAX_THRUST = 52000;
+const MAX_THRUST = 58000; // two turboprops: a full water load still climbs ~1000 ft/min
 export const GEAR_HEIGHT = 1.75; // keel below the origin (on the water, or a belly landing)
 export { WHEEL_HEIGHT } from '../aircraft/fw218-gear.js';
 import { WHEEL_HEIGHT } from '../aircraft/fw218-gear.js';
@@ -92,7 +92,7 @@ export function stepFlight(s, input, dt, env) {
   if (alpha > stallA) cl = Math.max(0.2, (0.32 + s.flaps * 0.55 + 4.6 * stallA) - (alpha - stallA) * 6);
   if (alpha < -0.25) cl = Math.min(cl, -0.6);
   const dead = dmg.engines.filter((e) => e.failed).length * 0.012; // windmilling / feathered prop drag
-  const cd = 0.034 + s.flaps * 0.05 + 0.045 * cl * cl + s.doors * 0.02 + (s.onWater ? 0.12 : 0) + (1 - dmg.structure) * 0.03 + dead;
+  const cd = 0.034 + s.flaps * 0.05 + 0.045 * cl * cl + s.doors * 0.02 + (s.scooping ? 0.03 : 0) + (1 - dmg.structure) * 0.03 + dead;
 
   _force.set(0, 0, 0);
   _force.addScaledVector(_f, power * MAX_THRUST * ((out[0] + out[1]) / 2) * clamp(1.15 - V / 140, 0.35, 1.1));
@@ -102,9 +102,17 @@ export function stepFlight(s, input, dt, env) {
     const liftDir = _tmp.clone().cross(_r).normalize();
     if (liftDir.dot(_u) < 0) liftDir.negate();
     _force.addScaledVector(liftDir, q * WING_AREA * cl);
+    s.liftRatio = (q * WING_AREA * cl) / (mass * G);
     _force.addScaledVector(_tmp, -q * WING_AREA * cd);
     // Side force keeps the aircraft from sliding.
     _force.addScaledVector(_r, -vr * Math.min(V, 60) * 220);
+  }
+  // Planing hull on the water: its drag is friction on the load the water still carries, so it fades
+  // as the wings take the weight (the hull gets "on the step" and unsticks).
+  if (s.onWater && V > 0.5) {
+    const load = clamp(1 - (s.liftRatio || 0), 0, 1);
+    _tmp.set(s.velocity.x, 0, s.velocity.z).normalize();
+    _force.addScaledVector(_tmp, -mass * G * load * (V < 12 ? 0.12 : 0.065));
   }
   // Load factor felt by the crew: aerodynamic force along the aircraft's up axis.
   const g = _force.dot(_u) / (mass * G);
@@ -183,7 +191,14 @@ function contact(s, dt, input, env, fwd) {
     s.waterRun = true;
     s.position.y = Math.max(s.position.y, surf.h + GEAR_HEIGHT - 0.25);
     // The hull clings to the water unless the pilot rotates at flying speed: then it unsticks.
-    const unstick = s.elevator > 0.25 && speed > 31;
+    const unstick = speed > 31 && (s.elevator > 0.12 || ((s.liftRatio || 0) > 1.02 && s.elevator > -0.05));
+    // The hull rides at its planing attitude: the water will not let the nose dig in or a wing drop,
+    // and with the stick neutral the nose settles a few degrees up.
+    const att = new THREE.Euler(Math.max(-0.02, Math.min(0.22, e.x)), e.y, e.z * (1 - Math.min(1, dt * 2)), 'YXZ');
+    if (!unstick && s.elevator < 0.1) att.x += (0.05 - att.x) * Math.min(1, dt * 1.5);
+    s.quaternion.setFromEuler(att);
+    if (s.angular.x < 0) s.angular.x *= 0.5;
+    s.angular.z *= 0.5;
     s.velocity.y = Math.max(0, s.velocity.y) * (unstick ? 1 : 0.3);
     if (unstick) s.position.y += 0.6 * dt;
     if (wasAir) s.lastTouchdown = { vs, speed, water: true, time: env.time, g: 1 + Math.abs(vs) * 0.3 };
@@ -193,8 +208,6 @@ function contact(s, dt, input, env, fwd) {
       s.scooping = true;
       s.water = Math.min(s.waterMax, s.water + 520 * dt);
     }
-    // Water drag
-    s.velocity.multiplyScalar(1 - dt * 0.035);
   } else {
     if (!runway && speed > 8) { s.crashed = wasAir ? (vs < -6 ? 'Dived into the forest' : 'Flew into the forest canopy') : s.waterRun ? 'Ran out of lake: the hull hit the shore' : 'Ran off the runway into the trees'; return; }
     s.waterRun = false;

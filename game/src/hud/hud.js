@@ -10,6 +10,7 @@ import { activeLights } from '../flight/annunciators.js';
 import { InstrumentCluster } from './hud-cluster.js';
 import { keyName } from '../input/key-names.js';
 import { PHASE_LABEL } from '../flight/scoop-autopilot.js';
+import { terrainHeight } from '../world/terrain.js';
 
 const KT = 1.944, FT = 3.281;
 
@@ -134,6 +135,7 @@ export class Hud {
     else if (game.dropWindow > 0 && s.water > 0) flash(g, `DROP NOW · ${keyName(game, 'drop')}`, W / 2, cy2, C.amber, u, this.time);
     if (s.turbulence > 0.2) flash(g, 'SMOKE · TURBULENCE', W / 2, cy2 + 26 * u, C.amber, u, this.time, true);
     autopilotCallout(g, game, W / 2, cy2 + 52 * u, u, this.time);
+    waterCallout(g, game, W / 2, cy2 - 26 * u, u, this.time);
 
     const lights = activeLights(s, game.plane.userData.parts);
     alertsDraw(g, this, lights, W / 2, portrait ? cy - (tapeH / 2 + 40) * u : headY + 62 * u, u);
@@ -248,6 +250,7 @@ Hud.prototype.drawTouch = function drawTouch(game, dt, s, W, H, u, kt, ft, obsta
   else if (game.dropWindow > 0 && s.water > 0) flash(g, `DROP NOW · ${keyName(game, 'drop')}`, W / 2, cy2, C.amber, u, this.time);
   if (s.turbulence > 0.2) flash(g, 'SMOKE · TURBULENCE', W / 2, cy2 - 26 * u, C.amber, u, this.time, true);
   autopilotCallout(g, game, W / 2, cy2 - 52 * u, u, this.time);
+  waterCallout(g, game, W / 2, cy2 - 78 * u, u, this.time);
   alertsDraw(g, this, activeLights(s, game.plane.userData.parts), W / 2, top + 66 * uH, u);
   // Radio: in the free gap along the bottom between the stick and the buttons.
   const gp = bottomGap(placed(), W, H, H - 100 * u); // only what reaches into the bottom strip
@@ -270,6 +273,19 @@ Hud.prototype.drawTouch = function drawTouch(game, dt, s, W, H, u, kt, ft, obsta
   bannerDraw(g, this, W, H, u, dt);
   this.rects = rects;
 };
+
+// On the lake: when to rotate, and a warning when the shore comes up (lighten the load by dropping).
+function waterCallout(g, game, x, y, u, time) {
+  const s = game.flight;
+  if (game.state !== 'playing' || (game.autopilot && game.autopilot.active) || s.crashed) return;
+  const low = s.onWater || (s.agl < 40 && terrainHeight(s.position.x, s.position.z) < 0);
+  if (!low) return;
+  let shore = false;
+  for (let t = 2; t <= 7 && !shore; t += 1) shore = terrainHeight(s.position.x + s.velocity.x * t, s.position.z + s.velocity.z * t) > 0;
+  const kt = s.airspeed * KT;
+  if (shore) flash(g, s.water > s.waterMax * 0.5 ? 'SHORE AHEAD · PULL UP · DROP TO LIGHTEN' : 'SHORE AHEAD · PULL UP', x, y, C.red, u, time);
+  else if (s.onWater && s.water > s.waterMax * 0.8) flash(g, kt >= 72 ? 'PULL UP · ROTATE' : 'FULL POWER · ROTATE AT 75 KT', x, y, C.amber, u, time, true);
+}
 
 // AUTO SCOOP status: the phase while it flies, a prompt when it could take the scoop.
 function autopilotCallout(g, game, x, y, u, time) {
