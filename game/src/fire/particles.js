@@ -54,14 +54,23 @@ void main() {
   vec2 q = rot * p;
   float r = length(p);
   if (look == 1) {
-    // Flame: a teardrop of turbulent noise, white-yellow core fading to deep red at the tips.
-    vec2 fp = vec2(p.x * 1.5, p.y + 0.35);
-    float n = fbm(vec2(fp.x * 2.5 + vSeed * 17.0, fp.y * 2.0 - time * 3.5 - vSeed * 9.0));
-    float shape = 1.0 - length(vec2(fp.x * (1.0 + max(fp.y, 0.0) * 1.6), fp.y * 0.75));
-    float f = shape + (n - 0.5) * 0.9;
+    // Flame: every tongue its own width and lean, its outline domain-warped by rising turbulence,
+    // the upper part split into two or three licking tips that flicker, the base fading out so the
+    // flames merge into the burning canopy instead of reading as stacked cones.
+    float wide = 0.7 + 0.65 * fract(vSeed * 7.13);
+    float lean = (fract(vSeed * 3.71) - 0.5) * 0.9;
+    vec2 fp = vec2((p.x - lean * (p.y + 1.0) * 0.45) * 1.5 / wide, p.y + 0.3);
+    vec2 warp = vec2(fbm(vec2(fp.x * 2.0 + vSeed * 11.0, fp.y * 1.6 - time * 2.6)), fbm(vec2(fp.x * 2.0 - vSeed * 5.0, fp.y * 1.6 - time * 3.2 + 4.0))) - 0.5;
+    fp += warp * vec2(0.7, 0.4) * (0.4 + max(fp.y + 0.6, 0.0));
+    float n = fbm(vec2(fp.x * 3.0 + vSeed * 17.0, fp.y * 2.2 - time * 4.2 - vSeed * 9.0));
+    float tongues = 0.5 + 0.5 * sin(fp.x * (5.0 + 7.0 * fract(vSeed * 5.3)) + time * (2.0 + 2.0 * fract(vSeed * 2.9)) + vSeed * 20.0);
+    float shape = 1.0 - length(vec2(fp.x * (1.0 + max(fp.y, 0.0) * 1.7), fp.y * 0.72));
+    shape -= max(fp.y, 0.0) * (1.0 - tongues) * 0.6;
+    float f = shape + (n - 0.5) * 1.05;
+    f *= smoothstep(-1.0, -0.55, p.y); // soft base
     if (vSize >= 3.0 && f <= 0.02) discard;
     float core = smoothstep(0.15, 0.75, f);
-    vec3 col = mix(vec3(1.0, 0.18, 0.02), vec3(1.0, 0.62, 0.18), core);
+    vec3 col = mix(vec3(0.75, 0.1, 0.02), vec3(1.0, 0.6, 0.16), core); // deep red edges and smoky tips
     col = mix(col, vec3(1.0, 0.92, 0.7), smoothstep(0.55, 0.95, f));
     float a = smoothstep(0.02, 0.3, f) * vTint.a;
     if (vSize < 3.0) { a = vTint.a; col = vec3(1.0, 0.5, 0.1); }

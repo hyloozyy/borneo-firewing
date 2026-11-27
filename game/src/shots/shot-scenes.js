@@ -72,6 +72,24 @@ export const SHOTS = {
     document.getElementById('title').classList.add('staged');
     return { warm: 2.0, mode: 'chase', kinematic: 'orbit' };
   },
+  // Inside the fire: low over the burning forest, chase camera above and behind; the smoke shakes
+  // the aircraft and an overheating engine lights the caution panel.
+  inferno(game) {
+    game.startMission(2, { quiet: true });
+    game.fire.update(0.1, game.wind, 0, null);
+    for (let i = 0; i < num('spread', 22); i++) game.fire.spreadStep(game.wind);
+    const spot = game.fire.hottestSpot() || { x: PLACES.fire.x, z: PLACES.fire.z };
+    const hdg = num('hdg', 215) * deg;
+    const back = num('back', 160);
+    const x = spot.x - Math.sin(hdg) * back, z = spot.z + Math.cos(hdg) * back;
+    setFlying(game.flight, new THREE.Vector3(x, terrainHeight(x, z) + num('agl', 85), z), -hdg, 58, -3 * deg, num('bank', 14) * deg);
+    game.flight.water = 0;
+    game.flight.damage.engines[1].itt = 845;
+    if (game.stageData.ring) game.stageData.ring.visible = false; // just the aircraft and the fire
+    game.renderer.toneMappingExposure = num('exp', 0.85);
+    game.rig.yaw = num('yaw', 0.5); game.rig.pitch = num('pitch', 0.27); game.rig.dist = num('dist', 21);
+    return { warm: 2.6, mode: 'chase' };
+  },
   // On the runway, standing on the gear or rolling for take-off (&v= ground speed, m/s).
   runway(game) {
     game.startMission(0, { quiet: true });

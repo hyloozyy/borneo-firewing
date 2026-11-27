@@ -18,6 +18,10 @@ export class FireSystem {
     scene.add(this.flames.points);
     this.light = new THREE.PointLight(0xff7a2a, 0, 900, 1.4);
     scene.add(this.light);
+    // A second, local glow over the burning patch nearest the camera: lights the aircraft's
+    // underside, the smoke and the trunks when flying low over the fire.
+    this.nearLight = new THREE.PointLight(0xff6420, 0, 320, 1.5);
+    scene.add(this.nearLight);
     this.spreadTimer = 0;
     this.spreadRate = 1;
     this.target = null; // optional bias point (the village)
@@ -147,11 +151,12 @@ export class FireSystem {
   update(dt, wind, time, camPos) {
     this.spreadTimer += dt;
     if (this.spreadTimer > 2.5) { this.spreadTimer = 0; this.spreadStep(wind); }
-    let lx = 0, lz = 0, lw = 0;
+    let lx = 0, lz = 0, lw = 0, near = null, nearD = 1e18;
     for (const c of this.cells.values()) {
       if (c.burnt || c.heat <= 0) continue;
       c.age += dt;
       lx += c.x * c.heat; lz += c.z * c.heat; lw += c.heat;
+      if (camPos) { const d = (camPos.x - c.x) ** 2 + (camPos.z - c.z) ** 2; if (d < nearD) { nearD = d; near = c; } }
       const far = camPos ? Math.hypot(camPos.x - c.x, camPos.z - c.z) : 0;
       const rate = c.heat * (far > 2500 ? 3 : 9) * dt;
       // Flames: bright cores that rise and cool to deep orange.
@@ -198,6 +203,10 @@ export class FireSystem {
       this.light.position.set(lx / lw, terrainHeight(lx / lw, lz / lw) + 40, lz / lw);
       this.light.intensity = Math.min(9, lw * 0.6) * (0.8 + 0.2 * Math.sin(time * 13) * Math.sin(time * 7.3)) * 1000;
     } else this.light.intensity = 0;
+    if (near && nearD < 500 * 500) {
+      this.nearLight.position.set(near.x, near.h + 28, near.z);
+      this.nearLight.intensity = Math.min(1.2, near.heat) * 2500 * (0.75 + 0.25 * Math.sin(time * 11) * Math.sin(time * 6.7));
+    } else this.nearLight.intensity = 0;
   }
 
   // How deep the aircraft is in smoke (0..1): drives turbulence and visibility.
