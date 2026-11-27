@@ -8,6 +8,7 @@ import { glowTexture } from '../core/canvas-textures.js';
 import { planarUV } from '../core/geometry-utils.js';
 import { latheZ, profileOf, bladeGeometry, strutGeometry, plateYZ } from './fw218-parts.js';
 import { mergeStaticMeshes } from './merge-static.js';
+import { buildGear, animateGear } from './fw218-gear.js';
 
 const RED = 0xc8102e;
 const WHITE = 0xf2f2ee;
@@ -45,13 +46,32 @@ function buildHullGeometry() {
         x = w * Math.sign(s) * Math.pow(Math.abs(s), 0.45);
         y = waist - (waist - bot) * Math.pow(-c, 1.25);
       }
-      pos.push(x, y, z);
+      pos.push(i === 0 ? 0 : x, y, z); // the nose ring pinched to the centre line
       uv.push(t, j / around);
     }
   }
   for (let i = 0; i < rings; i++) {
     for (let j = 0; j < around; j++) {
       const a = i * (around + 1) + j, b = a + around + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+  // Close both ends: the nose ring is pinched shut (below) and the tail gets a short rounded cone
+  // whose last ring collapses to a point (no open ring, no see-through gap).
+  const ringCentre = (i) => { let y = 0; for (let j = 0; j < around; j++) y += pos[(i * (around + 1) + j) * 3 + 1]; return y / around; };
+  // Tail cone: a few extra rings shrinking to a point behind the last station.
+  const last = rings * (around + 1), cy = ringCentre(rings);
+  const extra = 5;
+  for (let e = 1; e <= extra; e++) {
+    const k = Math.cos((e / extra) * Math.PI * 0.5), z = TAIL_Z + 0.55 * Math.sin((e / extra) * Math.PI * 0.5);
+    for (let j = 0; j <= around; j++) {
+      const q = (last + j) * 3;
+      pos.push(pos[q] * k, cy + (pos[q + 1] - cy) * k, z);
+      uv.push(1, j / around);
+    }
+    const r0 = rings + e - 1;
+    for (let j = 0; j < around; j++) {
+      const a = r0 * (around + 1) + j, b = a + around + 1;
       idx.push(a, b, a + 1, b, b + 1, a + 1);
     }
   }
@@ -341,41 +361,7 @@ export function buildFW218() {
 
   // Retractable landing gear: a nose leg folding forward into the bow and two main legs folding
   // up into the hull sides (an amphibian lands on the runway on wheels, on water on its hull).
-  parts.gear = [];
-  const tyre = new THREE.TorusGeometry(0.3, 0.13, 8, 18);
-  tyre.rotateY(Math.PI / 2);
-  const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.2, 14);
-  hubGeo.rotateZ(Math.PI / 2);
-  const rubber = std(0x1a1a1c, { roughness: 0.9 });
-  const wheel = (x, y, z) => {
-    const w = new THREE.Group();
-    w.add(new THREE.Mesh(tyre, rubber), new THREE.Mesh(hubGeo, grey));
-    w.position.set(x, y, z);
-    return w;
-  };
-  const leg = (len) => {
-    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, len, 8), grey);
-    l.position.y = -len / 2;
-    return l;
-  };
-  const noseH = hinge(model, 0, -1.0, -7.3);
-  noseH.add(leg(0.6), wheel(0.17, -0.62, 0), wheel(-0.17, -0.62, 0));
-  noseH.userData = { axis: 'x', sign: -1 };
-  parts.gear.push(noseH);
-  for (const side of [-1, 1]) {
-    const mh = hinge(model, side * 1.3, -0.62, 0.9);
-    const l = leg(1.05);
-    l.rotation.z = side * 0.25;
-    l.position.x = side * 0.13;
-    mh.add(l, wheel(side * 0.3, -1.05, 0));
-    const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 6), grey);
-    brace.position.set(side * 0.05, -0.45, -0.38);
-    brace.rotation.x = -0.75;
-    mh.add(brace);
-    mh.userData = { axis: 'z', sign: side };
-    parts.gear.push(mh);
-  }
-  parts.gearExt = null;
+  buildGear(model, { grey, chrome, dark, rubber: std(0x1a1a1c, { roughness: 0.9 }), red }, parts);
 
   // Navigation lights, strobes and beacon.
   const lightGlow = (col, size) => {
@@ -445,16 +431,7 @@ export function animateFW218(root, s, dt, time) {
     d.material.opacity = Math.min(1, (rpm - 0.3) * 2.5);
     d.rotation.z += dt * 3;
   });
-  // Gear comes down on the runway, on final with full flaps, or when slow; up on the water.
-  const gearDown = !s.onWater && (s.onGround || (s.flapTarget >= 1 && s.agl < 220) || s.airspeed < 28);
-  if (p.gearExt === null || s.onGround) p.gearExt = gearDown ? 1 : 0;
-  else p.gearExt += ((gearDown ? 1 : 0) - p.gearExt) * Math.min(1, dt * 0.8);
-  const up = 1 - p.gearExt;
-  for (const g of p.gear) {
-    if (g.userData.axis === 'x') g.rotation.x = g.userData.sign * up * 1.75;
-    else g.rotation.z = g.userData.sign * up * 1.55;
-    g.visible = p.gearExt > 0.02 || s.cockpit;
-  }
+  animateGear(p, s, dt);
   const flash = (time % 1.3) < 0.07;
   p.strobes.forEach((st) => (st.visible = flash));
   p.beacon.visible = (time % 1.0) < 0.5;

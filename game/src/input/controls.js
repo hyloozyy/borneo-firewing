@@ -80,6 +80,7 @@ export class Controls {
       this.dropBtn.style.setProperty('--fill', `${(s.water / s.waterMax) * 100}%`);
       this.extBtn.classList.toggle('alert', !!(s.damage && s.damage.engines.some((e) => e.fire)));
       // AUTO SCOOP button: only while it can do something (near the lake, or flying the scoop).
+      if (this.gearBtn) this.gearBtn.classList.toggle('on', !!s.gearDown);
       const ap = this.game.autopilot;
       if (ap && this.scoopBtn) {
         const show = ap.enabled && (ap.active || ap.showButton || ap.available(s));
@@ -173,6 +174,7 @@ export class Controls {
     this.extBtn = btn('.b-ext', 'KeyX');
     btn('.b-hud', 'KeyH');
     this.scoopBtn = btn('.b-scoop', 'KeyK');
+    this.gearBtn = btn('.b-gear', 'KeyG');
     const tiltBtn = root.querySelector('.b-tilt');
     tiltBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();

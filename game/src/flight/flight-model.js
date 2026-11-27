@@ -9,7 +9,9 @@ import { createDamage, engineOutput, landingDamage } from './damage-model.js';
 const RHO = 1.2, WING_AREA = 128, G = 9.81;
 const EMPTY_MASS = 12500, FUEL_MAX = 3200, WATER_MAX = 6000;
 const MAX_THRUST = 52000;
-export const GEAR_HEIGHT = 1.75; // keel / wheels below the origin
+export const GEAR_HEIGHT = 1.75; // keel below the origin (on the water, or a belly landing)
+export { WHEEL_HEIGHT } from '../aircraft/fw218-gear.js';
+import { WHEEL_HEIGHT } from '../aircraft/fw218-gear.js';
 
 const _f = new THREE.Vector3(), _u = new THREE.Vector3(), _r = new THREE.Vector3();
 const _v = new THREE.Vector3(), _force = new THREE.Vector3(), _tmp = new THREE.Vector3();
@@ -26,13 +28,14 @@ export function createFlightState() {
     fuel: FUEL_MAX, fuelMax: FUEL_MAX, water: 0, waterMax: WATER_MAX,
     engines: true, onGround: true, onWater: false, scooping: false, crashed: null,
     airspeed: 0, alpha: 0, stall: false, vs: 0, agl: 0, heading: 0, pitch: 0, roll: 0,
-    lastTouchdown: null, turbulence: 0, brakes: false,
+    lastTouchdown: null, turbulence: 0, brakes: false, gearDown: true,
     engRpm: [0, 0], gLoad: 1, damage: createDamage(),
   };
 }
 
 export function placeOnRunway(s, x, z, headingRad) {
-  s.position.set(x, terrainHeight(x, z) + GEAR_HEIGHT + 0.15, z);
+  s.position.set(x, terrainHeight(x, z) + WHEEL_HEIGHT + 0.05, z); // standing on its wheels
+  s.gearDown = true;
   s.quaternion.setFromEuler(new THREE.Euler(0.03, headingRad, 0, 'YXZ'));
   s.velocity.set(0, 0, 0);
   s.angular.set(0, 0, 0);
@@ -44,6 +47,7 @@ export function setFlying(s, pos, headingRad, speed, pitchRad = 0, rollRad = 0) 
   s.quaternion.setFromEuler(new THREE.Euler(pitchRad, headingRad, rollRad, 'YXZ'));
   s.velocity.set(0, 0, -speed).applyQuaternion(s.quaternion);
   s.onGround = false;
+  s.gearDown = false;
   s.throttle = s.rpm = 0.7;
   s.engRpm[0] = s.engRpm[1] = 0.7;
 }
@@ -150,7 +154,9 @@ export function stepFlight(s, input, dt, env) {
 
 function contact(s, dt, input, env, fwd) {
   const surf = surfaceUnder(s.position.x, s.position.z);
-  const bottom = s.position.y - GEAR_HEIGHT;
+  // On land the aircraft stands on its wheels (gear down); the hull meets the water.
+  const H = !surf.water && s.gearDown ? WHEEL_HEIGHT : GEAR_HEIGHT;
+  const bottom = s.position.y - H;
   s.agl = bottom - surf.h;
   s.onWater = false;
   s.scooping = false;
@@ -162,6 +168,7 @@ function contact(s, dt, input, env, fwd) {
   const wasAir = !s.onGround;
   const runway = isOnRunway(s.position.x, s.position.z, 4);
   if (surf.water) {
+    if (s.gearDown) { s.gearDown = false; s.damage.gear = Math.max(0, s.damage.gear - 0.25); s.damage.events.push({ text: 'GEAR DOWN ON THE WATER · GEAR RETRACTED, GEAR DAMAGED', level: 'warning' }); }
     // Hull on the water: gentle enough is a landing / scoop, too hard is a crash.
     if (vs < -9 || Math.abs(e.z) > 0.45 || e.x < -0.25 || speed > 85) { s.crashed = speed > 85 ? 'Hull broke up: far too fast on the water' : vs < -9 ? 'Hit the water too hard' : 'Wingtip or nose dug into the water'; return; }
     if (vs < -3.5 || speed > 66) {
@@ -197,8 +204,9 @@ function contact(s, dt, input, env, fwd) {
       s.lastTouchdown = { vs, speed, water: false, time: env.time, x: s.position.x, z: s.position.z, g: 1 + Math.abs(vs) * 0.42, bank: e.z, pitch: e.x };
       landingDamage(s, s.damage, vs, env.time);
     }
+    if (wasAir && !s.gearDown) s.damage.events.push({ text: 'BELLY LANDING · GEAR WAS UP', level: 'warning' });
     s.onGround = true;
-    s.position.y = Math.max(s.position.y, surf.h + GEAR_HEIGHT);
+    s.position.y = Math.max(s.position.y, surf.h + H);
     s.velocity.y = Math.max(0, s.velocity.y);
     // Rolling friction and brakes; steer the nose wheel with the rudder/roll.
     _tmp.copy(fwd).setY(0).normalize();

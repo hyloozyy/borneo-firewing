@@ -251,6 +251,11 @@ class Game {
   handleKeys() {
     const c = this.controls;
     if (c.hit('KeyK') && this.state === 'playing') this.toggleAutoScoop();
+    if (c.hit('KeyG') && this.state === 'playing') {
+      const s = this.flight;
+      if (s.onGround && !s.onWater && s.gearDown) this.hud.toast('GEAR LOCKED · ON THE GROUND', '#ffc861');
+      else { s.gearDown = !s.gearDown; this.hud.toast(s.gearDown ? 'GEAR DOWN' : 'GEAR UP', '#9dffb0'); }
+    }
     if (c.hit('KeyC')) { this.cameraMode = this.cameraMode === 'chase' ? 'cockpit' : 'chase'; this.rig.mode = this.cameraMode; this.rig.first = true; }
     if (c.hit('KeyP') || c.hit('Escape')) this.setPaused(this.state === 'playing');
     if (c.hit('KeyV')) this.flight.flapTarget = this.flight.flapTarget >= 1 ? 0 : this.flight.flapTarget + 0.5;
@@ -284,6 +289,9 @@ class Game {
     this.prevPos.copy(s.position);
     let input = this.state === 'playing' ? this.controls.read() : { pitch: 0, roll: 0, yaw: 0, throttleDelta: 0, drop: false, brakes: false };
     if (this.state === 'playing' && !this.kinematic) input = this.autopilot.control(s, input, dt);
+    // Gear comes down by itself on final to the airstrip (full flaps, low, over land).
+    if (!s.gearDown && !s.onGround && s.flapTarget >= 1 && s.agl < 150 && terrainHeight(s.position.x, s.position.z) > 0
+      && Math.hypot(s.position.x - PLACES.runway.x, s.position.z - PLACES.runway.z) < 3200) { s.gearDown = true; this.hud.toast('GEAR DOWN', '#9dffb0'); }
     if (this.autopilot.message) { this.hud.toast(this.autopilot.message.text, this.autopilot.message.color); this.audio.beep(this.autopilot.active ? 880 : 660, 0.12); this.autopilot.message = null; }
     if (input.throttleSet != null) s.throttle = input.throttleSet;
     s.turbulence = this.fire.smokeAt(s.position);

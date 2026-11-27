@@ -72,6 +72,15 @@ export const SHOTS = {
     document.getElementById('title').classList.add('staged');
     return { warm: 2.0, mode: 'chase', kinematic: 'orbit' };
   },
+  // On the runway, standing on the gear or rolling for take-off (&v= ground speed, m/s).
+  runway(game) {
+    game.startMission(0, { quiet: true });
+    const s = game.flight;
+    s.throttle = s.rpm = num('v', 0) > 0 ? 1 : 0.2; s.engRpm[0] = s.engRpm[1] = s.rpm;
+    s.velocity.set(0, 0, -num('v', 0));
+    game.rig.yaw = num('yaw', 0.9); game.rig.pitch = num('pitch', 0.08); game.rig.dist = num('dist', 24);
+    return { warm: 1.0, mode: 'chase' };
+  },
   // Asset inspection from a fixed camera: &at=x,y,z&look=x,y,z (metres, world), &fov=.
   // Named spots: &spot=airfield|village|lake.
   view(game) {

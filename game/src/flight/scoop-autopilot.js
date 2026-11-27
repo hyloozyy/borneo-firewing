@@ -44,6 +44,7 @@ export class ScoopAutopilot {
     const hx = Math.sin((s.heading * Math.PI) / 180);
     this.dir = Math.abs(s.position.x - cx) > rx * 0.9 ? Math.sign(cx - s.position.x) : Math.sign(hx) || 1;
     this.phase = 'position';
+    s.gearDown = false; // never on the water with the wheels down
     this.outbound = false; // decided on the first control step
     this.time = 0;
     this.active = true;
