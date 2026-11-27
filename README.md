@@ -30,10 +30,10 @@ live weather: **CLEAR / SMOKE HAZE / STORM** · engine fires, bird strikes, dama
 
 | | |
 | --- | --- |
-| ![storm inferno](screenshots/1-storm-inferno.jpg) | ![clear scoop](screenshots/2-clear-scoop.jpg) |
-| **Storm inferno**: low over the burning forest in the rain, ENG 2 ITT caution and smoke turbulence | **Clear scoop**: skimming the lake to fill the tank, stilt houses and jetty behind |
-| ![smoke-haze landing](screenshots/3-haze-landing.jpg) | ![water drop](screenshots/4-best.jpg) |
-| **Smoke-haze landing**: short final to runway 36, gear down, flaps full | **Water drop**: doors open over the fire front, target ring ahead |
+| ![water drop](screenshots/1-clear-water-drop.jpg) | ![storm inferno](screenshots/2-storm-inferno.jpg) |
+| **Water drop**: doors open over the fire front, target ring ahead | **Storm inferno**: low over the burning forest in the rain, ENG 2 ITT caution and smoke turbulence |
+| ![smoke-haze scoop](screenshots/3-haze-lake-scoop.jpg) | ![golden-hour landing](screenshots/4-golden-landing.jpg) |
+| **Smoke-haze scoop**: skimming the lake to fill the tank | **Golden-hour landing**: short final to runway 36, gear down, flaps full |
 
 An original firefighting flight game made for the make.fun bounty
 [Make the best flight game](https://make.fun/competitions/best-flight-game-20261126-0057).
