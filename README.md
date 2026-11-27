@@ -64,6 +64,10 @@ vertical speed, twin-needle engine RPM and a row of STALL / LOW FUEL / ITT / SMO
 | P or Esc | pause |
 | M / H / I | sound / HUD / chase-view instrument cluster |
 
+Graphics: the title and pause screens have a GRAPHICS setting (Performance, Balanced, Sharp, Ultra) and a render-scale
+slider. Speed is won back from scene detail, not resolution: phones render at up to 2x their screen with FXAA and a
+light sharpen, computers at up to 2x with 4x MSAA.
+
 ### On a phone
 
 Open the game in the phone browser and hold it sideways (a full-screen landscape button is offered in portrait).
@@ -111,6 +115,6 @@ Run it locally with `node serve.ts` (Node 22) and open http://localhost:8080.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The bundled fonts in `game/fonts/` (Saira Condensed, Saira Stencil One,
-B612, B612 Mono, Barlow, from the google/fonts repository) are under the SIL Open Font License 1.1;
+MIT, see [LICENSE](LICENSE). The bundled fonts in `game/fonts/` (Michroma, Manrope, JetBrains Mono and
+Saira Condensed for the aircraft lettering, from the google/fonts repository) are under the SIL Open Font License 1.1;
 their licence texts are next to them (`OFL-*.txt`).
