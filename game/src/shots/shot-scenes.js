@@ -1,7 +1,7 @@
 // Staged, deterministic scenes for the screenshots (?shot=title|cover|cockpit|scoop|landing|rear).
 // Optional overrides for framing: &yaw= &pitch= &dist= (chase camera), &spread= (fire growth).
 import * as THREE from 'three';
-import { PLACES, terrainHeight } from '../world/terrain.js';
+import { PLACES, terrainHeight, lakeLanding } from '../world/terrain.js';
 import { setFlying, GEAR_HEIGHT } from '../flight/flight-model.js';
 import { SUN_DIR } from '../world/sky.js';
 import { showScreen } from '../ui/screens.js';
@@ -40,8 +40,10 @@ export const SHOTS = {
   // Skimming the lake: hull on the water, spray, tank filling.
   scoop(game) {
     game.startMission(1, { quiet: true });
-    const l = PLACES.lake;
-    setFlying(game.flight, new THREE.Vector3(l.x - 260, GEAR_HEIGHT - 0.25, l.z + 40), -80 * deg, 44, 2 * deg, 0);
+    // Skimming a couple of hundred metres off the fishing landing (jetty, boats, stilt houses beyond).
+    const L = lakeLanding();
+    const at = L ? new THREE.Vector3(L.x - L.dx * num('off', 105) - num('side', 70), GEAR_HEIGHT - 0.25, L.z - L.dz * num('off', 105)) : new THREE.Vector3(PLACES.lake.x - 260, GEAR_HEIGHT - 0.25, PLACES.lake.z + 40);
+    setFlying(game.flight, at, -80 * deg, 44, 2 * deg, 0);
     game.flight.water = game.flight.waterMax * 0.45;
     game.flight.flaps = game.flight.flapTarget = 0.5;
     game.rig.yaw = -2.15; game.rig.pitch = 0.12; game.rig.dist = 34;

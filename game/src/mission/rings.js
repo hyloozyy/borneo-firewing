@@ -22,6 +22,8 @@ export function makeRing(radius, color) {
     t.rotation.z = a + Math.PI / 2; // tip points to the centre
     g.add(t);
   }
+  // Drawn after the smoke and flames, so a gate inside the smoke still reads as a marker to fly through.
+  g.traverse((o) => { o.renderOrder = 10; });
   g.userData = { radius, torus, halo };
   return g;
 }
