@@ -42,7 +42,7 @@ function buildRain(count) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('tail', new THREE.BufferAttribute(end, 1));
-  const uniforms = { time: { value: 0 }, origin: { value: new THREE.Vector3() }, fall: { value: new THREE.Vector3(0, -11, 0) }, size: { value: 90 }, amount: { value: 1 }, tint: { value: new THREE.Color(0.75, 0.8, 0.86) } };
+  const uniforms = { time: { value: 0 }, origin: { value: new THREE.Vector3() }, fall: { value: new THREE.Vector3(0, -11, 0) }, size: { value: 90 }, amount: { value: 1 }, tint: { value: new THREE.Color(0.75, 0.8, 0.86) }, firePos: { value: new THREE.Vector3(0, -1e5, 0) }, fireGlow: { value: 0 } };
   const mat = new THREE.ShaderMaterial({
     uniforms,
     transparent: true,
@@ -53,7 +53,10 @@ uniform float time;
 uniform vec3 origin;
 uniform vec3 fall;
 uniform float size;
+uniform vec3 firePos;
+uniform float fireGlow;
 varying float vA;
+varying float vFire;
 void main() {
   // Each drop falls through the box and wraps; the box is centred on the camera.
   vec3 p = position * size;
@@ -62,13 +65,15 @@ void main() {
   vec3 w = origin + p - fall * 0.07 * tail;
   vec4 mv = viewMatrix * vec4(w, 1.0);
   vA = (1.0 - smoothstep(size * 0.2, size * 0.5, length(p))) * mix(1.0, 0.2, tail); // the streak fades toward its tail
+  vFire = fireGlow / (1.0 + length(w - firePos) / 160.0); // drops near the fire catch its light
   gl_Position = projectionMatrix * mv;
 }`,
     fragmentShader: `
 uniform vec3 tint;
 uniform float amount;
 varying float vA;
-void main() { gl_FragColor = vec4(tint, vA * 0.55 * amount); }`,
+varying float vFire;
+void main() { gl_FragColor = vec4(tint + vec3(1.6, 0.6, 0.15) * vFire, vA * (0.55 + 0.3 * min(vFire, 1.0)) * amount); }`,
   });
   const lines = new THREE.LineSegments(g, mat);
   lines.frustumCulled = false;
@@ -116,6 +121,9 @@ export class Weather {
     m.bark.color.copy(b.barkColor).multiplyScalar(1 - p.wet * 0.35);
     g.terrain.material.roughness = b.terrainRough * (1 - p.wet * 0.42);
     g.terrain.material.color.copy(b.terrainColor).multiplyScalar(1 - p.wet * 0.22);
+    // Rain-soaked runway: a glossy sheen that mirrors the sky and catches the lights.
+    if (g.airstrip && g.airstrip.runway) { const m = g.airstrip.runway.material; m.roughness = p.wet ? 0.28 : 0.88; m.metalness = p.wet ? 0.15 : 0; m.envMapIntensity = p.wet ? 1.6 : 1; }
+    if (g.fire) g.fire.steam = p.rain > 0; // rain on the fire raises steam
     this.rain.lines.visible = p.rain > 0;
     this.rain.uniforms.amount.value = p.rain;
     if (env && g.rebuildEnvironment) g.rebuildEnvironment();
@@ -131,6 +139,8 @@ export class Weather {
       // Streaks fall at ~11 m/s, slanted by the wind and by the aircraft's motion through them.
       r.fall.value.set(g.wind.x * 1.5 - s.velocity.x * 0.35, -11, g.wind.z * 1.5 - s.velocity.z * 0.35);
       r.tint.value.setRGB(0.72, 0.77, 0.84).multiplyScalar(1 + this.flash * 2);
+      const fire = g.fire && g.fire.nearLight;
+      if (fire && fire.intensity > 0) { r.firePos.value.copy(fire.position); r.fireGlow.value = Math.min(1.5, fire.intensity / 2500); } else r.fireGlow.value = 0;
     }
     // Lightning: a double flicker inside the clouds, thunder a few seconds later.
     let f = 0;

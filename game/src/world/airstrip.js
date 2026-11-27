@@ -187,6 +187,7 @@ export function buildAirstrip(scene, quality = {}) {
 
   return {
     group,
+    runway,
     papi,
     props,
     update(t, plane, wind) {

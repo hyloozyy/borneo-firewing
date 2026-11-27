@@ -100,6 +100,7 @@ class Game {
     });
     await step('Lighting the fire', 0.92, () => {
       this.fire = new FireSystem(this.scene, this.forest, q, this.burnMap);
+      this.fire.steam = this.weather.p.rain > 0; // rain on the fire raises steam
       this.fire.seedScenario();
       this.water = new WaterEffects(this.scene, this.fire, q);
       this.engineFx = new EngineEffects(this.fire);

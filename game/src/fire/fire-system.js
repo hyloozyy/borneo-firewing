@@ -181,6 +181,13 @@ export class FireSystem {
           randRange(12, 20), randRange(18, 30), randRange(150, 260),
           [0.14, 0.11, 0.09, 0.62], [0.62, 0.55, 0.5, 0.0], 0.1, 0.8);
       }
+      // Rain on the fire: white steam boils up off the burning canopy.
+      if (this.steam && rand() < rate * 0.5) {
+        this.smoke.spawn(c.x + randRange(-25, 25), c.h + randRange(28, 42), c.z + randRange(-25, 25),
+          randRange(-1.5, 1.5), randRange(8, 14), randRange(-1.5, 1.5),
+          randRange(5, 9), randRange(14, 22), randRange(70, 120),
+          [0.85, 0.85, 0.86, 0.38], [0.9, 0.9, 0.92, 0.0], 0.15, 0.4);
+      }
       // Embers
       if (rand() < rate * 0.6) {
         this.flames.spawn(c.x + randRange(-25, 25), c.h + randRange(5, 20), c.z + randRange(-25, 25), randRange(-4, 4), randRange(8, 20), randRange(-4, 4),
