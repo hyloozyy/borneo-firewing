@@ -137,7 +137,7 @@ export function buildFW218() {
   const parts = { model };
 
   // Painted metal: a clear lacquer over the colour coat, reflecting the sky.
-  const paint = (color, extra = {}) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.42, metalness: 0.05, clearcoat: 0.7, clearcoatRoughness: 0.12, envMapIntensity: 1.1, ...extra });
+  const paint = (color, extra = {}) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, metalness: 0.05, clearcoat: 0.85, clearcoatRoughness: 0.09, envMapIntensity: 1.3, ...extra });
   const white = paint(WHITE);
   const red = paint(RED, { roughness: 0.4 });
   const grey = std(0xb9bcc0, { roughness: 0.38, metalness: 0.65 });
